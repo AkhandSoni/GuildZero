@@ -28,6 +28,11 @@ test("normalization options and exact budget survive editing and reload", async 
   await expect(page.getByTestId("saved-options")).toHaveText("product · preserve");
   await page.reload();
   await expect(page.getByTestId("saved-options")).toHaveText("product · preserve");
+  await page.getByRole("button", { name: "Edit mission", exact: true }).click();
+  await page.getByLabel("CSV dataset").fill("sku\n Bag \nBook");
+  await page.getByRole("checkbox", { name: "sku", exact: true }).check();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByTestId("saved-options")).toHaveText("sku · preserve");
   await page.getByRole("button", { name: "Delete draft", exact: true }).click();
   await page.getByRole("button", { name: "Confirm delete", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);

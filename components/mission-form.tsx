@@ -27,6 +27,13 @@ export function MissionForm({
   const [csv, setCsv] = useState(initial?.inputCsv ?? "");
   const [serviceType, setServiceType] = useState<ServiceType>(initial?.serviceType ?? "csv_summary");
   const [selectedColumns, setSelectedColumns] = useState(initial?.options?.columns ?? []);
+  function changeCsv(next: string) {
+    const nextHeaders = Papa.parse<string[]>(next.slice(0, 65536), {
+      delimiter: ",", skipEmptyLines: "greedy", preview: 1,
+    }).data[0] ?? [];
+    setCsv(next);
+    setSelectedColumns((previous) => previous.filter((column) => nextHeaders.includes(column)));
+  }
   const headers = Papa.parse<string[]>(csv.slice(0, 65536), {
     delimiter: ",", skipEmptyLines: "greedy", preview: 1,
   }).data[0] ?? [];
@@ -121,7 +128,7 @@ export function MissionForm({
         <textarea
           className="control min-h-48 font-mono"
           value={csv}
-          onChange={(event) => setCsv(event.target.value)}
+          onChange={(event) => changeCsv(event.target.value)}
           required
           maxLength={65536}
           placeholder="product,units,price"
@@ -135,7 +142,7 @@ export function MissionForm({
         type="button"
         variant="outline"
         className="w-fit"
-        onClick={() => setCsv(SAMPLE_CSV)}
+        onClick={() => changeCsv(SAMPLE_CSV)}
       >
         Use synthetic sample CSV
       </Button>
