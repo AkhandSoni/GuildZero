@@ -36,11 +36,13 @@ test("real password auth, mission CRUD, session persistence, and two-user privac
     await alice
       .getByRole("button", { name: "Use synthetic sample CSV" })
       .click();
+    await alice.getByRole("checkbox", { name: "units", exact: true }).check();
     await alice.getByRole("button", { name: "Create private mission" }).click();
     await expect(alice).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
     await expect(
       alice.getByRole("heading", { name: `Private sales ${suffix}` }),
     ).toBeVisible();
+    await expect(alice.getByTestId("saved-options")).toHaveText("units");
     const missionUrl = alice.url();
     await alice.reload();
     await expect(
@@ -48,10 +50,13 @@ test("real password auth, mission CRUD, session persistence, and two-user privac
     ).toBeVisible();
     await alice.getByRole("button", { name: "Edit mission" }).click();
     await alice.getByLabel("Mission title").fill(`Updated sales ${suffix}`);
+    await alice.getByRole("checkbox", { name: "units", exact: true }).uncheck();
+    await alice.getByRole("checkbox", { name: "price", exact: true }).check();
     await alice.getByRole("button", { name: "Save changes" }).click();
     await expect(
       alice.getByRole("heading", { name: `Updated sales ${suffix}` }),
     ).toBeVisible();
+    await expect(alice.getByTestId("saved-options")).toHaveText("price");
 
     await authenticate(bob, `bob-${suffix}@example.com`, true);
     await expect(

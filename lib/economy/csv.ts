@@ -7,163 +7,18 @@ import type {
   SummaryRequest,
   ColumnStatistics,
   Result,
-  ServiceOptions,
 } from "./types";
-import type { ServiceType } from "../missions";
+import { validateServiceOptions } from "./contracts";
+export { validateServiceOptions } from "./contracts";
 
-/** Complete signed decimal or scientific numeric literal */
-export const SAFE_NUMERIC_LITERAL_REGEX = /^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
-export const MAX_ABS_NUMERIC_VALUE = 1e12;
-export const MAX_INPUT_CSV_BYTES = 65536; // 64 KiB
-export const MAX_OUTPUT_BYTES = 131072; // 128 KiB
-
-/** Check if a trimmed string is a valid finite numeric literal within [-1e12, 1e12] */
-export function isSafeNumericLiteral(trimmed: string): boolean {
-  if (!SAFE_NUMERIC_LITERAL_REGEX.test(trimmed)) {
-    return false;
-  }
-  const num = Number(trimmed);
-  return Number.isFinite(num) && Math.abs(num) <= MAX_ABS_NUMERIC_VALUE;
-}
-
-/**
- * Check if a cell or header is an unsafe spreadsheet formula.
- * Cells/headers starting with '=', '+', '-', '@' (after leading whitespace/control chars)
- * are unsafe UNLESS the entire trimmed value is a safe finite numeric literal (e.g. "-3").
- */
-export function isUnsafeFormulaValue(raw: string): boolean {
-  const strippedLeading = raw.replace(/^[\s\u0000-\u001f]+/, "");
-  if (strippedLeading.length === 0) {
-    return false;
-  }
-  const first = strippedLeading[0];
-  if (first === "=" || first === "@") {
-    return true;
-  }
-  if (first === "+" || first === "-") {
-    const trimmed = raw.trim();
-    return !isSafeNumericLiteral(trimmed);
-  }
-  return false;
-}
-
-/** Validate service options against serviceType and exact CSV headers */
-export function validateServiceOptions(
-  serviceType: ServiceType,
-  options: unknown,
-  headers: readonly string[],
-  strictColumnCode = false,
-): Result<ServiceOptions> {
-  if (options === undefined) {
-    return {
-      ok: false,
-      code: strictColumnCode ? "OPTIONS_REQUIRED" : "INVALID_OPTIONS",
-      message: "Service options are required.",
-    };
-  }
-  if (!options || typeof options !== "object" || Array.isArray(options)) {
-    return { ok: false, code: "INVALID_OPTIONS", message: "Service options must be an object." };
-  }
-  const value = options as Record<string, unknown>;
-  const allowedKeys = serviceType === "csv_normalize" ? ["columns", "caseMode"] : ["columns"];
-  if (
-    (serviceType !== "csv_normalize" && serviceType !== "csv_summary") ||
-    Object.keys(value).some((key) => !allowedKeys.includes(key))
-  ) {
-    return { ok: false, code: "INVALID_OPTIONS", message: "Unsupported options for this service type." };
-  }
-  if (serviceType === "csv_normalize" && value.caseMode !== "preserve" && value.caseMode !== "lowercase") {
-    return { ok: false, code: "INVALID_OPTIONS", message: "caseMode must be 'preserve' or 'lowercase'." };
-  }
-
-  const columns = value.columns;
-  const colErrorCode = strictColumnCode ? "INVALID_COLUMNS" : "INVALID_OPTIONS";
-  if (
-    !Array.isArray(columns) ||
-    columns.length === 0 ||
-    columns.length > 32 ||
-    columns.some((col) => typeof col !== "string" || !col.trim() || col.length > 100 || !headers.includes(col)) ||
-    new Set(columns).size !== columns.length
-  ) {
-    return {
-      ok: false,
-      code: colErrorCode,
-      message: "Select 1-32 unique column names matching the CSV header.",
-    };
-  }
-
-  return {
-    ok: true,
-    value:
-      serviceType === "csv_normalize"
-        ? { columns: [...(columns as string[])], caseMode: value.caseMode as "preserve" | "lowercase" }
-        : { columns: [...(columns as string[])] },
-  };
-}
-
-/** Parse and validate bounded CSV input */
-export function parseBoundedCsv(inputCsv: unknown): Result<{
-  rawHeader: string[];
-  rawRows: string[][];
-}> {
-  if (typeof inputCsv !== "string") {
-    return { ok: false, code: "INVALID_INPUT", message: "CSV input must be a string." };
-  }
-  const byteLength = new TextEncoder().encode(inputCsv).length;
-  if (byteLength > MAX_INPUT_CSV_BYTES) {
-    return { ok: false, code: "INPUT_TOO_LARGE", message: "CSV exceeds the 64 KiB input limit." };
-  }
-
-  const parsed = Papa.parse<string[]>(inputCsv, {
-    delimiter: ",",
-    skipEmptyLines: "greedy",
-  });
-
-  if (parsed.errors.length > 0) {
-    return { ok: false, code: "INVALID_CSV", message: "CSV contains syntax or quoting errors." };
-  }
-
-  const [rawHeader, ...rawRows] = parsed.data;
-  if (!rawHeader || rawHeader.length === 0 || rawHeader.length > 32 || rawRows.length === 0 || rawRows.length > 500) {
-    return {
-      ok: false,
-      code: "INVALID_CSV",
-      message: "CSV must have 1-32 columns and 1-500 data rows.",
-    };
-  }
-
-  const trimmedHeaders = rawHeader.map((h) => h.trim());
-  if (
-    rawHeader.some((h) => h.length > 100) ||
-    trimmedHeaders.some((h) => h.length === 0 || h.length > 100) ||
-    new Set(trimmedHeaders).size !== rawHeader.length
-  ) {
-    return {
-      ok: false,
-      code: "INVALID_CSV",
-      message: "CSV headers must be nonempty, at most 100 characters, and unique when trimmed.",
-    };
-  }
-
-  if (rawHeader.some((h) => isUnsafeFormulaValue(h))) {
-    return {
-      ok: false,
-      code: "UNSAFE_CSV_CELL",
-      message: "CSV headers must not start with spreadsheet formula prefixes.",
-    };
-  }
-
-  const colCount = rawHeader.length;
-  if (rawRows.some((row) => !Array.isArray(row) || row.length !== colCount)) {
-    return {
-      ok: false,
-      code: "INVALID_CSV",
-      message: "Every CSV row must match the header column count.",
-    };
-  }
-
-  return { ok: true, value: { rawHeader, rawRows } };
-}
+import {
+  parseBoundedCsv, isSafeNumericLiteral, isUnsafeFormulaValue,
+  MAX_OUTPUT_BYTES, SAFE_NUMERIC_LITERAL_REGEX,
+} from "./csv-input";
+export {
+  parseBoundedCsv, isSafeNumericLiteral, isUnsafeFormulaValue,
+  MAX_OUTPUT_BYTES, MAX_ABS_NUMERIC_VALUE, MAX_INPUT_CSV_BYTES, SAFE_NUMERIC_LITERAL_REGEX,
+} from "./csv-input";
 
 function executeNormalize(req: NormalizeRequest): Result<ServiceOutput> {
   const csvRes = parseBoundedCsv(req.inputCsv);
@@ -210,7 +65,9 @@ function executeNormalize(req: NormalizeRequest): Result<ServiceOutput> {
   const serializedCsv = Papa.unparse([rawHeader, ...normalizedRows], {
     delimiter: ",",
     newline: "\n",
-    quotes: false,
+    // An empty one-column record must be quoted so it cannot be mistaken for
+    // a trailing record separator by a reader or the independent verifier.
+    quotes: (value) => rawHeader.length === 1 && value === "",
   });
 
   const output: ServiceOutput = {

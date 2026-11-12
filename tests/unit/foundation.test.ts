@@ -51,6 +51,11 @@ describe("bounded mission inputs", () => {
       }).title,
     ).toBe("Test");
   });
+  it("accepts a valid single-column CSV without delimiter-guessing errors", () => {
+    expect(
+      validateMission({ ...input(), inputCsv: "units\n3\n5" }).inputCsv,
+    ).toBe("units\n3\n5");
+  });
   it("rejects oversized rows and column counts", () => {
     expect(() =>
       validateMission({

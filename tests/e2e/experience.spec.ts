@@ -1,0 +1,18 @@
+import { randomBytes } from "node:crypto";
+import { expect,test } from "@playwright/test";
+test("live graph, private agent history, audited security probes and safe sample reset",async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto("/sign-in");await page.getByRole("button",{name:"Need an account? Sign up"}).click();
+ await page.getByLabel("Email",{exact:true}).fill(`experience-${randomBytes(8).toString("hex")}@example.com`);await page.getByLabel("Password",{exact:true}).fill(randomBytes(24).toString("base64url"));await page.getByRole("button",{name:"Create account",exact:true}).click();await expect(page).toHaveURL(/\/dashboard$/);
+ await page.getByRole("button",{name:"Add sample missions"}).click();await page.getByRole("heading",{name:"Sample: sales statistics",exact:true}).click();await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
+ await expect(page.getByTestId("saved-options")).toHaveText("units, price");await page.getByRole("button",{name:"Open auction",exact:true}).click();await expect(page.getByText("Persisted job · bidding",{exact:true})).toBeVisible();
+ await expect(page.getByText("Verified or buyer-approved work is required before payment.",{exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Prepare exact payment"})).toBeDisabled();
+ await page.getByRole("link",{name:"Economy",exact:true}).click();await expect(page).toHaveURL(/\/economy$/);await expect(page.getByRole("heading",{name:"Live economy",exact:true})).toBeVisible();await expect(page.locator(".react-flow__node")).toHaveCount(1);await expect(page.getByText("AUCTION_OPENED",{exact:true})).toBeVisible();await expect(page.getByText("No payments prepared or confirmed.",{exact:true})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.goto("/agents/stats-core");await expect(page.getByRole("heading",{name:"Stats Core",exact:true})).toBeVisible();await expect(page.getByText("No contracts with this agent yet.",{exact:true})).toBeVisible();
+ await expect(page.getByText("Private seller pricing is withheld from buyer-facing profiles.",{exact:true})).toBeVisible();await expect(page.getByText("Reserve price:",{exact:false})).toHaveCount(0);
+ await page.getByRole("link",{name:"Security",exact:true}).click();await expect(page).toHaveURL(/\/security$/);await page.getByLabel("Your job").selectOption({index:1});
+ await page.getByRole("button",{name:"Unauthorized reputation write"}).click();await expect(page.getByText("CONTROLLED_PROBE_REPUTATION · reject",{exact:true})).toBeVisible();await expect(page.getByText("Rejected: REPUTATION_REQUIRES_VERIFIED_WORKFLOW. Signing attempted: no.",{exact:true})).toBeVisible();
+ await page.getByRole("button",{name:"Over-budget amount"}).click();await expect(page.getByText("Unavailable: PAYMENT_STATE_PREREQUISITE_REQUIRED. Complete the required payment state first.",{exact:true})).toBeVisible();await expect(page.getByText("CONTROLLED_PROBE_OVERSPEND · reject",{exact:true})).toHaveCount(0);
+ await page.getByRole("link",{name:"Missions",exact:true}).click();await page.getByRole("button",{name:"Remove unused samples"}).click();await expect(page.getByText("Removed 1 unused sample drafts. Active work and payment history were preserved.",{exact:true})).toBeVisible();await expect(page.getByRole("heading",{name:"Sample: sales statistics",exact:true})).toBeVisible();await expect(page.getByRole("heading",{name:"Sample: CSV normalization",exact:true})).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

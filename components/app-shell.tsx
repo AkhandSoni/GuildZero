@@ -25,8 +25,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link href="/dashboard" className="text-xl font-bold">
           guildzero<span className="text-emerald-300">.</span>
         </Link>
-        <nav className="flex items-center gap-5 text-sm">
+        <nav className="flex flex-wrap items-center gap-4 text-sm">
           <Link href="/dashboard">Missions</Link>
+          <Link href="/economy">Economy</Link>
+          <Link href="/security">Security</Link>
           <Link href="/missions/new" className="text-emerald-300">
             New mission
           </Link>
@@ -52,8 +54,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
       <main className="py-10">{children}</main>
       <footer className="muted border-t border-neutral-800 py-5 text-xs">
-        Private workspace · Foundation preview · Testnet budgets only; no funds
-        are moved.
+        Private workspace · NEAR testnet only · Check receipts for actual
+        settlement.
       </footer>
     </div>
   );

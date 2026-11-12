@@ -164,7 +164,7 @@ export function verifyDeliverable(input: VerificationRequest): Result<Verificati
       Array.isArray(delivRec.columns) &&
       delivRec.columns.length === options.columns.length &&
       delivRec.columns.every((c, idx) => c === options.columns[idx]);
-    checks.push(check("COLUMNS_MATCH", colsMatch, `expected [${options.columns.join(", ")}]`));
+    checks.push(check("COLUMNS_MATCH", colsMatch, `Compared ${options.columns.length} selected column names in order.`));
 
     const reportedRowsMatch =
       typeof delivRec.rowCount === "number" &&

@@ -1,0 +1,1 @@
+{ "$schema": "https://schema.convex.dev/config.json", "node": { "nodeVersion": "24" } }

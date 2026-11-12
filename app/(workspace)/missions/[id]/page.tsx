@@ -8,6 +8,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { MissionForm } from "@/components/mission-form";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
+import { JobWorkspace } from "@/components/job-workspace";
 export default function MissionPage({
   params,
 }: {
@@ -33,7 +34,9 @@ export default function MissionPage({
       <p className="eyebrow">Private mission · {mission.state}</p>
       <h1>{mission.title}</h1>
       <p className="muted mb-8 mt-3">
-        Draft saved. No auction, agent execution, or payment has started.
+        {mission.state === "draft"
+          ? "Draft saved. No auction, agent execution, or payment has started."
+          : "Mission brief locked. Activity below comes from stored records; payment status is shown separately in the receipt."}
       </p>
       {editing ? (
         <MissionForm
@@ -70,6 +73,12 @@ export default function MissionPage({
             </div>
           </dl>
           <div>
+            <h2>Saved processing options</h2>
+            <p className="muted mt-3" data-testid="saved-options">
+              {mission.options ? `${mission.options.columns.join(", ")}${mission.options.caseMode ? ` · ${mission.options.caseMode}` : ""}` : "Not set. Edit the draft before opening an auction."}
+            </p>
+          </div>
+          <div>
             <h2>Acceptance criteria</h2>
             <p className="muted mt-3 whitespace-pre-wrap">
               {mission.acceptanceCriteria}
@@ -83,17 +92,20 @@ export default function MissionPage({
           </div>
         </section>
       )}
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Button variant="outline" onClick={() => setEditing(!editing)}>
-          {editing ? "Cancel editing" : "Edit mission"}
-        </Button>
-        <Button
-          variant="destructive"
-          onClick={() => setConfirming(!confirming)}
-        >
-          Delete draft
-        </Button>
-      </div>
+      {mission.state === "draft" && (
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => setEditing(!editing)}>
+            {editing ? "Cancel editing" : "Edit mission"}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => setConfirming(!confirming)}
+          >
+            Delete draft
+          </Button>
+        </div>
+      )}
+      {!editing && <JobWorkspace mission={mission} />}
       {confirming && (
         <div className="panel mt-5">
           <p>Delete this draft and its input? This cannot be undone.</p>

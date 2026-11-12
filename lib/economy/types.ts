@@ -212,12 +212,12 @@ export type NegotiationDecision =
     };
 
 export type NormalizeOptions = {
-  readonly columns: readonly string[];
+  readonly columns: string[];
   readonly caseMode: "preserve" | "lowercase";
 };
 
 export type SummaryOptions = {
-  readonly columns: readonly string[];
+  readonly columns: string[];
 };
 
 export type ServiceOptions = NormalizeOptions | SummaryOptions;
@@ -293,3 +293,8 @@ export interface EconomyEngine {
   runService(input: ServiceRequest): Result<ServiceOutput>;
   verifyDeliverable(input: VerificationRequest): Result<VerificationResult>;
 }
+
+export const JOB_STATES = ["bidding", "working", "verifying", "revision", "disputed", "approved", "rejected", "cancelled"] as const;
+export type JobState = (typeof JOB_STATES)[number];
+export type MissionState = "draft" | "active";
+export type ContractState = "active" | "completed" | "failed";

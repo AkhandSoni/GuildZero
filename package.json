@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^24.22.3 || >=26.0.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -17,16 +17,20 @@
     "test:watch": "vitest",
     "convex:codegen": "convex codegen",
     "auth:keys": "node scripts/auth-keys.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:near": "node scripts/verify-testnet.mjs",
+    "check:client": "node scripts/check-client-boundary.mjs"
   },
   "dependencies": {
     "@auth/core": "0.41.3",
     "@convex-dev/auth": "0.0.98",
     "@radix-ui/react-slot": "1.5.0",
+    "@xyflow/react": "12.12.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "convex": "1.49.0",
     "lucide-react": "1.71.0",
+    "near-api-js": "7.5.3",
     "next": "16.4.6",
     "papaparse": "5.7.0",
     "react": "19.3.1",
