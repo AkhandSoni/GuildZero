@@ -7,6 +7,8 @@ export type ServiceType = (typeof SERVICE_TYPES)[number];
 export const SAMPLE_CSV =
   "product,region,units,price\n Canvas bag ,North,3,12.50\nNotebook, South ,5,4.00\nCanvas bag,North,2,12.50\nNotebook,South,,4.00";
 export type MissionInput = {
+  cleanBeforeProcessing?: boolean;
+  requiresHumanReview?: boolean;
   // Optional only for legacy and incomplete drafts; execution requires options.
   options?: ServiceOptions;
   title: string;
@@ -48,6 +50,8 @@ export function validateMission(
   const csv = parseBoundedCsv(input.inputCsv);
   if (!csv.ok) throw new Error(csv.message);
   const header = csv.value.rawHeader;
+  if (input.cleanBeforeProcessing && input.serviceType !== "csv_summary")
+    throw new MissionValidationError("INVALID_OPTIONS", "Cleaning subcontract is only available for summary jobs.");
   if (input.options !== undefined) {
     const result = validateServiceOptions(input.serviceType, input.options, header);
     if (!result.ok) throw new MissionValidationError(result.code, result.message);

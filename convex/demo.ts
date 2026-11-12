@@ -29,6 +29,7 @@ export const seed = mutation({
               : "Sample: CSV normalization",
           serviceType,
           inputCsv: SAMPLE_CSV,
+          requiresHumanReview: false,
           options: serviceType === "csv_summary"
             ? { columns: ["units", "price"] }
             : { columns: ["product", "region"], caseMode: "preserve" },

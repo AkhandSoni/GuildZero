@@ -1,9 +1,11 @@
 import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { jobState, optionsValidator, checkValidator } from "./marketModel";
+import { jobState, optionsValidator, checkValidator, scoreValidator } from "./marketModel";
 import { paymentState } from "./paymentModel";
 export const missionFields = {
+  cleanBeforeProcessing: v.optional(v.boolean()),
+  requiresHumanReview: v.optional(v.boolean()),
   options: v.optional(optionsValidator),
   title: v.string(),
   serviceType: v.union(v.literal("csv_normalize"), v.literal("csv_summary")),
@@ -64,6 +66,12 @@ export default defineSchema({
     .index("by_owner_demo", ["ownerId", "demo"])
     .index("by_owner_state", ["ownerId", "state"]),
   jobs: defineTable({
+    engineManaged: v.optional(v.boolean()),
+    workerVersion: v.optional(v.number()),
+    workerError: v.optional(v.string()),
+    retryCount: v.optional(v.number()),
+    cleanBeforeProcessing: v.optional(v.boolean()),
+    requiresHumanReview: v.optional(v.boolean()),
     ownerId: v.id("users"),
     missionId: v.id("missions"),
     parentId: v.optional(v.id("jobs")),
@@ -82,6 +90,8 @@ export default defineSchema({
     .index("by_mission", ["missionId"])
     .index("by_parent", ["parentId"]),
   bids: defineTable({
+    estimatedCostYocto: v.optional(v.string()),
+    reputationBps: v.optional(v.number()),
     jobId: v.id("jobs"),
     agentId: v.string(),
     priceYocto: v.string(),
@@ -110,6 +120,7 @@ export default defineSchema({
     .index("by_job", ["jobId"])
     .index("by_bid", ["bidId"]),
   contracts: defineTable({
+    score: v.optional(scoreValidator),
     jobId: v.id("jobs"),
     agentId: v.string(),
     bidId: v.id("bids"),
@@ -126,6 +137,7 @@ export default defineSchema({
     .index("by_job", ["jobId"])
     .index("by_agent_state", ["agentId", "state"]),
   deliverables: defineTable({
+    verificationPayload: v.optional(v.string()),
     dependencyDeliverableId: v.optional(v.id("deliverables")),
     jobId: v.id("jobs"),
     attempt: v.number(),

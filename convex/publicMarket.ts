@@ -1,4 +1,5 @@
 import type { Doc } from "./_generated/dataModel";
+import { RANKING_WEIGHTS_BPS } from "../lib/economy/ranking";
 // Explicit allowlists prevent new private fields from silently reaching clients.
 export function publicBid(b: Doc<"bids">) {
   return {
@@ -39,8 +40,11 @@ export function publicContract(c: Doc<"contracts">) {
     holdbackYocto: c.holdbackYocto,
     state: c.state,
     createdAt: c.createdAt,
+    ...(c.score ? { score: c.score } : {}),
     selectionReason:
-      "Offer selected within the buyer budget; private cost diagnostics are not disclosed.",
+      c.score
+        ? `Highest eligible utility: ${c.score.total}/10000. Weights: price ${RANKING_WEIGHTS_BPS.price / 100}%, reputation ${RANKING_WEIGHTS_BPS.reputation / 100}%, capability ${RANKING_WEIGHTS_BPS.capability / 100}%, time ${RANKING_WEIGHTS_BPS.eta / 100}%. Equal scores use lower price, shorter duration, agent ID, then bid ID.`
+        : "Offer selected within the buyer budget; private cost diagnostics are not disclosed.",
   };
 }
 export function publicEvent(e: Doc<"economyEvents">) {

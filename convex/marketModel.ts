@@ -12,3 +12,4 @@ export const checkValidator = v.object({
   passed: v.boolean(),
   detail: v.string(),
 });
+export const scoreValidator = v.object({ price: v.number(), time: v.number(), reputation: v.number(), capability: v.number(), total: v.number() });

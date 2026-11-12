@@ -1,6 +1,14 @@
 # Cluster execution status
 
-Current work: **Review branch `codex/fix-audit-csv-verification` combines all six completed feature/fix branches, merged engine PR #14 and the two audit corrections. Automatic Convex worker integration, funded settlement and public release remain separate gates. Main awaits review of this combined application.**
+Current work: **Integrated local prototype validation and reference-inspired UI. PR #15 is merged. Broader service expansion remains paused; the user explicitly authorized finishing/testing the current product and pushing all verified changes to main. Public hosting and submission remain separate gates.**
+
+## Integrated prototype — 2026-11-13
+
+Connected the real engine through bounded, versioned Convex scheduling: independent discovery/costed bids, buyer counters and seller decisions, utility-ranked awards, actual CSV processing, independent verification, one constrained revision, owner disputes and deterministic reputation. Optional meaningful normalization subcontracts feed their actual approved CSV into the parent and retain one-level/budget limits. No execution endpoint is public; payment signing stays separate and owner-confirmed. Worker failures roll back their stage and persist sanitized pause evidence; retries are owner-only and capped at three. Legacy active auctions remain intact.
+
+Implemented the reference-inspired light responsive dashboard, icon navigation, green/orange metric cards, owner-data briefing/approval/activity, directory, consistent controls and readable mission/economy/security/receipt pages. Metrics describe actual loaded records. Downloads contain real outputs; unsafe CSV spreadsheet values are blocked. No decorative fabricated economy events or receipts.
+
+Checkpoint checks: lint and typecheck passed; 144 tests in 15 files passed, including eight actual scheduled-driver scenarios and two combined engine/lifecycle/payment-allocation cases. Four production-browser scenarios passed, including automatic useful subcontracting and verified downloads. Additional human-review/error/mobile testing and live settlement validation are in progress; this checkpoint is not a claim of final acceptance. Dedicated testnet faucet/operator and five recipient accounts were configured outside Git. No real-money service or mainnet account is used.
 
 ## Audit corrections — 2026-11-13
 

@@ -1,11 +1,12 @@
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { ownedJob, user } from "./ownership";
 import { optionsValidator } from "./marketModel";
 import { validateMission } from "../lib/missions";
 import { validateServiceOptions } from "../lib/economy";
-import { event, finish } from "./workflowHelpers";
+import { childrenComplete, event, finish } from "./workflowHelpers";
 import {
   publicBid,
   publicNegotiation,
@@ -51,6 +52,11 @@ export const start = mutation({
       ownerId,
       missionId: mission._id,
       depth: 0,
+      engineManaged: true,
+      workerVersion: 0,
+      retryCount: 0,
+      cleanBeforeProcessing: mission.cleanBeforeProcessing ?? false,
+      requiresHumanReview: mission.requiresHumanReview ?? true,
       serviceType: mission.serviceType,
       inputCsv: mission.inputCsv,
       options: result.value,
@@ -66,9 +72,21 @@ export const start = mutation({
       ctx,
       (await ctx.db.get(id))!,
       "AUCTION_OPENED",
-      "Mission opened for bids. Execution engine integration is pending; no bids or work are simulated.",
+      "Mission opened for independent service offers. No funds have moved.",
     );
+    await ctx.scheduler.runAfter(1500, internal.economyWorker.step, { jobId: id, version: 0 });
     return id;
+  },
+});
+export const resume = mutation({
+  args: { id: v.id("jobs") },
+  handler: async (ctx, { id }) => {
+    const job = await ownedJob(ctx, id);
+    if (!job.engineManaged || !job.workerError || (job.retryCount ?? 0) >= 3 || !["bidding", "working", "verifying", "revision"].includes(job.state))
+      throw new ConvexError("WORKFLOW_NOT_RETRYABLE");
+    await ctx.db.patch(id, { workerError: undefined, retryCount: (job.retryCount ?? 0) + 1 });
+    await ctx.scheduler.runAfter(0, internal.economyWorker.step, { jobId: id, version: job.workerVersion ?? 0 });
+    await event(ctx, job, "WORKFLOW_RESUMED", "Owner resumed this workflow. No payment was requested.");
   },
 });
 export const detail = query({
@@ -124,7 +142,7 @@ export const detail = query({
       bids: bids.map(publicBid),
       negotiations: negotiations.map(publicNegotiation),
       contracts: contracts.map(publicContract),
-      deliverables,
+      deliverables: deliverables.map((d) => ({ _id: d._id, _creationTime: d._creationTime, jobId: d.jobId, attempt: d.attempt, format: d.format, content: d.content, createdAt: d.createdAt, dependencyDeliverableId: d.dependencyDeliverableId ?? null })),
       verifications,
       children,
       disputes,
@@ -175,6 +193,11 @@ export const resolveDispute = mutation({
       .withIndex("by_job", (q) => q.eq("jobId", job._id))
       .unique();
     if (!dispute || dispute.decision) throw new ConvexError("NO_OPEN_DISPUTE");
+    if (args.decision === "approve") {
+      await childrenComplete(ctx, job);
+      if (!(await ctx.db.query("deliverables").withIndex("by_job", (q) => q.eq("jobId", job._id)).first()))
+        throw new ConvexError("NO_DELIVERABLE_TO_APPROVE");
+    }
     await finish(
       ctx,
       job,

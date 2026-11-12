@@ -2,6 +2,15 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-13 — Integrated current-scope hackathon prototype
+
+- The user authorized completing the entire current prototype, testing it from a tester's perspective, fixing issues and pushing verified changes to main. This supersedes earlier branch-only/stop gates for this integration. Broader business services remain paused; hosting/submission are not implied.
+- Added only the missing scheduled driver around the merged teammate kernel. Jobs snapshot execution/review flags. Legacy active jobs are not silently executed; new jobs run versioned atomic stages with bounded pause/retry behavior. Unawarded auctions are an explicit persisted outcome, not fabricated completion.
+- Objective template checks can approve automatically. A separate, explicit mission flag routes subjective acceptance notes to owner review; legacy briefs default to review. Unexecutable input cannot acquire human approval without a deliverable. One optional cleaning child contributes its actual approved CSV to the summary, with no recursive hiring or extra buyer charge.
+- Ranking uses the kernel's price/time/reputation/capability normalization and weights. Bids snapshot bounded earned reputation from the latest 100 global events for that agent (5000 + 10 times summed deltas, clamped to 0..10000); profiles reveal only the current owner's job history. Private costs/minima remain backend-only. Buyer counters never consult seller floors.
+- Applied the user's reference as a responsive light dashboard across existing routes. Metrics/events come from actual owner-scoped records; gradient decoration is not represented as economic evidence.
+- At the user's previously requested automated setup, created a dedicated free-faucet testnet operator and five project-owned recipient subaccounts. Keys/configuration are in ignored mode-0600 local files and the local Convex backend only, with existing Auth keys preserved. No credentials enter source, browser output or test artifacts. These are disposable testnet accounts, never mainnet wallets.
+
 ## 2026-11-13 — PR #15 CSV boundary follow-up
 
 - The user requested resolving both inline review comments. Extracted a browser-safe bounded CSV input validator shared by mission create/update, launch, subcontract input validation, execution and verification; ownership and public error wrappers remain unchanged.

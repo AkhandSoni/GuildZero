@@ -11,6 +11,7 @@
 import type * as agentPolicies from "../agentPolicies.js";
 import type * as auth from "../auth.js";
 import type * as demo from "../demo.js";
+import type * as economyWorker from "../economyWorker.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
 import type * as marketModel from "../marketModel.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   agentPolicies: typeof agentPolicies;
   auth: typeof auth;
   demo: typeof demo;
+  economyWorker: typeof economyWorker;
   http: typeof http;
   jobs: typeof jobs;
   marketModel: typeof marketModel;

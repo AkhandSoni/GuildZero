@@ -13,6 +13,7 @@ import {
 } from "./workflowHelpers";
 import { privateProfiles } from "./agentPolicies";
 import { validateMission } from "../lib/missions";
+import { scoreValidator } from "./marketModel";
 import { subcontractReason } from "../lib/settlement/policy";
 export const pricingContext = internalQuery({
   args: { jobId: v.id("jobs") },
@@ -68,6 +69,8 @@ export const recordBid = internalMutation({
     minimumYocto: v.string(),
     etaMs: v.number(),
     rationale: v.string(),
+    estimatedCostYocto: v.optional(v.string()),
+    reputationBps: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const job = await jobById(ctx, args.jobId);
@@ -80,6 +83,10 @@ export const recordBid = internalMutation({
       throw new ConvexError("CAPABILITY_MISMATCH");
     const price = amount(args.priceYocto),
       minimum = amount(args.minimumYocto);
+    if (args.estimatedCostYocto !== undefined && amount(args.estimatedCostYocto) > minimum)
+      throw new ConvexError("COST_EXCEEDS_SELLER_FLOOR");
+    if (args.reputationBps !== undefined && (!Number.isSafeInteger(args.reputationBps) || args.reputationBps < 0 || args.reputationBps > 10000))
+      throw new ConvexError("INVALID_REPUTATION_SNAPSHOT");
     if (
       price <= 0n ||
       minimum < BigInt(agent.reservePriceYocto) ||
@@ -104,7 +111,9 @@ export const recordBid = internalMutation({
         old.priceYocto !== args.priceYocto ||
         old.minimumYocto !== args.minimumYocto ||
         old.etaMs !== args.etaMs ||
-        old.rationale !== args.rationale
+        old.rationale !== args.rationale ||
+        old.estimatedCostYocto !== args.estimatedCostYocto ||
+        old.reputationBps !== args.reputationBps
       )
         throw new ConvexError("BID_RETRY_CHANGED");
       return old._id;
@@ -215,7 +224,7 @@ export const negotiate = internalMutation({
   },
 });
 export const award = internalMutation({
-  args: { bidId: v.id("bids"), selectionReason: v.string() },
+  args: { bidId: v.id("bids"), selectionReason: v.string(), score: v.optional(scoreValidator) },
   handler: async (ctx, args) => {
     const bid = await ctx.db.get(args.bidId);
     if (!bid) throw new ConvexError("BID_NOT_FOUND");
@@ -266,6 +275,7 @@ export const award = internalMutation({
       holdbackYocto: price,
       state: "active",
       selectionReason: text(args.selectionReason),
+      ...(args.score ? { score: args.score } : {}),
       createdAt: Date.now(),
     });
     if (job.parentId) {
@@ -336,6 +346,7 @@ export const subcontract = internalMutation({
       validateMission({
         ...mission,
         serviceType: "csv_normalize",
+        cleanBeforeProcessing: false,
         options: childOptions,
         inputCsv: parent.inputCsv,
         maxBudgetYocto: args.budgetYocto,
@@ -349,6 +360,7 @@ export const subcontract = internalMutation({
       missionId: parent.missionId,
       parentId: parent._id,
       depth: 1,
+      ...(parent.engineManaged ? { engineManaged: true, workerVersion: 0, requiresHumanReview: false, retryCount: 0 } : {}),
       serviceType: "csv_normalize",
       inputCsv: parent.inputCsv,
       options: childOptions,
@@ -377,6 +389,7 @@ export const submit = internalMutation({
     jobId: v.id("jobs"),
     format: v.union(v.literal("csv"), v.literal("json")),
     content: v.string(),
+    verificationPayload: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const job = await jobById(ctx, args.jobId);
@@ -398,6 +411,8 @@ export const submit = internalMutation({
     } else if (args.dependencyDeliverableId)
       throw new ConvexError("UNEXPECTED_DEPENDENCY");
     if (!args.content || new TextEncoder().encode(args.content).length > 131072)
+      throw new ConvexError("OUTPUT_SIZE");
+    if (args.verificationPayload && new TextEncoder().encode(args.verificationPayload).length > 131072)
       throw new ConvexError("OUTPUT_SIZE");
     if ((job.serviceType === "csv_normalize") !== (args.format === "csv"))
       throw new ConvexError("OUTPUT_FORMAT");

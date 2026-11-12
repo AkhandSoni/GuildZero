@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { reputationWriteAllowed } from "../lib/settlement/policy";
+import { internal } from "./_generated/api";
 export function text(value: string) {
   if (!value.trim() || value.length > 1000)
     throw new ConvexError("INVALID_EXPLANATION");
@@ -45,7 +46,7 @@ export async function finish(
   job: Doc<"jobs">,
   approved: boolean,
   cause: "verified" | "buyer_approved" | "rejected",
-) {
+): Promise<void> {
   if (!reputationWriteAllowed("verified_workflow"))
     throw new ConvexError("REPUTATION_AUTHORITY_REQUIRED");
   if (approved) await childrenComplete(ctx, job);
@@ -101,5 +102,10 @@ export async function finish(
         "Required child work rejected. Parent approval remains blocked; owner may reject the parent.",
       );
     }
+  }
+  if (approved && job.parentId) {
+    const parent = await ctx.db.get(job.parentId);
+    if (parent?.engineManaged && parent.state === "working")
+      await ctx.scheduler.runAfter(0, internal.economyWorker.step, { jobId: parent._id, version: parent.workerVersion ?? 0 });
   }
 }

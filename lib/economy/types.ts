@@ -294,7 +294,7 @@ export interface EconomyEngine {
   verifyDeliverable(input: VerificationRequest): Result<VerificationResult>;
 }
 
-export const JOB_STATES = ["bidding", "working", "verifying", "revision", "disputed", "approved", "rejected", "cancelled"] as const;
+export const JOB_STATES = ["bidding", "working", "verifying", "revision", "disputed", "approved", "rejected", "cancelled", "unawarded"] as const;
 export type JobState = (typeof JOB_STATES)[number];
 export type MissionState = "draft" | "active";
 export type ContractState = "active" | "completed" | "failed";
