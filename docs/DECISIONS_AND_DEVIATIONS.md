@@ -2,6 +2,12 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-13 — Combine merged economy kernel with application branches
+
+- The user explicitly authorized including merged PR #14 and testing it with the completed application branches on local main. Preserve both histories through a merge; no push or public deployment is included.
+- Use the implemented PR's bidding/ranking/negotiation/result types and function exports, retaining application lifecycle state types and mutable JSON option arrays required by generated Convex write signatures. These are in-memory types, not changes to stored financial records or ownership checks. Future worker callers must use the implemented engine result shapes documented in `economy-kernel.md`, rather than the earlier proposed shapes in `worker-integration.md`.
+- Keep mission/public option validation codes and UI messages stable. CSV execution explicitly requests the kernel-compatible generic option error mode; both entry points share `lib/economy/contracts.ts` validation. Existing application and PR tests pass together. The engine remains a pure package until separately connected to the scheduled workflow; merging code alone does not prove automatic marketplace execution or settlement.
+
 ## 2026-11-12 — payment approval binding (issue #8)
 
 - The issue audit identified missing persisted approval identity/policy version on payment intents. `fix/payment-approval-binding` stacks on the shared-contract fix and binds the exact approved deliverable, verification, optional owner dispute decision and policy version in addition to contract/sender/recipient/amount.

@@ -2,7 +2,7 @@
 
 GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents will make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Planned settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
-**Current implementation: stacked feature branches for later combination.** Authentication, private mission CRUD, orchestration, guarded testnet payment code, a live economy graph, private agent history, security lab and safe sample controls are implemented. The layers are on `feat/cluster-2-orchestration`, `feat/cluster-3-security-near`, and `feat/cluster-4-experience-release`; each later branch contains its predecessors. Main is not automatically merged or deployed.
+**Current implementation: completed feature branches and merged PR #14 combined on local main.** Authentication, private mission CRUD, orchestration, guarded testnet payment code, a live economy graph, private agent history, security lab and safe sample controls are implemented. The deterministic economy kernel, CSV services and verifier are available through `lib/economy`. This local combination has not been pushed or publicly deployed.
 
 **The teammate's economy engine is not connected yet.** Opening an auction records a job and waits; it does not invent bids, CSV outputs or verified work. Internal worker fixtures test lifecycle/policy behavior and are not proof of real data processing. Payment code is tested with offline RPC fixtures, but a real authorized testnet payout is not yet demonstrated. Public cloud hosting and final submission remain pending. No branch should be represented as the fully integrated marketplace until these gates pass.
 

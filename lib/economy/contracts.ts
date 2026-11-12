@@ -6,9 +6,10 @@ export function validateServiceOptions(
   serviceType: ServiceType,
   options: unknown,
   headers: readonly string[],
+  strictColumnCode = true,
 ): Result<ServiceOptions> {
   if (options === undefined)
-    return { ok: false, code: "OPTIONS_REQUIRED", message: "Save processing options before opening an auction." };
+    return { ok: false, code: strictColumnCode ? "OPTIONS_REQUIRED" : "INVALID_OPTIONS", message: "Save processing options before opening an auction." };
   if (!options || typeof options !== "object" || Array.isArray(options))
     return { ok: false, code: "INVALID_OPTIONS", message: "Processing options must be an object." };
   const value = options as Record<string, unknown>;
@@ -23,7 +24,7 @@ export function validateServiceOptions(
   if (!Array.isArray(columns) || !columns.length || columns.length > 32 ||
       columns.some((column) => typeof column !== "string" || !column.trim() || column.length > 100 || !headers.includes(column)) ||
       new Set(columns).size !== columns.length)
-    return { ok: false, code: "INVALID_COLUMNS", message: "Select 1–32 unique column names from the input CSV." };
+    return { ok: false, code: strictColumnCode ? "INVALID_COLUMNS" : "INVALID_OPTIONS", message: "Select 1–32 unique column names from the input CSV." };
   return {
     ok: true,
     value: serviceType === "csv_normalize"

@@ -1,6 +1,24 @@
 # Cluster execution status
 
-Current work: **User explicitly authorized independent Cluster 3/4 feature branches on 2026-11-12 for later combination. The missing teammate engine still prevents full integrated acceptance.**
+Current work: **Local main combines all six completed feature/fix branches with merged engine PR #14. Package and application regression checks pass; automatic Convex worker integration, funded settlement and public release remain separate gates. This local combination has not been pushed.**
+
+## PR #14 combination and validation — 2026-11-13
+
+The user authorized including PR #14 after its upstream merge. Fetched `origin/main` at `9c9af82`, which includes engine commits `3f5accd`, `caaba1c` and `e6d22f1`, and merged it into the previously combined local main at `4d25e25`. Resolved add/add conflicts in `lib/economy/index.ts` and `types.ts` by exposing the real engine functions while retaining persisted lifecycle types and Convex-compatible option arrays. Kept existing public `OPTIONS_REQUIRED`/`INVALID_COLUMNS` validation codes and exact UI messages; CSV execution explicitly retains the kernel's `INVALID_OPTIONS` error mode. Both paths now use one validator rather than duplicated validation rules. Initial combined checks exposed these mismatches; none was hidden by weakening existing tests.
+
+Final actual checks: `npm run typecheck`, `npm run lint`, `npm test` (114 tests in 11 files), `npm run test:integration` (56 included tests), `npm run build`, `npm run check:client` (25 assets), `npm audit --omit=dev` (zero vulnerabilities), and all four production-browser scenarios passed. The existing local Convex backend deployed the combined functions using the checksum-verified Node 24.22.3 runtime; existing auth keys and data were preserved. Browser tests used the documented executable override for installed Chromium 1248 against `npm start`. No funded transaction or public deployment occurred.
+
+PR #14 supplies pure functions, not the scheduled Convex worker. Opening an auction still waits for that worker; these browser tests verify the existing authenticated lifecycle/UI, not automatic bidding/service completion. Full economy workflow, earned-reputation ranking, funded NEAR settlement and release acceptance are not claimed. Stop at this tested integration handoff; no later implementation or public release is included.
+
+## Local main combination — 2026-11-13
+
+In a fresh checkout at `/Users/medhanshadhlakha/Downloads/GuildZero`, fast-forwarded `main` from `9ee2541` to `4d25e25`. Verified ancestry includes `feat/cluster-2-orchestration`, `feat/cluster-3-security-near`, `feat/cluster-4-experience-release`, `fix/negotiation-roles-pricing-privacy`, `fix/issue-1-economy-contracts` and `fix/payment-approval-binding`. They form one nine-commit sequence; no merge conflicts or application changes were necessary. PR #14 (`feat/economy-kernel`) and both of its commits (`3f5accd`, `caaba1c`) remain excluded. No push or PR mutation was performed.
+
+Actual validation: fresh `npm ci` passed with zero reported vulnerabilities; lint, typecheck, production build and client-boundary check passed (25 assets). Vitest passed all 100 tests in 10 files; the separate integration run passed 56 included tests in six files. Tests used the installed Vitest entry point while the large dependency download finished. Initial lint/typecheck attempts during that incomplete install failed on missing Next.js files; both passed after installation completed.
+
+Started a fresh anonymous local Convex backend and deployed the combined schema/functions. Node actions initially rejected host Node 26; installed the checksum-verified official Node 24.22.3 archive outside the repository and restarted Convex with that runtime. Generated fresh local auth keys without printing them. All four Playwright scenarios then passed against `npm start` and real local Convex Auth: auction persistence/cancellation; graph/security/sample reset; mission CRUD/session/two-user privacy; and saved options/exact budget. The default browser launch was unavailable because Playwright's matching binary was not installed; the passing run used the existing Chromium 1248 executable through the documented `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` option. No source workaround or auth bypass was introduced.
+
+Environment and backend state remain ignored; no secrets were tracked. Non-failing output includes dependency deprecations, Node 26 test warnings and Next.js ignoring an unrelated ancestor lockfile. Engine execution/scheduled economy, real funded NEAR settlement and public hosting remain unvalidated and are not claimed by these passing checks. Stop at this integration handoff; the pending engine PR requires separate review before inclusion.
 
 Latest follow-up branch: **`fix/negotiation-roles-pricing-privacy`**, based on the experience branch. The screenshot audit gaps are addressed in code; engine/live settlement/hosting acceptance remains pending.
 
