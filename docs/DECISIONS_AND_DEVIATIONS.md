@@ -16,6 +16,13 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - Payouts are owner-confirmed, capped at 1 testnet NEAR each, serialized per dedicated signer, and conservatively locked on uncertain outcomes. Exact signed transaction identity is persisted before one broadcast. No automatic resend or failed-intent recycling is implemented. Credentials and a genuinely approved engine deliverable are still required for live payment acceptance.
 - Cluster 4 uses pinned XYFlow as a UI library; no additional application server or Vite app is introduced. Graph relationships, agent history and security evidence are owner-scoped persisted records, with explicit bounds/truncation. Sample reset preserves active work and every payment record. CI is manual-only so branch pushes do not automatically launch hosted jobs or deployments. Public release is not claimed before combination and owner-provided cloud configuration.
 
+## Audit follow-up — negotiation roles and pricing privacy
+
+- User asked what independent work could proceed after the audit; the already authorized fix work is isolated on `fix/negotiation-roles-pricing-privacy`, based on the experience branch. No engine replacement, branch merge into main, payment, or deployment is performed.
+- Buyer projections now omit private bid/profile pricing and raw pricing diagnostics, including older free-text event/award explanations. Worker diagnostics remain available internally. Browser-safe metadata is separated while preserving the existing engine fixture profile export/type. Published fixture defaults are not secret; optional private seller floors are server-only configuration. Structured public selection-score explanations remain an engine integration requirement.
+- Negotiations require explicit buyer/seller roles with backend-derived identities, exact reference-price acceptance, existing round bounds, and different buyer-cap/seller-floor checks. A subcontract buyer is the parent seller. Old actor-less rows remain readable as legacy but fail closed for continued negotiation/new awards; no identity is invented or historical financial state rewritten.
+- New privacy fixtures exposed a pre-existing valid one-column CSV rejection from delimiter auto-detection. Comma parsing is now explicit and consistent across mission/column parsing, matching the established CSV contract.
+
 ## 2026-11-10 — Cluster 1 implementation
 
 - The current master prompt supersedes the ancestor Counterparty Guard instructions. No Fastify, Rust contracts, or person-based work allocation applies to GuildZero. Existing planning documents are preserved.

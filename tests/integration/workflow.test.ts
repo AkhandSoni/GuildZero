@@ -126,6 +126,7 @@ it("enforces negotiation ordering, accepted offers and the three-round cap", asy
   const bidId = await s.bid();
   const round = {
     bidId,
+    actorRole: "buyer" as const,
     round: 2,
     action: "counter" as const,
     priceYocto: "900000000000000000000000",
@@ -147,6 +148,7 @@ it("enforces negotiation ordering, accepted offers and the three-round cap", asy
   await s.t.mutation(internal.workflow.negotiate, {
     ...round,
     round: 3,
+    actorRole: "seller",
     action: "accept",
   });
   await s.t.mutation(internal.workflow.award, {

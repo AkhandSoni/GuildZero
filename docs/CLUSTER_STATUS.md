@@ -2,6 +2,8 @@
 
 Current work: **User explicitly authorized independent Cluster 3/4 feature branches on 2026-11-12 for later combination. The missing teammate engine still prevents full integrated acceptance.**
 
+Latest follow-up branch: **`fix/negotiation-roles-pricing-privacy`**, based on the experience branch. The screenshot audit gaps are addressed in code; engine/live settlement/hosting acceptance remains pending.
+
 | Cluster | Status | Evidence |
 |---|---|---|
 | 1 Foundation + auth | COMPLETE | Local Convex deployment, 33 Vitest tests, live two-account browser test, lint/types/build, production smoke checks |
@@ -10,6 +12,14 @@ Current work: **User explicitly authorized independent Cluster 3/4 feature branc
 | 4 Demo + release | IMPLEMENTED / INTEGRATED RELEASE PENDING | `feat/cluster-4-experience-release`; live graph/UI tests pass; engine, live payment and cloud hosting still needed |
 
 After each cluster, update commands/tests/demo and STOP. Do not treat this file as authorization to proceed.
+
+## Audit follow-up: pricing privacy and negotiation actors
+
+Implemented buyer-facing allowlists for bid/negotiation/contract/event responses, including sanitizing old raw pricing diagnostics; browser-safe agent metadata without reserves; optional backend-only private floor configuration; an internal worker pricing context; mandatory roles and backend-derived identities for new negotiation messages; exact referenced-offer acceptance; separate buyer-cap and seller-floor enforcement; and a visible actor-aware transcript. Subcontract buyer identity is the parent awarded agent. Legacy actor-less rows are not silently rewritten and cannot authorize a new award. Published fixture profile defaults remain public source, not secrets. Worker and frontend interfaces must be updated together as described in `worker-integration.md`.
+
+A new fixture exposed an existing valid one-column CSV rejection due to delimiter guessing; comma parsing is now explicit and consistent across validation and column selection. The teammate's economy implementation paths remain unchanged.
+
+Actual checks: lint/typecheck passed; **79 tests across 8 files passed**; production build passed; all **3 production-browser scenarios passed**, including absence of reserve prices from the actual agent page; `npm run check:client` passed on 25 generated assets with no private pricing fields or server-secret identifiers; dependency audit reported zero vulnerabilities. A live public HTTP query to the internal worker pricing context was rejected. The tests verify that raw private minima and diagnostic markers survive internally but do not appear in buyer detail/economy/profile responses. No payment, public deployment or merge into main is performed by this follow-up.
 
 ## Cluster 3 branch — 2026-11-12
 

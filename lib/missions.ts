@@ -34,6 +34,7 @@ export function validateMission(
   if (new TextEncoder().encode(input.inputCsv).length > 65536)
     throw new Error("CSV exceeds the 64 KiB input limit.");
   const parsed = Papa.parse<string[]>(input.inputCsv, {
+    delimiter: ",",
     skipEmptyLines: "greedy",
   });
   const [header, ...rows] = parsed.data;

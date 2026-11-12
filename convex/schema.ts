@@ -87,6 +87,9 @@ export default defineSchema({
     .index("by_job", ["jobId"])
     .index("by_job_agent", ["jobId", "agentId"]),
   negotiations: defineTable({
+    // Optional for old rows only. New writes always bind both fields.
+    actorRole: v.optional(v.union(v.literal("buyer"), v.literal("seller"))),
+    actorId: v.optional(v.string()),
     jobId: v.id("jobs"),
     bidId: v.id("bids"),
     round: v.number(),

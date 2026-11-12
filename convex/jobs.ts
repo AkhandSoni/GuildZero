@@ -5,6 +5,12 @@ import { ownedJob, user } from "./ownership";
 import { optionsValidator } from "./marketModel";
 import { validateMission } from "../lib/missions";
 import { event, finish } from "./workflowHelpers";
+import {
+  publicBid,
+  publicNegotiation,
+  publicContract,
+  publicEvent,
+} from "./publicMarket";
 export const start = mutation({
   args: { missionId: v.id("missions"), options: optionsValidator },
   handler: async (ctx, args) => {
@@ -28,6 +34,7 @@ export const start = mutation({
       throw new ConvexError("INVALID_OR_EXPIRED_MISSION");
     }
     const columns = Papa.parse<string[]>(mission.inputCsv, {
+      delimiter: ",",
       skipEmptyLines: "greedy",
     }).data[0];
     if (
@@ -119,14 +126,14 @@ export const detail = query({
     ]);
     return {
       job,
-      bids,
-      negotiations,
-      contracts,
+      bids: bids.map(publicBid),
+      negotiations: negotiations.map(publicNegotiation),
+      contracts: contracts.map(publicContract),
       deliverables,
       verifications,
       children,
       disputes,
-      events,
+      events: events.map(publicEvent),
     };
   },
 });

@@ -14,8 +14,10 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const headers =
-    Papa.parse<string[]>(mission.inputCsv, { skipEmptyLines: "greedy" })
-      .data[0] ?? [];
+    Papa.parse<string[]>(mission.inputCsv, {
+      delimiter: ",",
+      skipEmptyLines: "greedy",
+    }).data[0] ?? [];
   const root = jobs?.find((j) => j.depth === 0);
   if (jobs === undefined)
     return (
@@ -237,6 +239,29 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           </ul>
         </div>
       ))}
+      {data.negotiations.length > 0 && (
+        <section className="panel">
+          <h2>Negotiation transcript</h2>
+          <ol className="mt-4 grid gap-3">
+            {data.negotiations.map((n) => (
+              <li
+                className="border-l border-neutral-700 pl-4 text-sm"
+                key={n._id}
+              >
+                <p>
+                  Round {n.round} · {n.actorRole ?? "Unknown legacy actor"} ·{" "}
+                  {n.action}
+                </p>
+                <p>{formatNear(n.priceYocto)} testnet NEAR</p>
+                <p className="muted break-all">
+                  Actor: {n.actorId ?? "Reassessment required"}
+                </p>
+                <p className="muted">{n.explanation}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       <PaymentPanel jobId={id} approved={data.job.state === "approved"} />
       <div className="panel">
         <h2>Recorded activity</h2>

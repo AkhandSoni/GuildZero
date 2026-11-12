@@ -1,7 +1,8 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { user } from "./ownership";
-import { INITIAL_AGENTS } from "../lib/agents";
+import { PUBLIC_AGENTS } from "../lib/agent-directory";
+import { publicBid, publicContract, publicEvent } from "./publicMarket";
 export const overview = query({
   args: {},
   handler: async (ctx) => {
@@ -60,9 +61,9 @@ export const overview = query({
     ).flat();
     return {
       jobs,
-      bids,
-      contracts,
-      events: eventRows.slice(0, 100),
+      bids: bids.map(publicBid),
+      contracts: contracts.map(publicContract),
+      events: eventRows.slice(0, 100).map(publicEvent),
       payments: paymentRows.slice(0, 50),
       truncated: {
         jobs: rows.length > 50,
@@ -76,7 +77,7 @@ export const agent = query({
   args: { agentId: v.string() },
   handler: async (ctx, { agentId }) => {
     const ownerId = await user(ctx);
-    const profile = INITIAL_AGENTS.find((a) => a.id === agentId);
+    const profile = PUBLIC_AGENTS.find((a) => a.id === agentId);
     if (!profile) return null;
     const jobs = await ctx.db
       .query("jobs")
@@ -109,7 +110,7 @@ export const agent = query({
       .filter((r) => r.agentId === agentId);
     return {
       profile,
-      contracts,
+      contracts: contracts.map(publicContract),
       reputation,
       totalDelta: reputation.reduce((sum, r) => sum + r.delta, 0),
       truncated: jobs.length > 100,

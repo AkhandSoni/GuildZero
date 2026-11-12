@@ -18,7 +18,8 @@
     "convex:codegen": "convex codegen",
     "auth:keys": "node scripts/auth-keys.mjs",
     "test:e2e": "playwright test",
-    "test:near": "node scripts/verify-testnet.mjs"
+    "test:near": "node scripts/verify-testnet.mjs",
+    "check:client": "node scripts/check-client-boundary.mjs"
   },
   "dependencies": {
     "@auth/core": "0.41.3",

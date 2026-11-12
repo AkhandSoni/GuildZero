@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as agentPolicies from "../agentPolicies.js";
 import type * as auth from "../auth.js";
 import type * as demo from "../demo.js";
 import type * as http from "../http.js";
@@ -21,6 +22,7 @@ import type * as paymentHelpers from "../paymentHelpers.js";
 import type * as paymentModel from "../paymentModel.js";
 import type * as paymentWorker from "../paymentWorker.js";
 import type * as payments from "../payments.js";
+import type * as publicMarket from "../publicMarket.js";
 import type * as security from "../security.js";
 import type * as workflow from "../workflow.js";
 import type * as workflowHelpers from "../workflowHelpers.js";
@@ -32,6 +34,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  agentPolicies: typeof agentPolicies;
   auth: typeof auth;
   demo: typeof demo;
   http: typeof http;
@@ -45,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   paymentModel: typeof paymentModel;
   paymentWorker: typeof paymentWorker;
   payments: typeof payments;
+  publicMarket: typeof publicMarket;
   security: typeof security;
   workflow: typeof workflow;
   workflowHelpers: typeof workflowHelpers;

@@ -21,9 +21,8 @@ export default function Agent({ params }: { params: Promise<{ id: string }> }) {
           {data.profile.capabilities.join(", ") || "workflow support"}
         </p>
         <p>Capacity: {data.profile.capacity}</p>
-        <p>
-          Reserve price: {formatNear(data.profile.reservePriceYocto)} testnet
-          NEAR
+        <p className="muted">
+          Private seller pricing is withheld from buyer-facing profiles.
         </p>
         <p className="muted">
           Profile definition, not evidence of completed work or model

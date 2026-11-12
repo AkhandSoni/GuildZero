@@ -11,9 +11,27 @@ import {
   childrenComplete,
   finish,
 } from "./workflowHelpers";
-import { INITIAL_AGENTS } from "../lib/agents";
+import { privateProfiles } from "./agentPolicies";
 import { validateMission } from "../lib/missions";
 import { subcontractReason } from "../lib/settlement/policy";
+export const pricingContext = internalQuery({
+  args: { jobId: v.id("jobs") },
+  handler: async (ctx, { jobId }) => {
+    const job = await ctx.db.get(jobId);
+    if (!job) throw new ConvexError("JOB_NOT_FOUND");
+    const [bids, negotiations] = await Promise.all([
+      ctx.db
+        .query("bids")
+        .withIndex("by_job", (q) => q.eq("jobId", jobId))
+        .take(10),
+      ctx.db
+        .query("negotiations")
+        .withIndex("by_job", (q) => q.eq("jobId", jobId))
+        .take(30),
+    ]);
+    return { job, bids, negotiations, profiles: privateProfiles() };
+  },
+});
 export const executionContext = internalQuery({
   args: { jobId: v.id("jobs") },
   handler: async (ctx, { jobId }) => {
@@ -57,7 +75,7 @@ export const recordBid = internalMutation({
     const mission = await ctx.db.get(job.missionId);
     if (!mission || mission.deadlineAt <= Date.now())
       throw new ConvexError("DEADLINE_EXPIRED");
-    const agent = INITIAL_AGENTS.find((a) => a.id === args.agentId);
+    const agent = privateProfiles().find((a) => a.id === args.agentId);
     if (!agent || !agent.capabilities.some((c) => c === job.serviceType))
       throw new ConvexError("CAPABILITY_MISMATCH");
     const price = amount(args.priceYocto),
@@ -109,13 +127,14 @@ export const recordBid = internalMutation({
       ctx,
       job,
       "BID_SUBMITTED",
-      `${agent.name}: ${args.priceYocto} yoctoNEAR. ${args.rationale}`,
+      `${agent.name}: ${args.priceYocto} yoctoNEAR. Eligible seller offer.`,
     );
     return id;
   },
 });
 export const negotiate = internalMutation({
   args: {
+    actorRole: v.union(v.literal("buyer"), v.literal("seller")),
     bidId: v.id("bids"),
     round: v.number(),
     action: v.union(
@@ -137,29 +156,61 @@ export const negotiate = internalMutation({
       .collect();
     if (args.round !== 2 && args.round !== 3)
       throw new ConvexError("ROUND_LIMIT");
+    const mission = await ctx.db.get(job.missionId);
+    if (!mission || mission.deadlineAt <= Date.now())
+      throw new ConvexError("DEADLINE_EXPIRED");
+    if (history.some((n) => !n.actorRole || !n.actorId))
+      throw new ConvexError("LEGACY_NEGOTIATION_REASSESSMENT_REQUIRED");
     if (
       history.some((n) => n.action !== "counter") ||
       history.some((n) => n.round === args.round) ||
       args.round !== (history.length === 0 ? 2 : 3)
     )
       throw new ConvexError("NEGOTIATION_CLOSED_OR_OUT_OF_ORDER");
+    if (args.actorRole !== (args.round === 2 ? "buyer" : "seller"))
+      throw new ConvexError("NEGOTIATION_ROLE_MISMATCH");
+    const previous = history.find((n) => n.round === 2);
+    const referencedPrice =
+      args.actorRole === "buyer" ? bid.priceYocto : previous?.priceYocto;
+    if (
+      (args.action === "accept" || args.action === "reject") &&
+      args.priceYocto !== referencedPrice
+    )
+      throw new ConvexError("REFERENCED_OFFER_PRICE_MISMATCH");
     const price = amount(args.priceYocto);
+    const sellerProfile = privateProfiles().find((p) => p.id === bid.agentId);
+    if (!sellerProfile) throw new ConvexError("AGENT_NOT_FOUND");
     if (
       price <= 0n ||
       price > amount(job.budgetYocto) ||
-      (args.action !== "reject" && price < amount(bid.minimumYocto))
+      (args.actorRole === "seller" &&
+        args.action !== "reject" &&
+        (price < amount(bid.minimumYocto) ||
+          price < amount(sellerProfile.reservePriceYocto)))
     )
       throw new ConvexError("OFFER_OUT_OF_BOUNDS");
+    let actorId: string =
+      args.actorRole === "buyer" ? job.ownerId : bid.agentId;
+    if (args.actorRole === "buyer" && job.parentId) {
+      const parentContract = await ctx.db
+        .query("contracts")
+        .withIndex("by_job", (q) => q.eq("jobId", job.parentId!))
+        .unique();
+      if (!parentContract || parentContract.state !== "active")
+        throw new ConvexError("PARENT_CONTRACT_INACTIVE");
+      actorId = parentContract.agentId;
+    }
     await ctx.db.insert("negotiations", {
       ...args,
       jobId: job._id,
+      actorId,
       explanation: text(args.explanation),
     });
     await event(
       ctx,
       job,
       "NEGOTIATION",
-      `Round ${args.round} ${args.action}: ${args.priceYocto} yoctoNEAR. ${args.explanation}`,
+      `Round ${args.round} ${args.actorRole} ${args.action}: ${args.priceYocto} yoctoNEAR.`,
     );
   },
 });
@@ -178,6 +229,8 @@ export const award = internalMutation({
       .withIndex("by_bid", (q) => q.eq("bidId", bid._id))
       .collect();
     const latest = negotiations.sort((a, b) => b.round - a.round)[0];
+    if (negotiations.some((n) => !n.actorRole || !n.actorId))
+      throw new ConvexError("LEGACY_NEGOTIATION_REASSESSMENT_REQUIRED");
     if (latest && latest.action !== "accept")
       throw new ConvexError("OFFER_NOT_ACCEPTED");
     // Initial submitted offer is binding at its quoted price; counteroffers require acceptance.
@@ -188,7 +241,9 @@ export const award = internalMutation({
       amount(price) > amount(job.budgetYocto)
     )
       throw new ConvexError("AWARD_OUT_OF_BOUNDS");
-    const agent = INITIAL_AGENTS.find((a) => a.id === bid.agentId)!;
+    const agent = privateProfiles().find((a) => a.id === bid.agentId)!;
+    if (amount(price) < amount(agent.reservePriceYocto))
+      throw new ConvexError("PRIVATE_PRICING_CHANGED_REASSESS");
     const active = await ctx.db
       .query("contracts")
       .withIndex("by_agent_state", (q) =>
@@ -235,7 +290,7 @@ export const award = internalMutation({
       ctx,
       job,
       "CONTRACT_AWARDED",
-      `${agent.name}: ${price} yoctoNEAR. ${args.selectionReason}`,
+      `${agent.name}: ${price} yoctoNEAR. Offer awarded within buyer budget.`,
     );
     return id;
   },
@@ -286,7 +341,7 @@ export const subcontract = internalMutation({
     // Every child transforms only explicit columns of the real parent dataset.
     const headers = (await import("papaparse")).default.parse<string[]>(
       parent.inputCsv,
-      { skipEmptyLines: "greedy" },
+      { delimiter: ",", skipEmptyLines: "greedy" },
     ).data[0];
     if (
       !args.options.columns.length ||
