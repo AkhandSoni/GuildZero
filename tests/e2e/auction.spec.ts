@@ -5,6 +5,7 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   await page.getByLabel("Email", { exact: true }).fill(`auction-${randomBytes(8).toString("hex")}@example.com`);
   await page.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
+  await page.getByLabel("Confirm password", { exact: true }).fill(await page.getByLabel("Password", { exact: true }).inputValue());
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "+ New mission" }).click();
@@ -49,7 +50,8 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
     await other.getByRole("button", { name: "Need an account? Sign up" }).click();
     await other.getByLabel("Email", { exact: true }).fill(`result-outsider-${randomBytes(8).toString("hex")}@example.com`);
     await other.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
-    await other.getByRole("button", { name: "Create account", exact: true }).click();
+    await other.getByLabel("Confirm password", { exact: true }).fill(await other.getByLabel("Password", { exact: true }).inputValue());
+  await other.getByRole("button", { name: "Create account", exact: true }).click();
     await expect(other).toHaveURL(/\/dashboard$/);
     await other.goto(page.url());
     await expect(other.getByRole("heading", { name: "Workspace unavailable." })).toBeVisible();

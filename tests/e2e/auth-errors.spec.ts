@@ -18,6 +18,7 @@ test("unknown account and wrong password stay in the form, then valid signup and
   await expect(page.getByText("Console Error", { exact: true })).toHaveCount(0);
   expect(authConsoleErrors).toEqual([]);
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
+  await page.getByLabel("Confirm password", { exact: true }).fill(await page.getByLabel("Password", { exact: true }).inputValue());
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("button", { name: "Sign out", exact: true }).click();

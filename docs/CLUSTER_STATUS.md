@@ -2,6 +2,14 @@
 
 Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
+## Signup usability follow-up — 2026-11-13
+
+Implemented the requested shared 8–128 character policy, signup-only password confirmation with focused mismatch errors, separately labelled keyboard-accessible Show/Hide controls, password-manager autocomplete, disabled password spellcheck/autocapitalization and a compact responsive form. Fields remain hidden by default and confirmation is never sent/stored as an account field. Added scoped white autofill styling and retained accurate no-recovery disclosure.
+
+The first live eight-character signup failed because the user-started Node 26 Convex watcher had not replaced the older twelve-character backend. Restarted the existing local backend under Node 24 and deployed the new policy without changing keys or data; the targeted real eight-character signup/sign-out/login then passed. Added a startup check that passes on Node 24.22.3 and rejects host Node 26.13.0 with setup guidance. The frontend remains running and the updated backend is left running for manual testing.
+
+Checks: lint, typecheck and all 155 tests in 17 files passed, including direct backend rejections of seven-character and over-128-character signup attempts without account creation. A separate checkout passed lint, types, all 155 tests, production build and client-boundary scan. Visually inspected empty signup screenshots; 390px mobile layout has no horizontal overflow. After the runtime correction, all seven live browser scenarios passed, including real eight-character signup/sign-out/login, seven-character rejection, confirmation mismatch/focus, keyboard Show/Hide, mobile layout and the existing complete economy/privacy workflows.
+
 ## Sign-in development error follow-up — 2026-11-13
 
 The screenshot showed the stock Convex Auth `InvalidAccountId` rejection for an unregistered app account. The form caught the rejected promise, but Convex also forwarded it to `console.error`, opening the Next.js development overlay. Added a narrowly scoped client logger that sends only the three known credential-rejection codes from `auth:signIn` to a sanitized warning; all other errors retain normal error logging. Backend credential verification, attempt throttling, keys and account data remain unchanged.

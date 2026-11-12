@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { expect,test } from "@playwright/test";
 test("live graph, private agent history, audited security probes and safe sample reset",async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto("/sign-in");await page.getByRole("button",{name:"Need an account? Sign up"}).click();
- await page.getByLabel("Email",{exact:true}).fill(`experience-${randomBytes(8).toString("hex")}@example.com`);await page.getByLabel("Password",{exact:true}).fill(randomBytes(24).toString("base64url"));await page.getByRole("button",{name:"Create account",exact:true}).click();await expect(page).toHaveURL(/\/dashboard$/);
+ await page.getByLabel("Email",{exact:true}).fill(`experience-${randomBytes(8).toString("hex")}@example.com`);await page.getByLabel("Password",{exact:true}).fill(randomBytes(24).toString("base64url"));await page.getByLabel("Confirm password", { exact: true }).fill(await page.getByLabel("Password", { exact: true }).inputValue());
+  await page.getByRole("button",{name:"Create account",exact:true}).click();await expect(page).toHaveURL(/\/dashboard$/);
  await page.getByRole("button",{name:"Add sample missions"}).click();await page.getByRole("heading",{name:"Sample: sales statistics",exact:true}).click();await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
  await expect(page.getByTestId("saved-options")).toHaveText("units, price");await page.getByRole("button",{name:"Open auction",exact:true}).click();await expect(page.getByText("Persisted job · bidding",{exact:true})).toBeVisible();
  await expect(page.getByText("Verified or buyer-approved work is required before payment.",{exact:true})).toBeVisible();await expect(page.getByRole("button",{name:"Prepare exact payment"})).toBeDisabled();

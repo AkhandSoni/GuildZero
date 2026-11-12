@@ -2,6 +2,13 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-13 — Requested signup usability and password policy
+
+- The user explicitly requested an eight-character minimum, confirm password, visible-password controls and a conventional signup form. Changed the shared frontend/backend policy to 8–128 characters; existing credentials remain valid. Confirmation is a local typo check and is removed before calling Convex Auth. Passwords remain hashed by the existing provider; signup introduces no new wallet or account provisioning.
+- Implemented hidden-by-default, separately labelled Show/Hide controls, disabled spellcheck/autocapitalization for passwords, correct new/current-password autofill, focused mismatch feedback, and a compact responsive form with white autofill styling. No recovery/MFA feature is claimed or introduced.
+- [GOV.UK password input guidance](https://design-system.service.gov.uk/components/password-input/) informs the visibility/accessibility behavior; confirmation is included by user request even though that guidance considers it optional. Eight characters is the requested demo threshold, not a claim of current production security best practice: [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html) recommends longer passwords without MFA.
+- Live testing exposed the user-started Node 26 backend retaining the earlier twelve-character deployment. Restarted the same database with the existing verified Node 24 runtime and deployed the current policy, preserving Auth/testnet keys and all data. Added a backend startup runtime check: supported Node 24.22.3+ in the 24.x series; other runtimes stop with an actionable message instead of starting an unsupported deployment.
+
 ## 2026-11-13 — Integrated current-scope hackathon prototype
 
 - The user authorized completing the entire current prototype, testing it from a tester's perspective, fixing issues and pushing verified changes to main. This supersedes earlier branch-only/stop gates for this integration. Broader business services remain paused; hosting/submission are not implied.

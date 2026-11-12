@@ -4,6 +4,7 @@ async function signup(page: Page) {
   await page.goto("/sign-in"); await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   await page.getByLabel("Email", { exact: true }).fill(`recovery-${randomBytes(8).toString("hex")}@example.com`);
   await page.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
+  await page.getByLabel("Confirm password", { exact: true }).fill(await page.getByLabel("Password", { exact: true }).inputValue());
   await page.getByRole("button", { name: "Create account", exact: true }).click(); await expect(page).toHaveURL(/\/dashboard$/);
 }
 async function create(page: Page, title: string, csv = "units\n3\n5", budget = "1", human = false) {

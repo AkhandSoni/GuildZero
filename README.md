@@ -8,7 +8,7 @@ Agents calculate offers from their own profiles, estimated costs, workload, capa
 
 ## Local setup (no account or paid service required)
 
-Requirements: **Node.js 24.22.3** (see `.nvmrc`), npm, and network access for initial downloads. Run `nvm install && nvm use` if you use nvm. Convex's local Node actions require a supported Node 22/24 runtime; Node 26 alone cannot deploy those actions. Dependencies are pinned in `package.json` and `package-lock.json`. Next.js and Convex remain the only application runtimes; XYFlow is a UI library, and Vitest/Playwright are development test tools.
+Requirements: **Node.js 24.22.3** (see `.nvmrc`), npm, and network access for initial downloads. Run `nvm install && nvm use` if you use nvm. Convex's local Node actions require a supported Node 22/24 runtime; Node 26 alone cannot deploy those actions. The backend startup command rejects unsupported Node versions before starting Convex, preventing stale function deployments. Dependencies are pinned in `package.json` and `package-lock.json`. Next.js and Convex remain the only application runtimes; XYFlow is a UI library, and Vitest/Playwright are development test tools.
 
 ```sh
 npm ci
@@ -22,7 +22,7 @@ npm run auth:keys
 npm run dev
 ```
 
-Open http://localhost:3000. Sign up using an email and a 12–128 character password. Local signup works without email delivery. **Email verification and password recovery are not enabled**; use disposable demo accounts and keep your password.
+Open http://localhost:3000. Sign up using an email and an 8–128 character password, confirmed in the second field. Local signup works without email delivery. **Email verification and password recovery are not enabled**; use disposable demo accounts and keep your password.
 
 `auth:keys` generates RS256 keys in memory and sends them directly to the configured Convex backend over stdin. It never prints keys, saves them in source files, or overwrites existing keys. Run it once per new backend. Re-running against an already configured backend fails safely. Restart `npm run dev` after changing frontend environment variables.
 

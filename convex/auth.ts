@@ -1,6 +1,7 @@
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
+import { validNewPassword } from "../lib/auth-policy";
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Password({
@@ -14,8 +15,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return { email: params.email.trim().toLowerCase() };
       },
       validatePasswordRequirements(password) {
-        if (password.length < 12 || password.length > 128)
-          throw new ConvexError("Password must contain 12–128 characters.");
+        if (!validNewPassword(password))
+          throw new ConvexError("Password must contain 8–128 characters.");
       },
     }),
   ],
