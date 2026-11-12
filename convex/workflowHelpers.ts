@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { reputationWriteAllowed } from "../lib/settlement/policy";
 export function text(value: string) {
   if (!value.trim() || value.length > 1000)
     throw new ConvexError("INVALID_EXPLANATION");
@@ -45,6 +46,8 @@ export async function finish(
   approved: boolean,
   cause: "verified" | "buyer_approved" | "rejected",
 ) {
+  if (!reputationWriteAllowed("verified_workflow"))
+    throw new ConvexError("REPUTATION_AUTHORITY_REQUIRED");
   if (approved) await childrenComplete(ctx, job);
   const contract = await ctx.db
     .query("contracts")

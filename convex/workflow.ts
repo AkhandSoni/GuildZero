@@ -13,6 +13,7 @@ import {
 } from "./workflowHelpers";
 import { INITIAL_AGENTS } from "../lib/agents";
 import { validateMission } from "../lib/missions";
+import { subcontractReason } from "../lib/settlement/policy";
 export const executionContext = internalQuery({
   args: { jobId: v.id("jobs") },
   handler: async (ctx, { jobId }) => {
@@ -266,7 +267,7 @@ export const subcontract = internalMutation({
       .unique();
     if (!contract) throw new ConvexError("NO_CONTRACT");
     const value = amount(args.budgetYocto);
-    if (value <= 0n || value >= amount(contract.amountYocto))
+    if (subcontractReason(parent.depth, args.budgetYocto, contract.amountYocto))
       throw new ConvexError("SUBCONTRACT_OVER_BUDGET");
     // Parent holdback plus child allocation equals the existing award. Never add
     // the child allocation a second time to the buyer's total reservation.

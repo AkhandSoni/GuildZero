@@ -9,6 +9,12 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - Internal workflow functions accept trusted worker outputs and independently enforce state, ownership, amount, capacity, negotiation and subcontract bounds. No public function accepts agent-authored verification, reputation deltas, or arbitrary awards. Tests using internal worker fixtures are explicitly persistence tests, not evidence of real CSV execution.
 - Until the teammate package is available and connected, opening an auction persists a real job but explicitly waits for the engine. No scheduled fake bids, fabricated outputs, or false completion claims are introduced. Cluster 2 cannot be accepted on persistence tests alone.
 
+## 2026-11-12 — explicitly authorized Cluster 3/4 branches
+
+- The user explicitly requested implementing and pushing Clusters 3 and 4 while the teammate package remains separate, to combine later. These are stacked feature branches based on orchestration; this supersedes holding all later implementation behind the missing engine. It does not waive functional acceptance or authorize claims of completed integration.
+- Cluster 3 uses official `near-api-js` 7.5.3 and Node 24 for Convex Node actions. Node 26 alone could not deploy local Node actions; a checksum-verified official Node 24 binary was used for validation without replacing system Node.
+- Payouts are owner-confirmed, capped at 1 testnet NEAR each, serialized per dedicated signer, and conservatively locked on uncertain outcomes. Exact signed transaction identity is persisted before one broadcast. No automatic resend or failed-intent recycling is implemented. Credentials and a genuinely approved engine deliverable are still required for live payment acceptance.
+
 ## 2026-11-10 — Cluster 1 implementation
 
 - The current master prompt supersedes the ancestor Counterparty Guard instructions. No Fastify, Rust contracts, or person-based work allocation applies to GuildZero. Existing planning documents are preserved.

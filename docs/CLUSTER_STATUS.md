@@ -1,15 +1,25 @@
 # Cluster execution status
 
-Current cluster: **Cluster 2 in progress on `feat/cluster-2-orchestration`. User authorized continued work and feature-branch pushes on 2026-11-12.**
+Current work: **User explicitly authorized independent Cluster 3/4 feature branches on 2026-11-12 for later combination. The missing teammate engine still prevents full integrated acceptance.**
 
 | Cluster | Status | Evidence |
 |---|---|---|
 | 1 Foundation + auth | COMPLETE | Local Convex deployment, 33 Vitest tests, live two-account browser test, lint/types/build, production smoke checks |
 | 2 Marketplace | IN PROGRESS | Convex lifecycle and integration tests; teammate engine not yet available |
-| 3 Security + NEAR | BLOCKED BY GATE | — |
-| 4 Demo + release | BLOCKED BY GATE | — |
+| 3 Security + NEAR | IMPLEMENTED / LIVE ACCEPTANCE PENDING | `feat/cluster-3-security-near`; policy/adapter tests pass; funded credentials and real verified work still needed |
+| 4 Demo + release | AUTHORIZED, NEXT | UI/release branch will stack on Cluster 3 |
 
 After each cluster, update commands/tests/demo and STOP. Do not treat this file as authorization to proceed.
+
+## Cluster 3 branch — 2026-11-12
+
+The user's explicit request to proceed with 3 and 4 supersedes waiting for the engine before implementing these branches. Branches are stacked on `feat/cluster-2-orchestration`, to combine later without replacing the teammate's package.
+
+Implemented: owner-only exact payment preparation/confirmation; one immutable per-job intent; backend recipient configuration; approved-work/contract/reservation checks; child payment dependency on approved parent; atomic dedicated-signer lock; official NEAR JavaScript signing; hash/nonce persistence before a single broadcast; exact final receipt matching; conservative unknown-outcome accounting; owner-triggered reconciliation without resend; persisted security denials and controlled probes. Maximum payout is 1 testnet NEAR, additionally bounded by the actual contract holdback.
+
+Validation: local Node actions deployed successfully using Node 24.22.3. `npm run lint`, `npm run typecheck`, `npm test` (64 tests), `npm run build`, and `npm audit` (zero vulnerabilities) passed. Offline adapter tests verified pre-broadcast identity persistence, successful final receipt handling, timeout lock retention and no second broadcast. A live read-only RPC status request verified `chain_id=testnet`; no payment was sent. Source/worksheet secrets remain outside Git.
+
+`npm run test:near` is **NOT RUN against a real receipt**: required receipt fields and funded operator credentials are absent. The command reports this explicitly and does not submit funds. No real transaction, signature, balance or confirmation is fabricated. Full acceptance requires integrating the engine, supplying dedicated server-side testnet credentials and confirming one authorized real payout. Runbook: `docs/settlement.md`.
 
 ## 2026-11-12 — Cluster 2 orchestration progress
 

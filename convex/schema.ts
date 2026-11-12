@@ -2,6 +2,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { jobState, optionsValidator, checkValidator } from "./marketModel";
+import { paymentState } from "./paymentModel";
 export const missionFields = {
   title: v.string(),
   serviceType: v.union(v.literal("csv_normalize"), v.literal("csv_summary")),
@@ -12,6 +13,39 @@ export const missionFields = {
 };
 export default defineSchema({
   ...authTables,
+  paymentIntents: defineTable({
+    ownerId: v.id("users"),
+    jobId: v.id("jobs"),
+    contractId: v.id("contracts"),
+    sender: v.string(),
+    recipient: v.string(),
+    amountYocto: v.string(),
+    network: v.literal("testnet"),
+    status: paymentState,
+    authorizedAt: v.optional(v.number()),
+    txHash: v.optional(v.string()),
+    nonce: v.optional(v.string()),
+    blockHash: v.optional(v.string()),
+    lastReason: v.optional(v.string()),
+    lastCheckAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_job", ["jobId"])
+    .index("by_owner", ["ownerId"]),
+  signerLocks: defineTable({
+    sender: v.string(),
+    intentId: v.id("paymentIntents"),
+  }).index("by_sender", ["sender"]),
+  securityEvents: defineTable({
+    ownerId: v.id("users"),
+    jobId: v.id("jobs"),
+    scenario: v.string(),
+    decision: v.union(v.literal("allow"), v.literal("reject")),
+    reason: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_owner", ["ownerId"])
+    .index("by_job", ["jobId"]),
   missions: defineTable({
     ...missionFields,
     ownerId: v.id("users"),

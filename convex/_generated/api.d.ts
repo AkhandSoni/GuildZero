@@ -13,7 +13,13 @@ import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
 import type * as marketModel from "../marketModel.js";
 import type * as missions from "../missions.js";
+import type * as nearSettlement from "../nearSettlement.js";
 import type * as ownership from "../ownership.js";
+import type * as paymentHelpers from "../paymentHelpers.js";
+import type * as paymentModel from "../paymentModel.js";
+import type * as paymentWorker from "../paymentWorker.js";
+import type * as payments from "../payments.js";
+import type * as security from "../security.js";
 import type * as workflow from "../workflow.js";
 import type * as workflowHelpers from "../workflowHelpers.js";
 
@@ -29,7 +35,13 @@ declare const fullApi: ApiFromModules<{
   jobs: typeof jobs;
   marketModel: typeof marketModel;
   missions: typeof missions;
+  nearSettlement: typeof nearSettlement;
   ownership: typeof ownership;
+  paymentHelpers: typeof paymentHelpers;
+  paymentModel: typeof paymentModel;
+  paymentWorker: typeof paymentWorker;
+  payments: typeof payments;
+  security: typeof security;
   workflow: typeof workflow;
   workflowHelpers: typeof workflowHelpers;
 }>;
