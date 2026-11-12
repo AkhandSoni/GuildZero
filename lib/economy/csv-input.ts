@@ -135,4 +135,3 @@ export function parseBoundedCsv(inputCsv: unknown): Result<{
 
   return { ok: true, value: { rawHeader, rawRows } };
 }
-
