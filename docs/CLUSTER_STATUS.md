@@ -11,6 +11,40 @@ Current cluster: **Cluster 2 in progress on `feat/cluster-2-orchestration`. User
 
 After each cluster, update commands/tests/demo and STOP. Do not treat this file as authorization to proceed.
 
+## 2026-11-12 — Cluster 2 orchestration progress
+
+The user explicitly authorized sequential continuation and regular feature-branch commits/pushes while away. The old per-cluster approval stop does not require another permission request in this session. Product acceptance criteria remain unchanged.
+
+Implemented on `feat/cluster-2-orchestration`:
+
+- Owner-only idempotent auction opening with explicit service options, immutable mission briefs, private job/history queries and cancellation before award.
+- Internal-only bid/negotiation/award transitions with capability, reserve floor, capacity, deadline, budget, duplicate award, and three-round checks. Selection reasons persist; scored bid generation remains the teammate's engine responsibility.
+- One normalization child per summary contract; depth limited to one, child allocation contained in the original award, parent holdback reconciled to the actual child award. Concurrent awards/capacity are guarded by atomic mutations.
+- Stored deliverables/verifications, one revision, buyer-only human dispute decisions, deterministic one-time reputation events and durable owner-scoped activity history.
+- Parent worker context reads approved child CSV as its execution input; parent submission must bind the child deliverable ID. Failed child work opens a parent dispute and cannot be bypassed by buyer approval.
+- Mission UI opens/cancels auctions, shows real persisted activity, contracts, verification checks and deliverable contents, and offers owner dispute controls. It explicitly labels the engine as pending. No synthetic activity is emitted to make the UI appear operational.
+
+Actual checks for this increment:
+
+| Check | Result |
+|---|---|
+| Local Convex schema/function deployment | PASS; existing local auth preserved |
+| `npm run lint` | PASS |
+| `npm run typecheck` | PASS |
+| `npm test` | PASS: 45 tests across 3 files |
+| `npm run test:integration` | PASS: 29 tests, included in the 45 above |
+| `npm run build` | PASS |
+| `npm audit` | PASS: zero known vulnerabilities reported |
+| Production browser suite | PASS: final rerun 2/2 scenarios (foundation auth/privacy/CRUD and persisted auction open/reload/cancel), against `npm start` and the real local Convex backend |
+| Public HTTP calls to `workflow:recordBid`, `workflow:award`, `workflow:recordVerification` | PASS: all rejected because these are internal functions |
+| Teammate path isolation | PASS: no changes to `lib/economy`, `tests/unit/economy`, or `fixtures/economy` |
+
+Reproduction: run `npm run dev:backend`, build/start Next.js as described in README, register a local account, create a sample mission, select processing columns and open the auction. Refresh to confirm persistence and locked brief; cancel the unawarded auction and inspect its recorded event. This demonstration does not claim that bidding or CSV execution is running.
+
+**Cluster 2 remains incomplete.** The engine package is not on the configured remote, so no scheduled real auction-to-deliverable flow, independent data verification, or meaningful executed subcontract can be demonstrated yet. Internal fixtures are lifecycle tests only. See `worker-integration.md` for the exact connection points. Cluster 3/4 implementation is not silently substituted for this unmet gate; no payments or production hosting are claimed.
+
+Additional required inputs later: dedicated NEAR testnet account/key (server-side only) for the real payment acceptance test, and a free cloud Convex/hosting deployment configuration for release. Existing `.env` files and secrets are preserved and remain ignored.
+
 ## Cluster completed: 1 / 4
 
 Date: 2026-11-10. Authorized by the GuildZero master implementation prompt. No Cluster 2 work has started.

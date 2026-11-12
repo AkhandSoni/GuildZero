@@ -4,6 +4,13 @@ import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import { SAMPLE_CSV } from "../../lib/missions";
 const modules = import.meta.glob("../../convex/**/*.ts");
+const positiveChecks = [
+  {
+    code: "EXPLICIT_TEST_VERIFIER",
+    passed: true,
+    detail: "Lifecycle fixture, not executed CSV verification",
+  },
+];
 async function setup() {
   const t = convexTest(schema, modules);
   const [a, b] = await t.run(async (ctx) =>
@@ -333,4 +340,126 @@ it("requires consistent verification checks and records final reputation exactly
     (await s.t.run((ctx) => ctx.db.query("reputationEvents").collect()))[0]
       .delta,
   ).toBe(10);
+});
+it("binds parent submission to approved child output and restores unused allocation", async () => {
+  const s = await setup();
+  const bidId = await s.bid();
+  await s.t.mutation(internal.workflow.award, {
+    bidId,
+    selectionReason: "test",
+  });
+  const child = await s.t.mutation(internal.workflow.subcontract, {
+    parentId: s.jobId,
+    budgetYocto: "300000000000000000000000",
+    options: { columns: ["product"] },
+  });
+  const childBid = await s.t.mutation(internal.workflow.recordBid, {
+    jobId: child,
+    agentId: "clean-sprint",
+    priceYocto: "200000000000000000000000",
+    minimumYocto: "100000000000000000000000",
+    etaMs: 100,
+    rationale: "test",
+  });
+  await s.t.mutation(internal.workflow.award, {
+    bidId: childBid,
+    selectionReason: "test",
+  });
+  const childOutput = "product,units\nBag,3";
+  const dependencyDeliverableId = await s.t.mutation(internal.workflow.submit, {
+    jobId: child,
+    format: "csv",
+    content: childOutput,
+  });
+  await s.t.mutation(internal.workflow.recordVerification, {
+    deliverableId: dependencyDeliverableId,
+    verdict: "pass",
+    checks: positiveChecks,
+  });
+  const context = await s.t.query(internal.workflow.executionContext, {
+    jobId: s.jobId,
+  });
+  expect(context.inputCsv).toBe(childOutput);
+  expect(context.dependencyDeliverableId).toBe(dependencyDeliverableId);
+  await expect(
+    s.t.mutation(internal.workflow.submit, {
+      jobId: s.jobId,
+      format: "json",
+      content: "{}",
+    }),
+  ).rejects.toThrow("DEPENDENCY_OUTPUT_NOT_BOUND");
+  const d = await s.alice.query(api.jobs.detail, { id: s.jobId });
+  expect(d.contracts[0].holdbackYocto).toBe("800000000000000000000000");
+  const deliverableId = await s.t.mutation(internal.workflow.submit, {
+    jobId: s.jobId,
+    format: "json",
+    content: "{}",
+    dependencyDeliverableId,
+  });
+  await s.t.mutation(internal.workflow.recordVerification, {
+    deliverableId,
+    verdict: "pass",
+    checks: positiveChecks,
+  });
+  expect(
+    (await s.alice.query(api.jobs.detail, { id: s.jobId })).job.state,
+  ).toBe("approved");
+});
+it("routes rejected child work to a parent dispute without allowing an approval bypass", async () => {
+  const s = await setup();
+  const bidId = await s.bid();
+  await s.t.mutation(internal.workflow.award, {
+    bidId,
+    selectionReason: "test",
+  });
+  const child = await s.t.mutation(internal.workflow.subcontract, {
+    parentId: s.jobId,
+    budgetYocto: "300000000000000000000000",
+    options: { columns: ["product"] },
+  });
+  const childBid = await s.t.mutation(internal.workflow.recordBid, {
+    jobId: child,
+    agentId: "clean-sprint",
+    priceYocto: "200000000000000000000000",
+    minimumYocto: "100000000000000000000000",
+    etaMs: 100,
+    rationale: "test",
+  });
+  await s.t.mutation(internal.workflow.award, {
+    bidId: childBid,
+    selectionReason: "test",
+  });
+  const deliverableId = await s.t.mutation(internal.workflow.submit, {
+    jobId: child,
+    format: "csv",
+    content: "test fixture",
+  });
+  await s.t.mutation(internal.workflow.recordVerification, {
+    deliverableId,
+    verdict: "needs_human",
+    checks: [{ code: "REVIEW", passed: false, detail: "test" }],
+  });
+  await s.alice.mutation(api.jobs.resolveDispute, {
+    id: child,
+    decision: "reject",
+    reason: "Incorrect child output",
+  });
+  expect(
+    (await s.alice.query(api.jobs.detail, { id: s.jobId })).job.state,
+  ).toBe("disputed");
+  await expect(
+    s.alice.mutation(api.jobs.resolveDispute, {
+      id: s.jobId,
+      decision: "approve",
+      reason: "bypass",
+    }),
+  ).rejects.toThrow("CHILD_WORK_INCOMPLETE");
+  await s.alice.mutation(api.jobs.resolveDispute, {
+    id: s.jobId,
+    decision: "reject",
+    reason: "Child failed",
+  });
+  expect(
+    (await s.alice.query(api.jobs.detail, { id: s.jobId })).job.state,
+  ).toBe("rejected");
 });

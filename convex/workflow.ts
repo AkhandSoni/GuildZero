@@ -1,7 +1,7 @@
 // Trusted worker boundary. These functions are INTERNAL: a browser/agent cannot
 // submit its own scores, verification verdict, payout, or reputation delta.
 import { ConvexError, v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { optionsValidator, checkValidator } from "./marketModel";
 import {
   amount,
@@ -13,6 +13,34 @@ import {
 } from "./workflowHelpers";
 import { INITIAL_AGENTS } from "../lib/agents";
 import { validateMission } from "../lib/missions";
+export const executionContext = internalQuery({
+  args: { jobId: v.id("jobs") },
+  handler: async (ctx, { jobId }) => {
+    const job = await ctx.db.get(jobId);
+    if (!job || !(["working", "revision"] as string[]).includes(job.state))
+      throw new ConvexError("JOB_NOT_EXECUTABLE");
+    const child = await ctx.db
+      .query("jobs")
+      .withIndex("by_parent", (q) => q.eq("parentId", jobId))
+      .unique();
+    if (!child)
+      return { job, inputCsv: job.inputCsv, dependencyDeliverableId: null };
+    if (child.state !== "approved")
+      throw new ConvexError("CHILD_WORK_INCOMPLETE");
+    const deliverable = await ctx.db
+      .query("deliverables")
+      .withIndex("by_job", (q) => q.eq("jobId", child._id))
+      .order("desc")
+      .first();
+    if (!deliverable || deliverable.format !== "csv")
+      throw new ConvexError("CHILD_OUTPUT_MISSING");
+    return {
+      job,
+      inputCsv: deliverable.content,
+      dependencyDeliverableId: deliverable._id,
+    };
+  },
+});
 export const recordBid = internalMutation({
   args: {
     jobId: v.id("jobs"),
@@ -274,7 +302,10 @@ export const subcontract = internalMutation({
       depth: 1,
       serviceType: "csv_normalize",
       inputCsv: parent.inputCsv,
-      options: args.options,
+      options: {
+        ...args.options,
+        caseMode: args.options.caseMode ?? "preserve",
+      },
       budgetYocto: args.budgetYocto,
       reservedYocto: "0",
       state: "bidding",
@@ -296,6 +327,7 @@ export const subcontract = internalMutation({
 });
 export const submit = internalMutation({
   args: {
+    dependencyDeliverableId: v.optional(v.id("deliverables")),
     jobId: v.id("jobs"),
     format: v.union(v.literal("csv"), v.literal("json")),
     content: v.string(),
@@ -305,6 +337,20 @@ export const submit = internalMutation({
     if (job.state !== "working" && job.state !== "revision")
       throw new ConvexError("CANNOT_SUBMIT");
     await childrenComplete(ctx, job);
+    const child = await ctx.db
+      .query("jobs")
+      .withIndex("by_parent", (q) => q.eq("parentId", job._id))
+      .unique();
+    if (child) {
+      const dependency = await ctx.db
+        .query("deliverables")
+        .withIndex("by_job", (q) => q.eq("jobId", child._id))
+        .order("desc")
+        .first();
+      if (!dependency || dependency._id !== args.dependencyDeliverableId)
+        throw new ConvexError("DEPENDENCY_OUTPUT_NOT_BOUND");
+    } else if (args.dependencyDeliverableId)
+      throw new ConvexError("UNEXPECTED_DEPENDENCY");
     if (!args.content || new TextEncoder().encode(args.content).length > 131072)
       throw new ConvexError("OUTPUT_SIZE");
     if ((job.serviceType === "csv_normalize") !== (args.format === "csv"))

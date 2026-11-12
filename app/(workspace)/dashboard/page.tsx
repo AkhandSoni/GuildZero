@@ -49,7 +49,7 @@ export default function Dashboard() {
               >
                 <div>
                   <span className="text-xs text-emerald-300">
-                    DRAFT ·{" "}
+                    {mission.state.toUpperCase()} ·{" "}
                     {mission.serviceType === "csv_normalize"
                       ? "CSV normalization"
                       : "CSV statistics"}

@@ -2,7 +2,9 @@
 
 GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents will make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Planned settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
-**Current implementation: Cluster 1 foundation.** Email/password authentication, a private mission workspace, mission CRUD, bounded CSV input, integer budget handling, and initial agent definitions. Auctions, service execution, subcontracting, reputation, visualization, and payments are not active.
+**Current implementation: foundation plus Cluster 2 orchestration in progress.** Email/password authentication, private mission CRUD, bounded CSV input, integer budgets and static agent definitions work. On `feat/cluster-2-orchestration`, owners can open/cancel an auction, freeze its brief, and inspect persisted job activity. Internal worker functions enforce bids, negotiation, awards, capacity, subcontract allocation, deliverable dependencies, revision limits, disputes and reputation events.
+
+**The teammate's economy engine is not connected yet.** Opening an auction records a job and waits; it does not generate bids, execute CSV services, or claim verified work. The lifecycle tests use explicit trusted-worker fixtures and are not proof of real data processing. Payments, the advanced economy graph, and deployment are not implemented. The full Cluster 2 acceptance gate remains open.
 
 ## Local setup (no account or paid service required)
 
@@ -39,9 +41,11 @@ Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions instead 
 1. Open `/sign-in`, choose **Sign up**, and create account A.
 2. On `/dashboard`, select **New mission**. Enter a title, choose `csv_normalize` or `csv_summary`, and select **Use synthetic sample CSV** or paste CSV.
 3. Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**.
-4. The saved `/missions/[id]` page shows the exact input and budget. Reload to confirm persistence; edit and save changes. Missions remain drafts and move no funds.
+4. The saved `/missions/[id]` page shows the exact input and budget. Reload to confirm persistence; edit and save changes. Drafts move no funds.
 5. In a private browser window, create account B. Its dashboard does not list A's mission. Paste A's mission URL: access is denied without revealing the mission contents. Backend tests also exercise unauthorized edit/delete attempts.
 6. Sign back in as A and delete the draft using the confirmation step.
+
+On the orchestration branch, a draft also has **Open auction**. Select exact processing columns (and case mode for normalization), then open it. The job and `AUCTION_OPENED` event persist, and editing/deleting that mission is blocked. Refresh to see the same state. Until the teammate engine is integrated, it explicitly waits without generating activity. **Cancel unawarded auction** records cancellation and retains the immutable brief for audit. This does not transfer funds. Dispute decisions and actual submitted deliverables appear only when a trusted worker has persisted them.
 
 Input limits: 64 KiB of UTF-8 CSV, 1–500 data rows, at most 32 columns, unique nonempty headers, consistent row widths, 100-character titles, and 1,000-character acceptance notes. No external URL fetching or file execution. Notes are stored as text, not executed or treated as policy. Input validation is not yet the service execution/verification engine.
 
@@ -74,7 +78,8 @@ For a production-build smoke check, run `npm run build`, then `npm start` while 
 
 - `app/`, `components/`: Next.js App Router UI, Tailwind, shadcn/ui-style Button/Input primitives, Convex client subscriptions, and authenticated navigation.
 - `convex/`: Convex Auth managed tables and HTTP routes; mission schema and owner-scoped query/create/update/delete functions. Owner IDs come exclusively from the verified session. Lists use indexed pagination; denied and nonexistent mission IDs return the same error.
-- `lib/`: bounded mission validation, BigInt money conversion, static initial agents. No agent execution yet.
+- `convex/jobs.ts`, `workflow.ts`, `workflowHelpers.ts`: owner-facing job controls and internal worker transitions. No public endpoint accepts bidder scores, verification verdicts or reputation deltas. Parent holdback plus child price equals the original award; child reservations are a breakdown of that award, not a second charge to the buyer. Rejected/pending obligations remain recorded conservatively for later settlement integration.
+- `lib/`: bounded mission validation, BigInt money conversion, static initial agents. No agent execution yet; the assigned teammate package remains untouched.
 - `tests/`: unit, backend integration, and a live two-account browser smoke test.
 
 Auth uses the documented Convex Auth React provider in a client boundary. Private mission data is fetched only after authentication, and every mission function independently checks backend identity and ownership. Protected routes may serve a public HTML shell, but never private mission data in that shell. Authentication library endpoints necessarily allow credential exchange; no marketplace API is public. Convex Auth is beta. The demo currently has neither email verification nor recovery, so it must not be represented as production account management.
@@ -83,4 +88,4 @@ The `minimatch` override patches a development-only ESLint dependency advisory w
 
 Official setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Convex Auth setup](https://labs.convex.dev/auth/setup), [manual auth/key configuration](https://labs.convex.dev/auth/setup/manual), [password provider](https://labs.convex.dev/auth/config/passwords), and [Convex testing](https://docs.convex.dev/testing/convex-test).
 
-See [cluster status](docs/CLUSTER_STATUS.md), [decisions and deviations](docs/DECISIONS_AND_DEVIATIONS.md), and [locked product decisions](docs/decisions.md). Clusters 2–4 require separate explicit authorization.
+See [cluster status](docs/CLUSTER_STATUS.md), [decisions and deviations](docs/DECISIONS_AND_DEVIATIONS.md), and [locked product decisions](docs/decisions.md). On 2026-11-12 the user authorized continued sequential work and feature-branch pushes; acceptance gates still require actual working evidence.

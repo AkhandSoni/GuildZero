@@ -42,6 +42,8 @@ export const start = mutation({
       args.options.caseMode !== undefined
     )
       throw new ConvexError("INVALID_OPTIONS");
+    if (mission.serviceType === "csv_normalize" && !args.options.caseMode)
+      throw new ConvexError("INVALID_OPTIONS");
     const now = Date.now();
     const id = await ctx.db.insert("jobs", {
       ownerId,

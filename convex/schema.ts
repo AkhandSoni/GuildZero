@@ -81,6 +81,7 @@ export default defineSchema({
     .index("by_job", ["jobId"])
     .index("by_agent_state", ["agentId", "state"]),
   deliverables: defineTable({
+    dependencyDeliverableId: v.optional(v.id("deliverables")),
     jobId: v.id("jobs"),
     attempt: v.number(),
     format: v.union(v.literal("csv"), v.literal("json")),
