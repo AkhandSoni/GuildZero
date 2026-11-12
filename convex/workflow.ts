@@ -14,6 +14,7 @@ import {
 import { privateProfiles } from "./agentPolicies";
 import { validateMission } from "../lib/missions";
 import { scoreValidator } from "./marketModel";
+import { reviewCapacity } from "./workflowHelpers";
 import { subcontractReason } from "../lib/settlement/policy";
 export const pricingContext = internalQuery({
   args: { jobId: v.id("jobs") },
@@ -492,6 +493,7 @@ export const recordVerification = internalMutation({
       );
     } else {
       await ctx.db.patch(job._id, { state: "disputed", updatedAt: Date.now() });
+      await reviewCapacity(ctx, job);
       await ctx.db.insert("disputes", {
         jobId: job._id,
         reason:

@@ -82,7 +82,7 @@ Playwright starts Next.js automatically if port 3000 is free. Run against a disp
 
 Current validation results and remaining release gates are recorded in [cluster status](docs/CLUSTER_STATUS.md). Backend tests include the actual scheduled driver, real services, subcontract consumption, independent verification, revision, owner review, cancellation, unavailable budgets, retries and payment guards. Browser scenarios exercise the production app with real local Convex Auth and persisted subscriptions. A manual-only GitHub validation workflow does not deploy or submit anything.
 
-`npm run test:near` independently verifies an existing real receipt using public transaction fields and never submits a transfer. It reports not-run when those fields are absent; it is not part of the default offline suite. Real payment acceptance remains pending.
+`npm run test:near` independently verifies an existing real receipt using public transaction fields and never submits a transfer. It reports not-run when those fields are absent; it is not part of the default offline suite. Two separately owner-authorized parent/child transfers have been confirmed and independently checked on public testnet; see [receipt evidence](docs/settlement.md). The saved public receipt fields in this checkout allow the read-only check to be repeated.
 
 For a production-build smoke check, run `npm run build`, then `npm start` while the configured Convex backend is running. Do not run the production build and development server concurrently in the same checkout.
 

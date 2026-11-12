@@ -2,6 +2,8 @@ import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
+import { rankBids } from "../../lib/economy";
+import { INITIAL_AGENTS } from "../../lib/agents";
 const modules = import.meta.glob("../../convex/**/*.ts");
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
@@ -82,6 +84,7 @@ it("pauses atomically on invalid private configuration, enforces ownership and b
   expect(JSON.stringify((await s.detail()).events)).not.toContain("invalid private configuration");
   await expect(s.outsider.mutation(api.jobs.resume, { id: s.jobId })).rejects.toThrow("JOB_NOT_FOUND");
   for (let i = 0; i < 3; i++) { await s.owner.mutation(api.jobs.resume, { id: s.jobId }); await s.drain(); }
+  expect((await s.detail()).job.state).toBe("unawarded");
   await expect(s.owner.mutation(api.jobs.resume, { id: s.jobId })).rejects.toThrow("WORKFLOW_NOT_RETRYABLE");
 });
 it("resumes the existing stage after configuration is corrected without duplicating work", async () => {
@@ -100,4 +103,43 @@ it("detects tampering in stored output, runs one real revision and records reput
   expect(d.job.state).toBe("approved"); expect(d.deliverables).toHaveLength(2);
   expect(d.verifications.map((v) => v.verdict)).toEqual(["fail", "pass"]);
   expect(await s.t.run((ctx) => ctx.db.query("reputationEvents").collect())).toHaveLength(1);
+});
+it("pending human decisions preserve obligations without exhausting execution capacity", async () => {
+  const s = await setup({ requiresHumanReview: true }); await s.drain();
+  const first = await s.detail(); expect(first.contracts[0].state).toBe("awaiting_review");
+  expect(first.job.reservedYocto).toBe(first.contracts[0].amountYocto);
+  await expect(s.owner.mutation(api.payments.prepare, { jobId: s.jobId })).resolves.toMatchObject({ ok: false, code: "WORK_NOT_APPROVED" });
+  for (let i = 0; i < 5; i++) {
+    const missionId = await s.owner.mutation(api.missions.create, { title: `Review backlog ${i}`, serviceType: "csv_summary", inputCsv: "units\n3\n5", options: { columns: ["units"] }, maxBudgetYocto: "1000000000000000000000000", acceptanceCriteria: "Owner review", requiresHumanReview: true, deadlineAt: Date.now() + 86400000 });
+    const jobId = await s.owner.mutation(api.jobs.start, { missionId }); await s.drain();
+    expect((await s.owner.query(api.jobs.detail, { id: jobId })).job.state).toBe("disputed");
+  }
+  // Legacy repair changes only execution state and remains idempotent.
+  await s.t.run((ctx) => ctx.db.patch(first.contracts[0]._id, { state: "active" }));
+  expect(await s.t.mutation(internal.maintenance.releaseLegacyReviewCapacity, {})).toEqual({ updated: 1 });
+  expect(await s.t.mutation(internal.maintenance.releaseLegacyReviewCapacity, {})).toEqual({ updated: 0 });
+  expect((await s.detail()).job.reservedYocto).toBe(first.job.reservedYocto);
+});
+it("uses earned outcomes in later auctions without changing fixed strategies", async () => {
+  // Expensive private floors make the other two summary sellers decline the
+  // first brief. Restore their normal floors for the later competitive auction.
+  vi.stubEnv("AGENT_PRIVATE_FLOORS_JSON", JSON.stringify({ "stats-core": "2000000000000000000000000", "analysis-careful": "2000000000000000000000000" }));
+  const s = await setup(); await s.drain(); const first = await s.detail();
+  expect(first.contracts[0].agentId).toBe("report-craft");
+  vi.stubEnv("AGENT_PRIVATE_FLOORS_JSON", "{}");
+  const budget = "1000000000000000000000000000";
+  const missionId = await s.owner.mutation(api.missions.create, { title: "Second performance-priced auction", serviceType: "csv_summary", inputCsv: "units\n3\n5", options: { columns: ["units"] }, maxBudgetYocto: budget, acceptanceCriteria: "Template", requiresHumanReview: false, deadlineAt: Date.now() + 86400000 });
+  const jobId = await s.owner.mutation(api.jobs.start, { missionId }); await s.drain();
+  const bids = await s.t.run((ctx) => ctx.db.query("bids").withIndex("by_job", (q) => q.eq("jobId", jobId)).collect());
+  expect(bids.find((b) => b.agentId === first.contracts[0].agentId)?.reputationBps).toBe(5100);
+  expect(bids.filter((b) => b.agentId !== first.contracts[0].agentId).every((b) => b.reputationBps === 5000)).toBe(true);
+  const second = await s.owner.query(api.jobs.detail, { id: jobId });
+  expect(second.job.state).toBe("approved");
+  expect(second.contracts[0].agentId).toBe("report-craft");
+  const baseline = rankBids({ budgetYocto: budget, availableDurationMs: 86400000,
+    offers: bids.map((bid) => ({ agentId: bid.agentId, bidId: bid._id, priceYocto: second.negotiations.find((n) => n.bidId === bid._id && n.action === "accept")!.priceYocto,
+      minimumAcceptableYocto: bid.minimumYocto, estimatedCostYocto: bid.estimatedCostYocto!, etaMs: bid.etaMs,
+      strategy: INITIAL_AGENTS.find((a) => a.id === bid.agentId)!.strategy!, explanation: "Counterfactual initial reputation" })),
+    reputationBps: bids.map(() => 5000), capabilityMatchBps: bids.map(() => 10000) });
+  expect(baseline.ok && baseline.value[0].offer.agentId).toBe("stats-core");
 });

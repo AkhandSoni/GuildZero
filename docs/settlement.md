@@ -20,7 +20,7 @@ Backend environment variables:
 
 An ignored `.env.near.local` worksheet may be used for manual entry. It is not automatically synchronized. Import only the five backend variables above via the Convex dashboard or `convex env set --from-file` after filling every value; never overwrite existing secrets with blank placeholders. Do not import optional receipt-verification fields into the backend. Do not rotate the existing Convex Auth keys.
 
-No key/account is generated, funded, or presumed valid by this implementation. Named testnet accounts only are accepted. Individual payouts are capped at **1 testnet NEAR**, additionally bounded by the contract holdback and reservation. The live RPC chain must identify itself as `testnet`. The adapter checks recipient existence and sender balance against transfer value, chain-reported storage pricing and a gas reserve before signing.
+The application runtime does not create or fund accounts. During local validation, a dedicated project operator was created through the official free testnet helper and five project-owned recipients were funded from it. The existing checkout has working server-only configuration; a fresh clone must configure its own accounts. Keys are in ignored mode-0600 local files and the local backend, never Git. Named testnet accounts only are accepted. Individual payouts are capped at **1 testnet NEAR**, additionally bounded by the contract holdback and reservation. The live RPC chain must identify itself as `testnet`. The adapter checks recipient existence and sender balance against transfer value, chain-reported storage pricing and a gas reserve before signing.
 
 ## State and authorization
 
@@ -46,6 +46,16 @@ Unit/backend tests cover policy binding, private access, idempotency, duplicate 
 
 To independently inspect a real previously submitted receipt, set public fields in ignored `.env.near.local` (or your shell): `NEAR_RECEIPT_TX_HASH`, `NEAR_OPERATOR_ACCOUNT_ID`, `NEAR_RECEIPT_RECIPIENT`, `NEAR_RECEIPT_AMOUNT_YOCTO`, `NEAR_RECEIPT_NONCE`. Run `npm run test:near`. It never sends a transaction and exits nonzero if required fields/evidence are absent. Confirmation is not claimed without matching final chain evidence.
 
-**Acceptance still pending:** a real authorized transfer using funded project accounts after the engine integration produces genuinely verified work. No transaction hash or successful payment is invented to close this gate.
+**Live acceptance demonstrated locally on 2026-11-13:** the production browser created a custom summary mission, enabled a useful cleaning subcontract, awaited actual execution and independent verification, then prepared and separately authorized both exact allocations through the real UI.
+
+- Parent: **0.407070342 testnet NEAR**, [final transaction](https://testnet.nearblocks.io/txns/VXXUqkDSdzH8mQxUs59CazxsHWYXQBnMqCLwzuxvNsS).
+- Child: **0.10316754 testnet NEAR**, [final transaction](https://testnet.nearblocks.io/txns/2uz2eKHdVyEUYjxWpda4WAwY1qyHFyQs8Q8XDeqUdtMi).
+- Independently queried both exact hashes through official testnet RPC and rechecked hash/sender/recipient/amount/nonce/finality/receipt outcomes. Both returned `FINAL_MATCHING_TRANSFER`; their sum, **0.510237882**, equals the original award exactly, with no duplicate intents.
+- Real backend probes rejected altered amounts, substituted recipients, unauthorized reputation writes, excessive child depth and a duplicate payout after confirmation. Probes performed no signing.
+- `npm run test:near` passed against the saved public child receipt fields. This command only reads chain state. Default tests do not submit transactions or consume faucet tokens.
+
+For this configured checkout, keep the existing environment/backend state. Do not rerun key generation, import blanks, delete intents or resend an existing payment to repeat a demonstration. A fresh clone needs its own backend keys and funded testnet mapping. Public hosted payment acceptance remains pending.
 
 Primary references: [official NEAR JavaScript tooling](https://docs.near.org/tools/near-api), [transaction RPC/finality](https://docs.near.org/api/rpc/transactions). A read-only request to the configured official RPC verified `chain_id=testnet` during development; it was not a payment.
+
+Account setup reference: [official NEAR faucet implementation](https://github.com/near/docs/blob/main/snippets/faucet.jsx), using the free testnet account helper. Recipient subaccounts were created with the official JavaScript SDK. No mainnet account or real-money purchase was involved.

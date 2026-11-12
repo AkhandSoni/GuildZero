@@ -41,6 +41,15 @@ export async function childrenComplete(ctx: MutationCtx, job: Doc<"jobs">) {
   if (child && child.state !== "approved")
     throw new ConvexError("CHILD_WORK_INCOMPLETE");
 }
+// Waiting for a human retains the full financial obligation, but consumes no
+// execution slot. This changes neither approval nor payment eligibility.
+export async function reviewCapacity(ctx: MutationCtx, job: Doc<"jobs">) {
+  const contract = await ctx.db.query("contracts").withIndex("by_job", (q) => q.eq("jobId", job._id)).unique();
+  if (contract?.state === "active") {
+    await ctx.db.patch(contract._id, { state: "awaiting_review" });
+    await event(ctx, job, "AWAITING_OWNER_REVIEW", "Processing capacity released. The contract allocation remains reserved and payment remains blocked until approval.");
+  }
+}
 export async function finish(
   ctx: MutationCtx,
   job: Doc<"jobs">,
@@ -95,6 +104,7 @@ export async function finish(
         jobId: parent._id,
         reason: "Required subcontract was rejected",
       });
+      await reviewCapacity(ctx, parent);
       await event(
         ctx,
         parent,

@@ -5,7 +5,7 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { privateProfiles } from "./agentPolicies";
-import { event } from "./workflowHelpers";
+import { event, reviewCapacity } from "./workflowHelpers";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { makeBid, rankBids, respondToCounteroffer, runService, verifyDeliverable } from "../lib/economy";
 import type { Offer, Result, ServiceRequest } from "../lib/economy";
@@ -27,6 +27,7 @@ async function unavailable(ctx: MutationCtx, job: Doc<"jobs">, reason: string): 
     if (parent?.state === "working") {
       await ctx.db.patch(parent._id, { state: "disputed", updatedAt: Date.now() });
       await ctx.db.insert("disputes", { jobId: parent._id, reason: "Required subcontract could not be awarded" });
+      await reviewCapacity(ctx, parent);
       await event(ctx, parent, "DEPENDENCY_FAILED", "The required child has no eligible offer. Owner may reject this contract.");
     }
   }
@@ -113,6 +114,7 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
     if (mission.deadlineAt <= Date.now()) {
       await ctx.db.patch(job._id, { state: "disputed", updatedAt: Date.now() });
       await ctx.db.insert("disputes", { jobId: job._id, reason: "Execution deadline expired; owner review required" });
+      await reviewCapacity(ctx, job);
       await event(ctx, job, "DEADLINE_REVIEW", "Committed work passed its deadline and requires a human decision."); return;
     }
     const child = await ctx.db.query("jobs").withIndex("by_parent", (q) => q.eq("parentId", job._id)).unique();
@@ -135,6 +137,7 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
       // Input that cannot be executed must not become a fabricated deliverable.
       await ctx.db.patch(job._id, { state: "disputed", updatedAt: Date.now() });
       await ctx.db.insert("disputes", { jobId: job._id, reason: `Service could not execute: ${executed.code}. No deliverable exists; reject and create a revised brief.` });
+      await reviewCapacity(ctx, job);
       await event(ctx, job, "EXECUTION_REQUIRES_REVIEW", `${executed.code}. No output or automatic approval was fabricated.`); return;
     }
     const output = executed.value;
@@ -174,6 +177,17 @@ export const step = internalMutation({ args, handler: async (ctx, input): Promis
     // Subtransaction rolled back; preserve a bounded, sanitized failure audit.
     const job = await ctx.db.get(input.jobId);
     if (job && job.workerVersion === input.version && ["bidding", "working", "revision", "verifying"].includes(job.state)) {
+      if ((job.retryCount ?? 0) >= 3) {
+        await ctx.db.patch(job._id, { workerError: undefined });
+        if (job.state === "bidding") await unavailable(ctx, job, "The workflow exhausted its three owner retries before an award. No payment was requested.");
+        else {
+          await ctx.db.patch(job._id, { state: "disputed", updatedAt: Date.now() });
+          await ctx.db.insert("disputes", { jobId: job._id, reason: "Workflow retries exhausted. Owner review required; no payment was requested." });
+          await reviewCapacity(ctx, job);
+          await event(ctx, job, "WORKFLOW_RETRY_LIMIT", "Three owner retries exhausted. Processing capacity released; financial obligations remain reserved for review.");
+        }
+        return null;
+      }
       await ctx.db.patch(job._id, { workerError: "WORKFLOW_PAUSED_RETRY_AVAILABLE" });
       await event(ctx, job, "WORKFLOW_PAUSED", "This stage could not finish safely. Owner may retry the same stage up to three times; no payment was requested.");
     }

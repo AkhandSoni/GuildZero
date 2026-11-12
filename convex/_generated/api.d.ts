@@ -14,6 +14,7 @@ import type * as demo from "../demo.js";
 import type * as economyWorker from "../economyWorker.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
+import type * as maintenance from "../maintenance.js";
 import type * as marketModel from "../marketModel.js";
 import type * as marketViews from "../marketViews.js";
 import type * as missions from "../missions.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   economyWorker: typeof economyWorker;
   http: typeof http;
   jobs: typeof jobs;
+  maintenance: typeof maintenance;
   marketModel: typeof marketModel;
   marketViews: typeof marketViews;
   missions: typeof missions;

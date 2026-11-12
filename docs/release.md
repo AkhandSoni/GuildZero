@@ -1,21 +1,6 @@
 # Combination, release and demo checklist
 
-## Branches
-
-The branches are intentionally stacked:
-
-1. `feat/cluster-2-orchestration` — persisted marketplace lifecycle, reservations, private reads, subcontract/revision/dispute guards.
-2. `feat/cluster-3-security-near` — based on orchestration; exact owner-authorized testnet payment intents, protected signer, receipt verification/reconciliation and security audits.
-3. `feat/cluster-4-experience-release` — based on security/NEAR; graph, agent profiles, payment/security UX, safe samples, tests and release preparation.
-
-Review changes against each branch's immediate predecessor. You can create a combination branch from `origin/feat/cluster-4-experience-release` and merge the teammate's actual engine branch there. No force-push, destructive reset or merge into main is required by this document. The engine package remains owned by the teammate; its integration contract is in `worker-integration.md` and the provided handoff archive.
-
-## What is actually demonstrated
-
-Real local auth; private mission CRUD; idempotent opening/canceling of an auction; immutable briefs; persisted events; graph nodes/edges only for recorded relationships; private agent contract history; backend controlled probes; and sample reset preserving active work/payment records were exercised. Tests cover financial guards, one revision, subcontract dependencies, owner disputes, locks, receipt binding, success/timeout adapter behavior and privacy. Offline verifier/RPC fixtures are not on-chain or data-processing evidence.
-
-Still required: teammate engine integration, scheduled independent bids/negotiation, actual computed deliverable and independent checks, executed meaningful subcontract, a funded owner-authorized testnet transfer with final evidence, and hosted app validation. Do not describe these as completed until observed.
-
+## Integrated local prototype,,PRs #14 and #15 combined the engine and application branches. The scheduled driver now runs actual independent offers, bounded negotiation, scored awards, real services, independent verification, useful subcontracting and owner review. Broader service expansion is paused. The user authorized finishing current-scope validation and pushing verified changes to main.,,Production-browser validation has exercised real local auth, private mission CRUD, automatic custom CSV fulfillment and downloads, subjective review, invalid-input rejection, unaffordable auctions, graph/security/sample behavior and mobile layout. Backend tests cover lifecycle bounds, stale scheduling, revisions, capacity, budget conservation, reputation and payment integrity. Exact final results are in CLUSTER_STATUS.md.,,A real custom summary consumed an approved cleaning subcontract. The owner separately authorized both allocations through the production UI. Both public-testnet transfers finalized and were independently rechecked; their sum equals the original award. See settlement.md for the exact public receipts. Real security probes rejected altered amounts, recipient substitution, duplicate payout, reputation manipulation and excessive subcontract depth without signing.,,Public hosting, the final demo recording and submission remain pending. Local acceptance does not establish that a hosted application works independently of this machine.,
 ## Cloud deployment (owner configuration needed)
 
 Use only eligible free plans; do not enable paid services or metered upgrades. The owner must supply their own cloud account configuration. There is no cloud Convex deployment key or hosting credential in this checkout, and no unfinished site has been published.
@@ -27,12 +12,12 @@ Use only eligible free plans; do not enable paid services or metered upgrades. T
 5. Test the hosted URL from a second machine with all local processes stopped: two-account privacy, actual auction/service workflow, verification/dispute, safe sample reset, graph subscriptions, payment authorization and confirmed explorer receipt. Record the actual URL and receipt only after verification.
 6. Keep the demo reachable for judging. Do not claim hosted acceptance from a local screenshot or a successful local build.
 
-Official deployment reference: https://docs.convex.dev/production/hosting/vercel . A full cloud deploy was not run here because account configuration and the integrated engine are absent.
+Official deployment reference: https://docs.convex.dev/production/hosting/vercel . A full cloud deploy was not run here because cloud account configuration and explicit publication approval remain pending.
 
 ## Demo walkthrough after combination
 
 1. Sign up as a buyer. Add synthetic samples or your own bounded CSV; explicitly label synthetic data.
-2. Open a mission with exact template columns/options. Show recorded independent bids and the stored selection scores/negotiation explanation after the engine is integrated.
+2. Open a mission with exact template columns/options. Show recorded independent bids and the stored selection scores/negotiation explanation from the integrated workflow.
 3. Execute a real normalization/statistics job. Download the real result and show independent checks. Demonstrate that a child's output contributes to the parent's actual input.
 4. Show buyer-only dispute resolution and a failed output path; do not present deterministic services as LLM intelligence.
 5. Prepare the exact configured recipient/amount. Confirm as the owner. Show pending/unknown state truthfully; a hash alone is not confirmation. Open a matching final testnet receipt only after chain verification.
@@ -43,10 +28,10 @@ Official deployment reference: https://docs.convex.dev/production/hosting/vercel
 
 | Intended track | Required working evidence before claiming completion |
 |---|---|
-| AI Swarms (`swarms`) | Independent bids/negotiation plus one meaningful, bounded subcontract; integration pending |
-| Agent Economy (`agents`) | Real services bought/sold and one confirmed authorized NEAR testnet payment; live acceptance pending |
-| Autonomous Business (`business`) | Explainable cost/bid/contract decisions and deterministic work fulfillment; engine integration pending |
-| AI Security & Defense (`security`) | Backend authorization, substitution/duplicate/budget guards, durable rejection evidence and reconciliation; code/tests/probes implemented, full payment-linked demo pending |
+| AI Swarms (`swarms`) | Demonstrated locally: independent bids/negotiation and one useful bounded subcontract |
+| Agent Economy (`agents`) | Demonstrated locally: real services and two separately authorized final parent/child testnet transfers |
+| Autonomous Business (`business`) | Demonstrated locally: computed independent offers, scored awards and deterministic fulfillment |
+| AI Security & Defense (`security`) | Backend authorization, substitution/duplicate/budget guards, durable rejection evidence and reconciliation; code/tests and actual payment-linked probes demonstrated locally |
 
 ## Human-owned submission prerequisites
 

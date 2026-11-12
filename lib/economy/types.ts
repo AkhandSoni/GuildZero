@@ -297,4 +297,4 @@ export interface EconomyEngine {
 export const JOB_STATES = ["bidding", "working", "verifying", "revision", "disputed", "approved", "rejected", "cancelled", "unawarded"] as const;
 export type JobState = (typeof JOB_STATES)[number];
 export type MissionState = "draft" | "active";
-export type ContractState = "active" | "completed" | "failed";
+export type ContractState = "active" | "awaiting_review" | "completed" | "failed";

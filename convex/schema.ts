@@ -128,6 +128,7 @@ export default defineSchema({
     holdbackYocto: v.string(),
     state: v.union(
       v.literal("active"),
+      v.literal("awaiting_review"),
       v.literal("completed"),
       v.literal("failed"),
     ),
