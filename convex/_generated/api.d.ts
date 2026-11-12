@@ -9,9 +9,11 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as demo from "../demo.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
 import type * as marketModel from "../marketModel.js";
+import type * as marketViews from "../marketViews.js";
 import type * as missions from "../missions.js";
 import type * as nearSettlement from "../nearSettlement.js";
 import type * as ownership from "../ownership.js";
@@ -31,9 +33,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  demo: typeof demo;
   http: typeof http;
   jobs: typeof jobs;
   marketModel: typeof marketModel;
+  marketViews: typeof marketViews;
   missions: typeof missions;
   nearSettlement: typeof nearSettlement;
   ownership: typeof ownership;

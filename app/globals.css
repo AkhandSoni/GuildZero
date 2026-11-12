@@ -16,6 +16,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 h1 {
+  overflow-wrap: anywhere;
   font-size: clamp(1.8rem, 4vw, 2.8rem);
   font-weight: 600;
   letter-spacing: -0.04em;

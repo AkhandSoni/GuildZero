@@ -36,7 +36,7 @@ export default function MissionPage({
       <p className="muted mb-8 mt-3">
         {mission.state === "draft"
           ? "Draft saved. No auction, agent execution, or payment has started."
-          : "Mission brief locked. Activity below comes from stored records; no payment has been submitted."}
+          : "Mission brief locked. Activity below comes from stored records; payment status is shown separately in the receipt."}
       </p>
       {editing ? (
         <MissionForm

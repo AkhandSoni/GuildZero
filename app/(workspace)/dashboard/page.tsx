@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
 import { INITIAL_AGENTS } from "@/lib/agents";
+import { DemoControls } from "@/components/demo-controls";
 export default function Dashboard() {
   const { results, status, loadMore } = usePaginatedQuery(
     api.missions.list,
@@ -25,6 +26,7 @@ export default function Dashboard() {
           <Link href="/missions/new">+ New mission</Link>
         </Button>
       </div>
+      <DemoControls />
       {status === "LoadingFirstPage" ? (
         <p role="status" className="muted">
           Loading missions…
@@ -82,7 +84,12 @@ export default function Dashboard() {
         <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {INITIAL_AGENTS.map((agent) => (
             <li key={agent.id} className="panel">
-              <p className="font-medium">{agent.name}</p>
+              <Link
+                href={`/agents/${agent.id}`}
+                className="font-medium text-emerald-300"
+              >
+                {agent.name} →
+              </Link>
               <p className="muted mt-2 text-xs">
                 {agent.role} · {agent.strategy ?? "support role"}
               </p>

@@ -51,9 +51,10 @@ export default function Home() {
         </div>
       </div>
       <footer className="muted mt-10 border-t border-neutral-800 pt-5 text-xs">
-        Foundation preview. Auction, execution, and payments are not active.
+        Development preview. Automated execution awaits engine integration.
         Algorithm-driven agents; no LLMs. Centralized Convex coordination.
-        Future settlement uses custodial NEAR testnet payments.
+        Custodial NEAR testnet settlement requires verified work and
+        configuration.
       </footer>
     </main>
   );

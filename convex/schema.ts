@@ -47,6 +47,7 @@ export default defineSchema({
     .index("by_owner", ["ownerId"])
     .index("by_job", ["jobId"]),
   missions: defineTable({
+    demo: v.optional(v.boolean()),
     ...missionFields,
     ownerId: v.id("users"),
     state: v.union(v.literal("draft"), v.literal("active")),
@@ -54,6 +55,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_owner", ["ownerId"])
+    .index("by_owner_demo", ["ownerId", "demo"])
     .index("by_owner_state", ["ownerId", "state"]),
   jobs: defineTable({
     ownerId: v.id("users"),

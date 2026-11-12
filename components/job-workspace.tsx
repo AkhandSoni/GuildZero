@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
+import { PaymentPanel } from "@/components/payment-panel";
 export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const jobs = useQuery(api.jobs.forMission, { missionId: mission._id });
   const start = useMutation(api.jobs.start);
@@ -121,7 +122,8 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         <h2>Marketplace activity</h2>
         <p className="muted mt-3 text-sm">
           Reserved within mission: {formatNear(data.job.reservedYocto)} testnet
-          NEAR. These are contractual planning amounts, not transferred funds.
+          NEAR. These are contractual amounts; the payment receipt separately
+          shows settlement.
         </p>
         {data.job.state === "bidding" && (
           <>
@@ -235,6 +237,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           </ul>
         </div>
       ))}
+      <PaymentPanel jobId={id} approved={data.job.state === "approved"} />
       <div className="panel">
         <h2>Recorded activity</h2>
         <ol className="mt-4 grid gap-3">

@@ -7,7 +7,7 @@ Current work: **User explicitly authorized independent Cluster 3/4 feature branc
 | 1 Foundation + auth | COMPLETE | Local Convex deployment, 33 Vitest tests, live two-account browser test, lint/types/build, production smoke checks |
 | 2 Marketplace | IN PROGRESS | Convex lifecycle and integration tests; teammate engine not yet available |
 | 3 Security + NEAR | IMPLEMENTED / LIVE ACCEPTANCE PENDING | `feat/cluster-3-security-near`; policy/adapter tests pass; funded credentials and real verified work still needed |
-| 4 Demo + release | AUTHORIZED, NEXT | UI/release branch will stack on Cluster 3 |
+| 4 Demo + release | IMPLEMENTED / INTEGRATED RELEASE PENDING | `feat/cluster-4-experience-release`; live graph/UI tests pass; engine, live payment and cloud hosting still needed |
 
 After each cluster, update commands/tests/demo and STOP. Do not treat this file as authorization to proceed.
 
@@ -20,6 +20,16 @@ Implemented: owner-only exact payment preparation/confirmation; one immutable pe
 Validation: local Node actions deployed successfully using Node 24.22.3. `npm run lint`, `npm run typecheck`, `npm test` (64 tests), `npm run build`, and `npm audit` (zero vulnerabilities) passed. Offline adapter tests verified pre-broadcast identity persistence, successful final receipt handling, timeout lock retention and no second broadcast. A live read-only RPC status request verified `chain_id=testnet`; no payment was sent. Source/worksheet secrets remain outside Git.
 
 `npm run test:near` is **NOT RUN against a real receipt**: required receipt fields and funded operator credentials are absent. The command reports this explicitly and does not submit funds. No real transaction, signature, balance or confirmation is fabricated. Full acceptance requires integrating the engine, supplying dedicated server-side testnet credentials and confirming one authorized real payout. Runbook: `docs/settlement.md`.
+
+## Cluster 4 branch — 2026-11-12
+
+`feat/cluster-4-experience-release` stacks on `feat/cluster-3-security-near`; both include the orchestration branch as ancestry. No branch is merged into main. The teammate's engine paths remain untouched.
+
+Implemented owner-scoped live economy subscriptions and an XYFlow graph built only from persisted jobs/bids/contracts/subcontracts; bounded graph/history queries with visible truncation; private agent contract/reputation views; exact owner payment review and actual transaction explorer links when hashes exist; security lab with durable controlled-probe results and honest unavailable prerequisites; idempotent synthetic sample seeding; reset restricted to unused owned sample drafts, preserving active work and payment history. Added a manual validation workflow without deployment credentials.
+
+Actual validation: lint/typecheck passed; 71 unit/backend tests across 7 files passed; production build includes all requested application routes. All 3 browser scenarios passed against `npm start` plus a real local Convex backend: foundation privacy/CRUD, auction persistence/cancel, and mobile graph/profile/security/sample-reset workflow. The mobile test verified the real persisted graph node, unavailable payment prerequisites, a recorded reputation-probe rejection, and preservation of active samples during reset. A browser asset scan found no server-secret identifiers or private-key literals in 25 client asset files.
+
+Not accepted yet: full engine-to-service-to-verifier-to-payment integration, a real confirmed testnet payout, public cloud deployment independent of the developer laptop, final demo recording and human-approved submission. No fake receipts or graph activity replace these requirements. Cloud Convex/hosting credentials are not configured; the user requested feature branches for later combination, so no unfinished site is published.
 
 ## 2026-11-12 — Cluster 2 orchestration progress
 
