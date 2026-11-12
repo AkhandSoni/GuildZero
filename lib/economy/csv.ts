@@ -62,8 +62,12 @@ export function parseBoundedCsv(inputCsv: unknown): Result<{
 
   const parsed = Papa.parse<string[]>(inputCsv, {
     delimiter: ",",
-    skipEmptyLines: "greedy",
+    skipEmptyLines: false,
   });
+
+  // Papa adds an empty record for a terminal separator. Remove that artifact
+  // once; explicit empty records (including one-column records) remain data.
+  if (/[\r\n]$/.test(inputCsv)) parsed.data.pop();
 
   if (parsed.errors.length > 0) {
     return { ok: false, code: "INVALID_CSV", message: "CSV contains syntax or quoting errors." };
@@ -156,7 +160,9 @@ function executeNormalize(req: NormalizeRequest): Result<ServiceOutput> {
   const serializedCsv = Papa.unparse([rawHeader, ...normalizedRows], {
     delimiter: ",",
     newline: "\n",
-    quotes: false,
+    // An empty one-column record must be quoted so it cannot be mistaken for
+    // a trailing record separator by a reader or the independent verifier.
+    quotes: (value) => rawHeader.length === 1 && value === "",
   });
 
   const output: ServiceOutput = {

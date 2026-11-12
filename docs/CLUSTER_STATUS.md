@@ -1,6 +1,12 @@
 # Cluster execution status
 
-Current work: **Local main combines all six completed feature/fix branches with merged engine PR #14. Package and application regression checks pass; automatic Convex worker integration, funded settlement and public release remain separate gates. This local combination has not been pushed.**
+Current work: **Review branch `codex/fix-audit-csv-verification` combines all six completed feature/fix branches, merged engine PR #14 and the two audit corrections. Automatic Convex worker integration, funded settlement and public release remain separate gates. Main awaits review of this combined application.**
+
+## Audit corrections — 2026-11-13
+
+Fixed silent deletion of explicit all-empty CSV records, including one-column empty records and terminal LF/CRLF handling. Such records now count toward statistics and row limits; deleted-row deliverables fail independent verification. Replaced the unbounded selected-header explanation with a count/order summary; exact comparison and the 1,000-character persistence cap remain enforced. Added eight CSV regression cases and two real engine-to-Convex boundary tests at 11/32 maximum-length headers.
+
+Validation: lint, typecheck, production build and client-boundary check (25 assets) passed. All 124 tests in 12 files passed; the separate 58-test backend integration run is included in that total. All four live browser scenarios passed against `npm start` and the existing local Convex backend using Node 24.22.3 and the documented Chromium executable override. These tests include actual service execution and verification persisted via internal workflow mutations; selection in those boundary tests is an explicit trusted fixture, not a scheduled autonomous auction. No funded transfer or public deployment is claimed. The user authorized a branch push and PR; no merge or hackathon submission is included.
 
 ## PR #14 combination and validation — 2026-11-13
 

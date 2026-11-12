@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import { SAMPLE_CSV } from "../../lib/missions";
+import { runService, verifyDeliverable, type ServiceRequest } from "../../lib/economy";
 const modules = import.meta.glob("../../convex/**/*.ts");
 const positiveChecks = [
   {
@@ -465,4 +466,37 @@ it("routes rejected child work to a parent dispute without allowing an approval 
   expect(
     (await s.alice.query(api.jobs.detail, { id: s.jobId })).job.state,
   ).toBe("rejected");
+});
+
+
+it.each([11, 32])("persists real normalization checks for %i maximum-length headers", async (columnCount) => {
+  const s = await setup();
+  const columns = Array.from({ length: columnCount }, (_, i) => `${String(i).padStart(2, "0")}${"h".repeat(98)}`);
+  const request: ServiceRequest = {
+    serviceType: "csv_normalize",
+    inputCsv: `${columns.join(",")}\n${columns.map(() => " X ").join(",")}`,
+    options: { columns, caseMode: "lowercase" },
+  };
+  const missionId = await s.alice.mutation(api.missions.create, {
+    ...s.input, ...request,
+  });
+  const jobId = await s.alice.mutation(api.jobs.start, { missionId });
+  const bidId = await s.bid("clean-sprint", jobId);
+  // Trusted worker fixture for selection; service and verification below are real.
+  await s.t.mutation(internal.workflow.award, { bidId, selectionReason: "Boundary regression fixture" });
+  const execution = runService(request);
+  if (!execution.ok || execution.value.format !== "csv") throw new Error("Expected CSV output");
+  const deliverableId = await s.t.mutation(internal.workflow.submit, {
+    jobId, format: "csv", content: execution.value.csv,
+  });
+  const verification = verifyDeliverable({ request, deliverable: execution.value });
+  if (!verification.ok) throw new Error(verification.message);
+  expect(verification.value.verdict).toBe("pass");
+  expect(verification.value.checks.every((check) => check.detail.length <= 1000)).toBe(true);
+  await s.t.mutation(internal.workflow.recordVerification, {
+    deliverableId, verdict: verification.value.verdict, checks: [...verification.value.checks],
+  });
+  const detail = await s.alice.query(api.jobs.detail, { id: jobId });
+  expect(detail.job.state).toBe("approved");
+  expect(detail.verifications).toHaveLength(1);
 });
