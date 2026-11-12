@@ -14,6 +14,7 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - The user explicitly requested implementing and pushing Clusters 3 and 4 while the teammate package remains separate, to combine later. These are stacked feature branches based on orchestration; this supersedes holding all later implementation behind the missing engine. It does not waive functional acceptance or authorize claims of completed integration.
 - Cluster 3 uses official `near-api-js` 7.5.3 and Node 24 for Convex Node actions. Node 26 alone could not deploy local Node actions; a checksum-verified official Node 24 binary was used for validation without replacing system Node.
 - Payouts are owner-confirmed, capped at 1 testnet NEAR each, serialized per dedicated signer, and conservatively locked on uncertain outcomes. Exact signed transaction identity is persisted before one broadcast. No automatic resend or failed-intent recycling is implemented. Credentials and a genuinely approved engine deliverable are still required for live payment acceptance.
+- Cluster 4 uses pinned XYFlow as a UI library; no additional application server or Vite app is introduced. Graph relationships, agent history and security evidence are owner-scoped persisted records, with explicit bounds/truncation. Sample reset preserves active work and every payment record. CI is manual-only so branch pushes do not automatically launch hosted jobs or deployments. Public release is not claimed before combination and owner-provided cloud configuration.
 
 ## 2026-11-10 — Cluster 1 implementation
 

@@ -29,6 +29,8 @@ Implemented owner-scoped live economy subscriptions and an XYFlow graph built on
 
 Actual validation: lint/typecheck passed; 71 unit/backend tests across 7 files passed; production build includes all requested application routes. All 3 browser scenarios passed against `npm start` plus a real local Convex backend: foundation privacy/CRUD, auction persistence/cancel, and mobile graph/profile/security/sample-reset workflow. The mobile test verified the real persisted graph node, unavailable payment prerequisites, a recorded reputation-probe rejection, and preservation of active samples during reset. A browser asset scan found no server-secret identifiers or private-key literals in 25 client asset files.
 
+Clean-clone validation also passed on official Node 24.22.3: a fresh clone of the experience branch ran `npm ci`, lint, typecheck, all 71 tests and a production build without copied environment files, auth keys, backend state or credentials. Dependency installation reported zero known vulnerabilities. Non-failing upstream deprecation notices remain in Convex Auth/ESLint dependencies. The manual GitHub workflow and cloud deployment were not run.
+
 Not accepted yet: full engine-to-service-to-verifier-to-payment integration, a real confirmed testnet payout, public cloud deployment independent of the developer laptop, final demo recording and human-approved submission. No fake receipts or graph activity replace these requirements. Cloud Convex/hosting credentials are not configured; the user requested feature branches for later combination, so no unfinished site is published.
 
 ## 2026-11-12 — Cluster 2 orchestration progress

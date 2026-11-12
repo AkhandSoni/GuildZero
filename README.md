@@ -2,13 +2,13 @@
 
 GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents will make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Planned settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
-**Current implementation: foundation plus Cluster 2 orchestration in progress.** Email/password authentication, private mission CRUD, bounded CSV input, integer budgets and static agent definitions work. On `feat/cluster-2-orchestration`, owners can open/cancel an auction, freeze its brief, and inspect persisted job activity. Internal worker functions enforce bids, negotiation, awards, capacity, subcontract allocation, deliverable dependencies, revision limits, disputes and reputation events.
+**Current implementation: stacked feature branches for later combination.** Authentication, private mission CRUD, orchestration, guarded testnet payment code, a live economy graph, private agent history, security lab and safe sample controls are implemented. The layers are on `feat/cluster-2-orchestration`, `feat/cluster-3-security-near`, and `feat/cluster-4-experience-release`; each later branch contains its predecessors. Main is not automatically merged or deployed.
 
-**The teammate's economy engine is not connected yet.** Opening an auction records a job and waits; it does not generate bids, execute CSV services, or claim verified work. The lifecycle tests use explicit trusted-worker fixtures and are not proof of real data processing. Payments, the advanced economy graph, and deployment are not implemented. The full Cluster 2 acceptance gate remains open.
+**The teammate's economy engine is not connected yet.** Opening an auction records a job and waits; it does not invent bids, CSV outputs or verified work. Internal worker fixtures test lifecycle/policy behavior and are not proof of real data processing. Payment code is tested with offline RPC fixtures, but a real authorized testnet payout is not yet demonstrated. Public cloud hosting and final submission remain pending. No branch should be represented as the fully integrated marketplace until these gates pass.
 
 ## Local setup (no account or paid service required)
 
-Requirements: Node.js 24 LTS or newer supported even-numbered release (tested with Node 26.13.0), npm, and network access for initial dependency/backend downloads. Dependencies are pinned in `package.json` and `package-lock.json`.
+Requirements: **Node.js 24.22.3** (see `.nvmrc`), npm, and network access for initial downloads. Run `nvm install && nvm use` if you use nvm. Convex's local Node actions require a supported Node 22/24 runtime; Node 26 alone cannot deploy those actions. Dependencies are pinned in `package.json` and `package-lock.json`. Next.js and Convex remain the only application runtimes; XYFlow is a UI library, and Vitest/Playwright are development test tools.
 
 ```sh
 npm ci
@@ -34,7 +34,7 @@ For a free Convex cloud development deployment, choose the login option in `npm 
 
 This working checkout also includes an ignored `.env.convex.local` worksheet with blank server-only fields, ready for manual configuration if needed. It is **not automatically loaded or synced**. For a different backend, fill every field and import with `npx convex env set --from-file .env.convex.local`, or use `npm run auth:keys` instead. Current local auth keys are already configured; leave them intact. Never import blank values into a working backend. The worksheet and `.env.local` are private local files and are intentionally absent from Git.
 
-Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions instead of pretending storage/auth work. Both local processes are needed for live use. `.convex/`, `.env*` (except the example), build files, and test artifacts are ignored. There are no NEAR credentials or signing code in Cluster 1.
+Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions instead of pretending storage/auth work. Both local processes are needed for local use. `.convex/`, `.env*` (except the example), build files, and test artifacts are ignored. NEAR signing code is confined to the backend Node action; credentials must be manually configured there. The ignored `.env.near.local` worksheet is optional and is not automatically synchronized. See [settlement setup](docs/settlement.md).
 
 ## Foundation walkthrough
 
@@ -46,6 +46,10 @@ Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions instead 
 6. Sign back in as A and delete the draft using the confirmation step.
 
 On the orchestration branch, a draft also has **Open auction**. Select exact processing columns (and case mode for normalization), then open it. The job and `AUCTION_OPENED` event persist, and editing/deleting that mission is blocked. Refresh to see the same state. Until the teammate engine is integrated, it explicitly waits without generating activity. **Cancel unawarded auction** records cancellation and retains the immutable brief for audit. This does not transfer funds. Dispute decisions and actual submitted deliverables appear only when a trusted worker has persisted them.
+
+On the experience branch, **Add sample missions** creates two owner-private synthetic drafts idempotently. **Remove unused samples** deletes only unused sample drafts; it preserves regular missions, active jobs, receipts and uncertain payment records. Open `/economy` to see the recorded job node and actual event stream; agent/award/subcontract edges appear only when those records exist. Use an agent profile link to inspect your own contract/reputation history; it is not a global rating.
+
+At `/security`, select your job and run a controlled probe. Reputation/depth probes record backend denials without signing. Payment probes are unavailable until a real intent/state exists; the UI does not fake an attack result. An approved job's receipt panel prepares the exact configured recipient/amount and requires owner confirmation before scheduling any signing. `UNKNOWN_RECONCILE` offers a check of the existing hash, never a resend. Explorer links distinguish an available transaction hash from a matching final confirmation.
 
 Input limits: 64 KiB of UTF-8 CSV, 1–500 data rows, at most 32 columns, unique nonempty headers, consistent row widths, 100-character titles, and 1,000-character acceptance notes. No external URL fetching or file execution. Notes are stored as text, not executed or treated as policy. Input validation is not yet the service execution/verification engine.
 
@@ -70,7 +74,11 @@ npm run test:e2e
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e
 ```
 
-Playwright starts Next.js automatically if port 3000 is free. Run against a disposable development backend: it creates two new demo accounts per run and deletes its mission on success. It does not delete auth accounts. Traces, video, and screenshots are disabled to avoid storing credential-bearing form state. No bypass auth or fake database is used by this test.
+Playwright starts Next.js automatically if port 3000 is free. Run against a disposable development backend: tests create disposable auth accounts and may retain active/cancelled sample jobs for audit. Draft-only test work is deleted on success. Auth accounts are retained. Traces, video, and screenshots are disabled to avoid storing credential-bearing form state. Browser tests use real Convex Auth, persisted records and subscriptions; payment adapter tests are explicitly offline fixtures.
+
+Latest checks: **71 unit/backend tests and 3 live browser scenarios passed**, plus lint, types and production build. `npm audit` reported zero known vulnerabilities. A manual-only GitHub validation workflow is supplied; it has not been run on GitHub in this session. It does not deploy, submit, post publicly, or contain secrets. Check your free-tier eligibility/quotas before running hosted services.
+
+`npm run test:near` independently verifies an existing real receipt using public transaction fields and never submits a transfer. It reports not-run when those fields are absent; it is not part of the default offline suite. Real payment acceptance remains pending.
 
 For a production-build smoke check, run `npm run build`, then `npm start` while the configured Convex backend is running. Do not run the production build and development server concurrently in the same checkout.
 
@@ -82,7 +90,13 @@ For a production-build smoke check, run `npm run build`, then `npm start` while 
 - `lib/`: bounded mission validation, BigInt money conversion, static initial agents. No agent execution yet; the assigned teammate package remains untouched.
 - `tests/`: unit, backend integration, and a live two-account browser smoke test.
 
-Auth uses the documented Convex Auth React provider in a client boundary. Private mission data is fetched only after authentication, and every mission function independently checks backend identity and ownership. Protected routes may serve a public HTML shell, but never private mission data in that shell. Authentication library endpoints necessarily allow credential exchange; no marketplace API is public. Convex Auth is beta. The demo currently has neither email verification nor recovery, so it must not be represented as production account management.
+## Branch combination and release
+
+Review/merge the orchestration, security/NEAR and experience/release branches in that order, or start an integration branch from `origin/feat/cluster-4-experience-release`, which already contains the other two. Integrate the teammate's economy kernel there and wire the bounded driver described in [worker integration](docs/worker-integration.md). No teammate-owned kernel files were replaced by these branches.
+
+Then demonstrate a real CSV transformation, independent verification and meaningful subcontract; configure server-only testnet credentials; confirm one exact authorized payout; and run the full suite again. [Release instructions and submission checklist](docs/release.md) cover cloud setup, honest track evidence and remaining owner-supplied information. No repository visibility, license, public post or submission is changed automatically.
+
+Auth uses the documented Convex Auth React provider in a client boundary. Private mission data is fetched only after authentication, and marketplace functions independently check backend identity and ownership. Protected routes may serve a public HTML shell, but never private mission data in that shell. Authentication endpoints necessarily allow credential exchange; every marketplace entry point requires an authenticated session and applicable resource ownership. Convex Auth is beta. The demo currently has neither email verification nor recovery, so it must not be represented as production account management.
 
 The `minimatch` override patches a development-only ESLint dependency advisory while retaining pinned compatible tooling. Convex Auth uses the patched compatible `@auth/core` 0.41.3 rather than the older version shown in its setup example.
 
