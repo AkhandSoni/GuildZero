@@ -11,109 +11,14 @@ import type {
 import { validateServiceOptions } from "./contracts";
 export { validateServiceOptions } from "./contracts";
 
-/** Complete signed decimal or scientific numeric literal */
-export const SAFE_NUMERIC_LITERAL_REGEX = /^[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
-export const MAX_ABS_NUMERIC_VALUE = 1e12;
-export const MAX_INPUT_CSV_BYTES = 65536; // 64 KiB
-export const MAX_OUTPUT_BYTES = 131072; // 128 KiB
-
-/** Check if a trimmed string is a valid finite numeric literal within [-1e12, 1e12] */
-export function isSafeNumericLiteral(trimmed: string): boolean {
-  if (!SAFE_NUMERIC_LITERAL_REGEX.test(trimmed)) {
-    return false;
-  }
-  const num = Number(trimmed);
-  return Number.isFinite(num) && Math.abs(num) <= MAX_ABS_NUMERIC_VALUE;
-}
-
-/**
- * Check if a cell or header is an unsafe spreadsheet formula.
- * Cells/headers starting with '=', '+', '-', '@' (after leading whitespace/control chars)
- * are unsafe UNLESS the entire trimmed value is a safe finite numeric literal (e.g. "-3").
- */
-export function isUnsafeFormulaValue(raw: string): boolean {
-  const strippedLeading = raw.replace(/^[\s\u0000-\u001f]+/, "");
-  if (strippedLeading.length === 0) {
-    return false;
-  }
-  const first = strippedLeading[0];
-  if (first === "=" || first === "@") {
-    return true;
-  }
-  if (first === "+" || first === "-") {
-    const trimmed = raw.trim();
-    return !isSafeNumericLiteral(trimmed);
-  }
-  return false;
-}
-
-/** Parse and validate bounded CSV input */
-export function parseBoundedCsv(inputCsv: unknown): Result<{
-  rawHeader: string[];
-  rawRows: string[][];
-}> {
-  if (typeof inputCsv !== "string") {
-    return { ok: false, code: "INVALID_INPUT", message: "CSV input must be a string." };
-  }
-  const byteLength = new TextEncoder().encode(inputCsv).length;
-  if (byteLength > MAX_INPUT_CSV_BYTES) {
-    return { ok: false, code: "INPUT_TOO_LARGE", message: "CSV exceeds the 64 KiB input limit." };
-  }
-
-  const parsed = Papa.parse<string[]>(inputCsv, {
-    delimiter: ",",
-    skipEmptyLines: false,
-  });
-
-  // Papa adds an empty record for a terminal separator. Remove that artifact
-  // once; explicit empty records (including one-column records) remain data.
-  if (/[\r\n]$/.test(inputCsv)) parsed.data.pop();
-
-  if (parsed.errors.length > 0) {
-    return { ok: false, code: "INVALID_CSV", message: "CSV contains syntax or quoting errors." };
-  }
-
-  const [rawHeader, ...rawRows] = parsed.data;
-  if (!rawHeader || rawHeader.length === 0 || rawHeader.length > 32 || rawRows.length === 0 || rawRows.length > 500) {
-    return {
-      ok: false,
-      code: "INVALID_CSV",
-      message: "CSV must have 1-32 columns and 1-500 data rows.",
-    };
-  }
-
-  const trimmedHeaders = rawHeader.map((h) => h.trim());
-  if (
-    rawHeader.some((h) => h.length > 100) ||
-    trimmedHeaders.some((h) => h.length === 0 || h.length > 100) ||
-    new Set(trimmedHeaders).size !== rawHeader.length
-  ) {
-    return {
-      ok: false,
-      code: "INVALID_CSV",
-      message: "CSV headers must be nonempty, at most 100 characters, and unique when trimmed.",
-    };
-  }
-
-  if (rawHeader.some((h) => isUnsafeFormulaValue(h))) {
-    return {
-      ok: false,
-      code: "UNSAFE_CSV_CELL",
-      message: "CSV headers must not start with spreadsheet formula prefixes.",
-    };
-  }
-
-  const colCount = rawHeader.length;
-  if (rawRows.some((row) => !Array.isArray(row) || row.length !== colCount)) {
-    return {
-      ok: false,
-      code: "INVALID_CSV",
-      message: "Every CSV row must match the header column count.",
-    };
-  }
-
-  return { ok: true, value: { rawHeader, rawRows } };
-}
+import {
+  parseBoundedCsv, isSafeNumericLiteral, isUnsafeFormulaValue,
+  MAX_OUTPUT_BYTES, SAFE_NUMERIC_LITERAL_REGEX,
+} from "./csv-input";
+export {
+  parseBoundedCsv, isSafeNumericLiteral, isUnsafeFormulaValue,
+  MAX_OUTPUT_BYTES, MAX_ABS_NUMERIC_VALUE, MAX_INPUT_CSV_BYTES, SAFE_NUMERIC_LITERAL_REGEX,
+} from "./csv-input";
 
 function executeNormalize(req: NormalizeRequest): Result<ServiceOutput> {
   const csvRes = parseBoundedCsv(req.inputCsv);

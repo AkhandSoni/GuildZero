@@ -10,7 +10,7 @@ function execute(request: ServiceRequest) {
 
 describe("CSV record preservation", () => {
   it.each(["", "\n", "\r\n"])("preserves explicit empty records with terminal separator %j", (ending) => {
-    const inputCsv = `a,b\n1,2\n,\n3,4${ending}`;
+    const inputCsv = ["a,b", "1,2", ",", "3,4"].join(ending || "\n") + ending;
     const request: ServiceRequest = { serviceType: "csv_summary", inputCsv, options: { columns: ["a", "b"] } };
     const output = execute(request);
     expect(output).toMatchObject({ rowCount: 3, columns: [
@@ -42,4 +42,23 @@ describe("CSV record preservation", () => {
     expect(runService({ serviceType: "csv_summary", inputCsv: `a,b\n${Array(501).fill(",").join("\n")}`, options: { columns: ["a"] } })).toMatchObject({ ok: false, code: "INVALID_CSV" });
     expect(runService({ serviceType: "csv_summary", inputCsv: "a,b\n1,2\n\n3,4", options: { columns: ["a"] } })).toMatchObject({ ok: false, code: "INVALID_CSV" });
   });
+});
+
+
+it.each(["a,b\r\n1,2\r\n3,4\n", "a,b\n1,2\n3,4\r"])("rejects mixed separators without approving shortened output: %j", (inputCsv) => {
+  for (const request of [
+    { serviceType: "csv_summary", inputCsv, options: { columns: ["a", "b"] } },
+    { serviceType: "csv_normalize", inputCsv, options: { columns: ["a"], caseMode: "preserve" } },
+  ] satisfies ServiceRequest[]) {
+    expect(runService(request)).toMatchObject({ ok: false, code: "INVALID_CSV" });
+    const short = execute({ ...request, inputCsv: "a,b\n1,2" });
+    expect(verifyDeliverable({ request, deliverable: short })).toMatchObject({ ok: false, code: "INVALID_CSV" });
+  }
+});
+
+it("permits different embedded line endings and escaped quotes inside quoted fields", () => {
+  const request: ServiceRequest = { serviceType: "csv_normalize", inputCsv: 'a,b\r\n1,"two\nlines ""quoted"""\r\n3,4\r\n', options: { columns: ["a"], caseMode: "preserve" } };
+  const output = execute(request);
+  expect(output.rowCount).toBe(2);
+  expect(verifyDeliverable({ request, deliverable: output })).toMatchObject({ ok: true, value: { verdict: "pass" } });
 });

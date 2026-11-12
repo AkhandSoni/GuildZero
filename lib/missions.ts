@@ -1,4 +1,4 @@
-import Papa from "papaparse";
+import { parseBoundedCsv } from "./economy/csv-input";
 import { validateBudget } from "./money";
 import { validateServiceOptions } from "./economy/contracts";
 import type { ServiceOptions, ReasonCode } from "./economy/types";
@@ -45,31 +45,9 @@ export function validateMission(
     input.deadlineAt > now + 30 * 86400000
   )
     throw new Error("Deadline must be in the future, within 30 days.");
-  if (new TextEncoder().encode(input.inputCsv).length > 65536)
-    throw new Error("CSV exceeds the 64 KiB input limit.");
-  const parsed = Papa.parse<string[]>(input.inputCsv, {
-    delimiter: ",",
-    skipEmptyLines: "greedy",
-  });
-  const [header, ...rows] = parsed.data;
-  if (
-    parsed.errors.length ||
-    !header ||
-    header.length > 32 ||
-    !rows.length ||
-    rows.length > 500
-  )
-    throw new Error(
-      "Provide valid CSV with a header, 1–500 data rows, and at most 32 columns.",
-    );
-  const normalizedHeader = header.map((cell) => cell.trim());
-  if (
-    normalizedHeader.some((cell) => !cell || cell.length > 100) ||
-    new Set(normalizedHeader).size !== header.length
-  )
-    throw new Error("CSV headers must be nonempty and unique.");
-  if (rows.some((row) => row.length !== header.length))
-    throw new Error("Every CSV row must match the header width.");
+  const csv = parseBoundedCsv(input.inputCsv);
+  if (!csv.ok) throw new Error(csv.message);
+  const header = csv.value.rawHeader;
   if (input.options !== undefined) {
     const result = validateServiceOptions(input.serviceType, input.options, header);
     if (!result.ok) throw new MissionValidationError(result.code, result.message);

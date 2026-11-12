@@ -1,4 +1,4 @@
-import Papa from "papaparse";
+import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ownedJob, user } from "./ownership";
@@ -35,10 +35,9 @@ export const start = mutation({
     } catch {
       throw new ConvexError("INVALID_OR_EXPIRED_MISSION");
     }
-    const columns = Papa.parse<string[]>(mission.inputCsv, {
-      delimiter: ",",
-      skipEmptyLines: "greedy",
-    }).data[0];
+    const csv = parseBoundedCsv(mission.inputCsv);
+    if (!csv.ok) throw new ConvexError("INVALID_OR_EXPIRED_MISSION");
+    const columns = csv.value.rawHeader;
     const result = validateServiceOptions(mission.serviceType, mission.options, columns);
     if (!result.ok) throw new ConvexError({ code: result.code, message: result.message });
     if (args.options) {

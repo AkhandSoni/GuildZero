@@ -2,6 +2,12 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-13 — PR #15 CSV boundary follow-up
+
+- The user requested resolving both inline review comments. Extracted a browser-safe bounded CSV input validator shared by mission create/update, launch, subcontract input validation, execution and verification; ownership and public error wrappers remain unchanged.
+- Reject mixed LF/CRLF/CR record separators outside quoted fields rather than guessing and potentially removing data. Different embedded endings and escaped quotes inside quoted fields remain valid. Remove a terminal parser artifact only when the source ends in its confirmed record separator and the parsed final record is exactly one empty field.
+- Retained drafts with inconsistent separators or previously accepted invalid row/header bounds remain readable but fail launch revalidation. No stored data is silently rewritten and no migration alters existing financial or execution history.
+
 ## 2026-11-13 — Audit corrections
 
 - User authorized correcting both auditor findings and opening a PR containing the combined application. This authorizes the review branch push and PR, not merging it, public hosting or submitting to the hackathon.
