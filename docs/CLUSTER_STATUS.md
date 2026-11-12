@@ -1,6 +1,14 @@
 # Cluster execution status
 
-Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. User-authorized main integration is being finalized. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
+Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
+
+## Sign-in development error follow-up — 2026-11-13
+
+The screenshot showed the stock Convex Auth `InvalidAccountId` rejection for an unregistered app account. The form caught the rejected promise, but Convex also forwarded it to `console.error`, opening the Next.js development overlay. Added a narrowly scoped client logger that sends only the three known credential-rejection codes from `auth:signIn` to a sanitized warning; all other errors retain normal error logging. Backend credential verification, attempt throttling, keys and account data remain unchanged.
+
+Clarified that first-time users must sign up in this app and made failed-login guidance actionable without disclosing whether an account exists. Handle a non-completed sign-in response explicitly. Moved the Next.js development indicator to bottom-right because its default location intercepted the sidebar Sign out button.
+
+Added seven logger regression cases that also verify unrelated/auth-configuration errors remain visible, plus a real browser scenario: unknown account → visible form rejection without console error/overlay → signup → sign out → wrong-password rejection → correct-password login. Final validation passed: lint, typecheck and all 153 tests in 16 files; all six live browser scenarios passed against the user-running development frontend/backend, including both credential failures with no auth console-error overlay and valid signup/sign-in. A separate checkout passed lint/types/all 153 tests/production build/client-boundary scan, avoiding a concurrent build against the running dev checkout. The user-started frontend/backend are preserved and local credentials are not rotated.
 
 ## Integrated prototype — 2026-11-13
 

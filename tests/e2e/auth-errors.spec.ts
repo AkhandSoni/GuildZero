@@ -1,0 +1,35 @@
+import { randomBytes } from "node:crypto";
+import { expect, test } from "@playwright/test";
+test("unknown account and wrong password stay in the form, then valid signup and login succeed", async ({ page }) => {
+  const email = `auth-errors-${randomBytes(8).toString("hex")}@example.com`;
+  const password = randomBytes(24).toString("base64url");
+  const authConsoleErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && message.text().includes("[CONVEX A(auth:signIn)]")) authConsoleErrors.push(message.text());
+  });
+  const rejected = page.getByRole("alert").filter({ hasText: "Unable to sign in. Check your email and password." });
+  await page.goto("/sign-in");
+  await expect(page.getByText("First visit? Choose Sign up below.", { exact: false })).toBeVisible();
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(rejected).toBeVisible();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByText("Console Error", { exact: true })).toHaveCount(0);
+  expect(authConsoleErrors).toEqual([]);
+  await page.getByRole("button", { name: "Need an account? Sign up" }).click();
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(rejected).toBeVisible();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByText("Console Error", { exact: true })).toHaveCount(0);
+  expect(authConsoleErrors).toEqual([]);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+});

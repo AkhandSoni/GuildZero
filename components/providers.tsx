@@ -2,10 +2,11 @@
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { useState } from "react";
+import { convexLogger } from "@/lib/convex-logger";
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() =>
     process.env.NEXT_PUBLIC_CONVEX_URL
-      ? new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL)
+      ? new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL, { logger: convexLogger })
       : null,
   );
   if (!client)

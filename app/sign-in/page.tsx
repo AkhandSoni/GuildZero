@@ -25,7 +25,7 @@ export default function SignInPage() {
         <p className="eyebrow">Private mission workspace</p>
         <h1>{flow === "signIn" ? "Welcome back." : "Create your account."}</h1>
         <p className="muted mt-3 text-sm">
-          Use an email and password. No wallet connection required.
+          {flow === "signIn" ? "Sign in to an account created in this app. First visit? Choose Sign up below." : "Create an app account with your email and password. No wallet connection required."}
         </p>
         <form
           className="mt-6 grid gap-5"
@@ -36,11 +36,12 @@ export default function SignInPage() {
             const data = new FormData(event.currentTarget);
             data.set("flow", flow);
             try {
-              await signIn("password", data);
+              const result = await signIn("password", data);
+              if (!result.signingIn) setError("Sign-in was not completed. Check your details and try again.");
             } catch {
               setError(
                 flow === "signIn"
-                  ? "Unable to sign in. Check your credentials and backend connection."
+                  ? "Unable to sign in. Check your email and password. If you have not registered in this app, choose Sign up below."
                   : "Unable to create account. Check your details or try signing in.",
               );
             } finally {
