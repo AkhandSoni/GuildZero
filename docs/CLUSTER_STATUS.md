@@ -1,6 +1,6 @@
 # Cluster execution status
 
-Current work: **Integrated local prototype validation and reference-inspired UI. PR #15 is merged. Broader service expansion remains paused; the user explicitly authorized finishing/testing the current product and pushing all verified changes to main. Public hosting and submission remain separate gates.**
+Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. User-authorized main integration is being finalized. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
 ## Integrated prototype — 2026-11-13
 
@@ -17,6 +17,22 @@ A custom mission completed actual cleaning subcontract → summary → independe
 Tester follow-up found review backlog consuming execution slots. Contracts now enter `awaiting_review` without changing financial amounts or payment eligibility. Tests run six sequential review-pending missions without starving processing, and verify a bounded idempotent legacy repair. Applied that repair to two earlier local test contracts only. Earned reputation now has a two-mission regression demonstrating that actual first-job performance can change the second award while strategies remain fixed. Exhausted retries route to unawarded or human review instead of trapping committed work.
 
 Latest checkpoint: 146 tests in 15 files passed; 77 integration tests (included) passed; five production-browser scenarios passed; lint, typecheck, production build, client-boundary scan and dependency audit passed. Final restart/clean-clone validation remains in progress below; public hosting, video and submission remain pending.
+### Final validation and local handoff
+
+- Working source at `1bb618e`: lint, typecheck, 146 tests across 15 files, 77 included backend integration tests, production build and client-boundary check passed. Dependency audit: zero known vulnerabilities. Five real production-browser scenarios passed, including keyboard launch/download, automatic useful subcontract, reload persistence, two-account result/graph isolation, mobile layout, human acceptance, invalid-input rejection and unawarded budget handling. No default browser test submits a payment.
+
+- Clean checkout `/tmp/guildzero-final-clean-20261113`: fresh `npm ci`, lint, typecheck, all 146 tests, production build and client-boundary check passed without copied environment files, signing keys or backend state. Node 24.22.3 is now the declared supported runtime in both package manifests; Node 26 is not advertised as a working local Node-action runtime. Upstream dependency deprecation warnings are non-failing; audit reports no known vulnerabilities.
+
+- Live restart test passed: stopped the actual local Convex process during a persisted auction, observed the reconnect banner, restarted the existing backend and observed approved independently verified output after reload with the same session. Both earlier confirmed payment records survived the restart without replacement intents.
+
+- Captured and visually inspected current desktop/mobile dashboard screenshots outside Git. Mobile has no horizontal overflow; the visual browser run reported no uncaught page errors. Public HTML for a private mission contains no mission title. Exact-value scan across 120 tracked files and 27 public assets found none of the six locally configured signing keys; all environment worksheets, backend state and test artifacts remain ignored.
+
+- Live receipt evidence is in settlement.md. Operator and five recipient keys are private mode-0600 local configuration, with existing Auth keys preserved. Total confirmed transfers: 0.510237882 testnet NEAR across exactly two job intents; their sum matches the original award, excluding network gas.
+
+For manual use, select Node 24.22.3, run `npm run dev:backend` in one terminal and `npm run dev` in another, then open http://localhost:3000. Current local auth and testnet configuration already exist; do not rotate keys or overwrite working environment files. A new clone needs its own documented backend/auth/testnet setup because secrets and database state are intentionally not shipped. Validation preview processes are stopped at handoff.
+
+Current-scope implementation stops here. No paused expansion branch is merged and no app is publicly deployed or submitted. Hosting/accounts, final public demo/video and explicit human submission approval remain release prerequisites.
+
 ## Audit corrections — 2026-11-13
 
 PR #15 review follow-up: resolved the unconditional terminal-record removal and inconsistent mission/executor validation findings. One shared bounded parser now preserves explicit empties, rejects mixed record separators outside quotes, and enforces identical row/width/raw-header bounds through create/edit/launch/subcontract/execution/verification. Added both reported mixed-ending cases with no-shortened-output checks, quoted embedded-ending control, backend create/edit/legacy-launch/subcontract cases, and valid empty/500-row controls. Final validation: 134 tests in 13 files passed; 65 backend integration tests passed (included), all four real local-auth production-browser scenarios passed, plus lint, typecheck, production build, client boundary (25 assets) and diff checks. No credentials were rotated, no payment was sent and no public deployment occurred. Automatic economy workflow and funded settlement remain pending.

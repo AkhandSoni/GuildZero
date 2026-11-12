@@ -1,6 +1,15 @@
 # Combination, release and demo checklist
 
-## Integrated local prototype,,PRs #14 and #15 combined the engine and application branches. The scheduled driver now runs actual independent offers, bounded negotiation, scored awards, real services, independent verification, useful subcontracting and owner review. Broader service expansion is paused. The user authorized finishing current-scope validation and pushing verified changes to main.,,Production-browser validation has exercised real local auth, private mission CRUD, automatic custom CSV fulfillment and downloads, subjective review, invalid-input rejection, unaffordable auctions, graph/security/sample behavior and mobile layout. Backend tests cover lifecycle bounds, stale scheduling, revisions, capacity, budget conservation, reputation and payment integrity. Exact final results are in CLUSTER_STATUS.md.,,A real custom summary consumed an approved cleaning subcontract. The owner separately authorized both allocations through the production UI. Both public-testnet transfers finalized and were independently rechecked; their sum equals the original award. See settlement.md for the exact public receipts. Real security probes rejected altered amounts, recipient substitution, duplicate payout, reputation manipulation and excessive subcontract depth without signing.,,Public hosting, the final demo recording and submission remain pending. Local acceptance does not establish that a hosted application works independently of this machine.,
+## Integrated local prototype
+
+PRs #14 and #15 combined the engine and application branches. The scheduled driver now runs actual independent offers, bounded negotiation, scored awards, real services, independent verification, useful subcontracting and owner review. Broader service expansion is paused. The user authorized finishing current-scope validation and pushing verified changes to main.
+
+Production-browser validation has exercised real local auth, private mission CRUD, automatic custom CSV fulfillment and downloads, subjective review, invalid-input rejection, unaffordable auctions, graph/security/sample behavior and mobile layout. Backend tests cover lifecycle bounds, stale scheduling, revisions, capacity, budget conservation, reputation and payment integrity. Exact final results are in CLUSTER_STATUS.md.
+
+A real custom summary consumed an approved cleaning subcontract. The owner separately authorized both allocations through the production UI. Both public-testnet transfers finalized and were independently rechecked; their sum equals the original award. See settlement.md for the exact public receipts. Real security probes rejected altered amounts, recipient substitution, duplicate payout, reputation manipulation and excessive subcontract depth without signing.
+
+Public hosting, the final demo recording and submission remain pending. Local acceptance does not establish that a hosted application works independently of this machine.
+
 ## Cloud deployment (owner configuration needed)
 
 Use only eligible free plans; do not enable paid services or metered upgrades. The owner must supply their own cloud account configuration. There is no cloud Convex deployment key or hosting credential in this checkout, and no unfinished site has been published.

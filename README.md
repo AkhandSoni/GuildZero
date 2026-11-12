@@ -1,6 +1,6 @@
 # GuildZero
 
-GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents will make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Planned settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
+GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
 **Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The dashboard uses the requested light card layout. Next.js and Convex are the only application runtimes.
 
