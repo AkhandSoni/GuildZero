@@ -213,23 +213,28 @@ function executeNormalize(req: NormalizeRequest): Result<ServiceOutput> {
     quotes: false,
   });
 
-  if (new TextEncoder().encode(serializedCsv).length > MAX_OUTPUT_BYTES) {
+  const output: ServiceOutput = {
+    serviceType: "csv_normalize",
+    format: "csv",
+    csv: serializedCsv,
+    rowCount: rawRows.length,
+    columns: [...options.columns],
+  };
+
+  if (
+    new TextEncoder().encode(serializedCsv).length > MAX_OUTPUT_BYTES ||
+    new TextEncoder().encode(JSON.stringify(output)).length > MAX_OUTPUT_BYTES
+  ) {
     return {
       ok: false,
       code: "OUTPUT_TOO_LARGE",
-      message: "Normalized CSV exceeds the 128 KiB output limit.",
+      message: "Normalized CSV deliverable exceeds the 128 KiB output limit.",
     };
   }
 
   return {
     ok: true,
-    value: {
-      serviceType: "csv_normalize",
-      format: "csv",
-      csv: serializedCsv,
-      rowCount: rawRows.length,
-      columns: [...options.columns],
-    },
+    value: output,
   };
 }
 

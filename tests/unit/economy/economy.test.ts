@@ -112,6 +112,71 @@ describe("CSV services: fixtures, quoting, formulas, and validation", () => {
       deliverable: res.value,
     });
     expect(ver).toMatchObject({ ok: true, value: { verdict: "pass", reasonCode: "VERIFICATION_PASSED" } });
+
+    // Quoted CRLF inside unselected or selected cell is preserved and passes verification
+    const crlfRequest: NormalizeRequest = {
+      serviceType: "csv_normalize",
+      inputCsv: 'name,note\n Bag ,"Line 1\r\nLine 2"',
+      options: { columns: ["name"], caseMode: "preserve" },
+    };
+    const crlfRes = runService(crlfRequest);
+    expect(crlfRes).toEqual({
+      ok: true,
+      value: {
+        serviceType: "csv_normalize",
+        format: "csv",
+        csv: 'name,note\nBag,"Line 1\r\nLine 2"',
+        rowCount: 1,
+        columns: ["name"],
+      },
+    });
+    expect(verifyDeliverable({ request: crlfRequest, deliverable: crlfRes.ok ? crlfRes.value : null })).toMatchObject({
+      ok: true,
+      value: { verdict: "pass", reasonCode: "VERIFICATION_PASSED" },
+    });
+
+    // Unquoted CRLF record delimiter in deliverable is rejected by verifier
+    expect(
+      verifyDeliverable({
+        request: crlfRequest,
+        deliverable: {
+          serviceType: "csv_normalize",
+          format: "csv",
+          csv: 'name,note\r\nBag,"Line 1\r\nLine 2"',
+          rowCount: 1,
+          columns: ["name"],
+        },
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: { verdict: "fail", reasonCode: "CONTENT_MISMATCH" },
+    });
+
+    // Escaping-heavy boundary (> 128 KiB serialized JSON ServiceOutput) is rejected by executor as OUTPUT_TOO_LARGE
+    const overLimitEscapeReq: NormalizeRequest = {
+      serviceType: "csv_normalize",
+      inputCsv: `name,note\nBag,"${"\n".repeat(65_510)}"`,
+      options: { columns: ["name"], caseMode: "preserve" },
+    };
+    expect(runService(overLimitEscapeReq)).toMatchObject({
+      ok: false,
+      code: "OUTPUT_TOO_LARGE",
+    });
+
+    // Near-limit case (<= 128 KiB serialized JSON ServiceOutput) is accepted by both executor and verifier
+    const nearLimitEscapeReq: NormalizeRequest = {
+      serviceType: "csv_normalize",
+      inputCsv: `name,note\nBag,"${"\n".repeat(65_400)}"`,
+      options: { columns: ["name"], caseMode: "preserve" },
+    };
+    const nearLimitRes = runService(nearLimitEscapeReq);
+    expect(nearLimitRes.ok).toBe(true);
+    if (nearLimitRes.ok) {
+      expect(verifyDeliverable({ request: nearLimitEscapeReq, deliverable: nearLimitRes.value })).toMatchObject({
+        ok: true,
+        value: { verdict: "pass", reasonCode: "VERIFICATION_PASSED" },
+      });
+    }
   });
 
   it("preserves exact header names with whitespace when matching options", () => {

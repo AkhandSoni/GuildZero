@@ -35,6 +35,30 @@ function hasExactKeys(obj: Record<string, unknown>, expectedKeys: readonly strin
   return keys.length === expectedKeys.length && expectedKeys.every((k) => Object.prototype.hasOwnProperty.call(obj, k));
 }
 
+/**
+ * Verify canonical LF record separators outside quoted CSV fields and no trailing newline.
+ * Preserved CRLF inside quoted field values is valid.
+ */
+function hasCanonicalCsvLineEndings(csv: string): boolean {
+  if (csv.length === 0 || csv.endsWith("\n") || csv.endsWith("\r")) {
+    return false;
+  }
+  let inQuotes = false;
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i];
+    if (ch === '"') {
+      if (inQuotes && csv[i + 1] === '"') {
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "\r" && !inQuotes) {
+      return false;
+    }
+  }
+  return !inQuotes;
+}
+
 export function verifyDeliverable(input: VerificationRequest): Result<VerificationResult> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { ok: false, code: "INVALID_INPUT", message: "VerificationRequest must be an object." };
@@ -155,17 +179,15 @@ export function verifyDeliverable(input: VerificationRequest): Result<Verificati
 
     if (
       typeof delivRec.csv === "string" &&
-      new TextEncoder().encode(delivRec.csv).length <= MAX_OUTPUT_BYTES &&
-      !delivRec.csv.endsWith("\n") &&
-      !delivRec.csv.endsWith("\r") &&
-      !delivRec.csv.includes("\r\n")
+      new TextEncoder().encode(delivRec.csv).length <= MAX_OUTPUT_BYTES
     ) {
+      const canonicalEndings = hasCanonicalCsvLineEndings(delivRec.csv);
       const parsedOut = Papa.parse<string[]>(delivRec.csv, {
         delimiter: ",",
         skipEmptyLines: false,
       });
 
-      if (parsedOut.errors.length === 0 && parsedOut.data.length === rawRows.length + 1) {
+      if (parsedOut.errors.length === 0 && parsedOut.data.length >= 1) {
         const [outHeader, ...outRows] = parsedOut.data;
         parsedRowsMatch = outRows.length === rawRows.length;
 
@@ -174,7 +196,12 @@ export function verifyDeliverable(input: VerificationRequest): Result<Verificati
           outHeader.length === rawHeader.length &&
           outHeader.every((h, idx) => h === rawHeader[idx] && !isUnsafeFormulaValue(h));
 
-        if (headerMatches && outRows.every((r) => Array.isArray(r) && r.length === rawHeader.length)) {
+        if (
+          canonicalEndings &&
+          parsedRowsMatch &&
+          headerMatches &&
+          outRows.every((r) => Array.isArray(r) && r.length === rawHeader.length)
+        ) {
           const selectedColPositions = new Array<boolean>(rawHeader.length).fill(false);
           for (const colName of options.columns) {
             const pos = rawHeader.indexOf(colName);
