@@ -7,6 +7,12 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
 import { PaymentPanel } from "@/components/payment-panel";
+import Papa from "papaparse";
+import { isUnsafeFormulaValue } from "@/lib/economy/csv-input";
+function safeCsv(content: string) {
+  const parsed = Papa.parse<string[]>(content, { delimiter: ",", skipEmptyLines: false });
+  return !parsed.errors.length && parsed.data.every((row) => row.every((cell) => !isUnsafeFormulaValue(cell)));
+}
 export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const jobs = useQuery(api.jobs.forMission, { missionId: mission._id });
   const start = useMutation(api.jobs.start);
@@ -29,8 +35,8 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
       <h2>Open an auction</h2>
       <p className="muted mt-2 text-sm">
         Opening uses the saved processing options, locks the brief and records an
-        auction. Automated bidding and execution await the economy engine; no
-        work or payments are simulated.
+        auction. Agents calculate offers, negotiate and process your dataset.
+        Payment always requires a separate confirmation.
       </p>
       <form
         className="mt-5 grid gap-4"
@@ -55,7 +61,7 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
       >
         <p className="muted text-sm">Columns: {mission.options.columns.join(", ")}. Edit the draft to change processing options.</p>
         {error && (
-          <p role="alert" className="text-red-300">
+          <p role="alert" className="text-red-800">
             {error}
           </p>
         )}
@@ -70,6 +76,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
   const data = useQuery(api.jobs.detail, { id });
   const cancel = useMutation(api.jobs.cancel);
   const resolve = useMutation(api.jobs.resolveDispute);
+  const resume = useMutation(api.jobs.resume);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   if (!data) return <p role="status">Loading activity…</p>;
@@ -80,7 +87,11 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
       await fn();
     } catch (err) {
       setError(
-        err instanceof ConvexError ? String(err.data) : "Action failed.",
+        err instanceof ConvexError
+          ? err.data === "NO_DELIVERABLE_TO_APPROVE"
+            ? "No deliverable exists to approve. Reject this work and create a mission with corrected input."
+            : String(err.data)
+          : "Action failed.",
       );
     } finally {
       setBusy(false);
@@ -99,8 +110,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         {data.job.state === "bidding" && (
           <>
             <p className="muted mt-3 text-sm">
-              Waiting for the execution engine. Bids and work appear only when
-              recorded by the trusted worker.
+              {data.job.engineManaged ? "Agents are evaluating this brief. Offers and decisions appear as they are recorded." : "This legacy auction predates automated execution. Cancel it and create a new mission to run the workflow."}
             </p>
             <Button
               className="mt-4"
@@ -117,6 +127,9 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
             {b.agentId}: {formatNear(b.priceYocto)} testnet NEAR · {b.rationale}
           </p>
         ))}
+        {data.job.workerError && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm">The workflow paused safely. Review configuration, then retry the existing stage.</p><Button className="mt-3" variant="outline" disabled={busy || (data.job.retryCount ?? 0) >= 3} onClick={() => act(() => resume({ id }))}>Retry workflow stage</Button></div>}
+        {data.job.state === "unawarded" && <p className="muted mt-4 text-sm">No offer could be awarded within the budget, deadline and negotiation limits. Create a revised mission to try again. No payment was submitted.</p>}
+        {data.contracts.map((c) => <div key={c._id} className="mt-5 border-t border-[#d5dccf] pt-4"><h3 className="text-sm font-medium">Contract · {c.agentId}</h3><p className="muted text-xs mt-2">Award: {formatNear(c.amountYocto)} · Parent payable allocation: {formatNear(c.holdbackYocto)} testnet NEAR</p>{c.score && <p className="muted text-xs mt-2">Utility {c.score.total}/10000 · Price {c.score.price} · Time {c.score.time} · Reputation {c.score.reputation} · Capability {c.score.capability}</p>}</div>)}
         {data.contracts.map((c) => (
           <div className="mt-3 text-sm" key={c._id}>
             <p>
@@ -132,7 +145,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           </p>
         ))}
         {error && (
-          <p role="alert" className="mt-3 text-red-300">
+          <p role="alert" className="mt-3 text-red-800">
             {error}
           </p>
         )}
@@ -154,6 +167,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           }}
         >
           <h2>Buyer dispute decision</h2>
+          {data.disputes.map((dispute) => <p className="muted text-sm" key={dispute._id}>{dispute.reason}</p>)}
           <label className="field">
             Reason
             <textarea
@@ -165,7 +179,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           </label>
           <label className="field">
             Decision
-            <select name="decision" className="control">
+            <select name="decision" aria-label="Decision" className="control">
               <option value="reject">Reject work</option>
               <option value="approve">Approve after human review</option>
             </select>
@@ -191,9 +205,8 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
               </a>
             </Button>
           )}
-          <p className="muted mt-3 text-xs">
-            CSV download awaits the engine’s spreadsheet-safe exporter.
-          </p>
+          {d.format === "csv" && safeCsv(d.content) && <Button asChild className="mt-3" variant="outline"><a download="guildzero-normalized.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(d.content)}`}>Download CSV</a></Button>}
+          {d.format === "csv" && !safeCsv(d.content) && <p className="muted text-xs mt-3">CSV download blocked: unsafe spreadsheet values or invalid CSV.</p>}
         </div>
       ))}
       {data.verifications.map((v) => (
@@ -214,7 +227,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           <ol className="mt-4 grid gap-3">
             {data.negotiations.map((n) => (
               <li
-                className="border-l border-neutral-700 pl-4 text-sm"
+                className="border-l border-[#d5dccf] pl-4 text-sm"
                 key={n._id}
               >
                 <p>
@@ -232,13 +245,14 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         </section>
       )}
       <PaymentPanel jobId={id} approved={data.job.state === "approved"} />
+      {data.children.map((child) => <details className="panel" key={child._id}><summary className="cursor-pointer text-sm font-medium">Cleaning subcontract · {child.state}</summary><JobDetail id={child._id} /></details>)}
       <div className="panel">
         <h2>Recorded activity</h2>
         <ol className="mt-4 grid gap-3">
           {data.events.map((e) => (
             <li
               key={e._id}
-              className="border-l border-neutral-700 pl-4 text-sm"
+              className="border-l border-[#d5dccf] pl-4 text-sm"
             >
               <p>{e.type}</p>
               <p className="muted">{e.detail}</p>

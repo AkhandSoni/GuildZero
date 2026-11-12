@@ -5,7 +5,7 @@ export default function NotFound() {
       <h1>Page not found.</h1>
       <p className="muted mt-4">
         Return to{" "}
-        <Link href="/dashboard" className="text-emerald-300 underline">
+        <Link href="/dashboard" className="text-emerald-800 underline">
           your missions
         </Link>
         .

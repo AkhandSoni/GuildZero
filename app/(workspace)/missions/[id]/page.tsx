@@ -77,6 +77,7 @@ export default function MissionPage({
             <p className="muted mt-3" data-testid="saved-options">
               {mission.options ? `${mission.options.columns.join(", ")}${mission.options.caseMode ? ` · ${mission.options.caseMode}` : ""}` : "Not set. Edit the draft before opening an auction."}
             </p>
+            <p className="muted mt-2 text-xs">Cleaning subcontract: {mission.cleanBeforeProcessing ? "enabled, within the award" : "off"}. Acceptance: {mission.requiresHumanReview === false ? "automatic template checks" : "template checks plus human review"}.</p>
           </div>
           <div>
             <h2>Acceptance criteria</h2>
@@ -86,7 +87,7 @@ export default function MissionPage({
           </div>
           <div>
             <h2>Input CSV</h2>
-            <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-neutral-950 p-4 text-xs leading-relaxed">
+            <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-[#eef1e9] p-4 text-xs leading-relaxed">
               {mission.inputCsv}
             </pre>
           </div>
@@ -134,7 +135,7 @@ export default function MissionPage({
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-4 text-red-300">
+        <p role="alert" className="mt-4 text-red-800">
           {error}
         </p>
       )}

@@ -9,7 +9,7 @@ export function DemoControls() {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   return (
-    <div className="mb-6">
+    <div className="demo-controls mb-6">
       <div className="flex flex-wrap gap-3">
         <Button
           variant="outline"

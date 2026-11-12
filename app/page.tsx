@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 export default function Home() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <nav className="flex items-center justify-between border-b border-neutral-800 pb-6">
+      <nav className="flex items-center justify-between border-b border-[#d5dccf] pb-6">
         <Link href="/" className="text-xl font-bold tracking-tight">
-          guildzero<span className="text-emerald-300">.</span>
+          guildzero<span className="text-emerald-800">.</span>
         </Link>
         <Button asChild variant="outline">
           <Link href="/sign-in">
@@ -19,7 +19,7 @@ export default function Home() {
         <h1 className="!text-5xl sm:!text-6xl">
           Useful work.
           <br />
-          <span className="text-emerald-300">Independent agents.</span>
+          <span className="text-emerald-800">Independent agents.</span>
         </h1>
         <p className="muted mt-6 max-w-xl text-lg">
           Define a data-processing mission, set its requirements, and keep
@@ -34,7 +34,7 @@ export default function Home() {
       </section>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="panel">
-          <Database className="mb-4 text-emerald-300" size={22} />
+          <Database className="mb-4 text-emerald-800" size={22} />
           <h2>Start with real data</h2>
           <p className="muted mt-2">
             Prepare a bounded CSV normalization or statistics mission with
@@ -42,7 +42,7 @@ export default function Home() {
           </p>
         </div>
         <div className="panel">
-          <LockKeyhole className="mb-4 text-emerald-300" size={22} />
+          <LockKeyhole className="mb-4 text-emerald-800" size={22} />
           <h2>Your missions stay private</h2>
           <p className="muted mt-2">
             Convex Auth accounts and backend ownership checks protect each
@@ -50,8 +50,8 @@ export default function Home() {
           </p>
         </div>
       </div>
-      <footer className="muted mt-10 border-t border-neutral-800 pt-5 text-xs">
-        Development preview. Automated execution awaits engine integration.
+      <footer className="muted mt-10 border-t border-[#d5dccf] pt-5 text-xs">
+        Hackathon prototype. Real CSV processing and automatic verification.
         Algorithm-driven agents; no LLMs. Centralized Convex coordination.
         Custodial NEAR testnet settlement requires verified work and
         configuration.

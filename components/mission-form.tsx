@@ -61,6 +61,8 @@ export function MissionForm({
             maxBudgetYocto: nearToYocto(String(data.get("budget"))),
             acceptanceCriteria: String(data.get("acceptanceCriteria")),
             deadlineAt: new Date(String(data.get("deadline"))).getTime(),
+            requiresHumanReview: data.get("requiresHumanReview") === "on",
+            cleanBeforeProcessing: serviceType === "csv_summary" && data.get("cleanBeforeProcessing") === "on",
           });
           await onSave(input);
         } catch (err) {
@@ -188,10 +190,14 @@ export function MissionForm({
         </span>
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-300">
+        <p role="alert" className="text-sm text-red-800">
           {error}
         </p>
       )}
+      <div className="grid gap-4 rounded-2xl bg-white/50 p-4 text-sm">
+        {serviceType === "csv_summary" && <label className="flex items-start gap-3"><input type="checkbox" name="cleanBeforeProcessing" defaultChecked={initial?.cleanBeforeProcessing ?? false} className="mt-1 shrink-0" /><span>Clean before analysis<span className="muted block text-xs mt-1">Hire one cleaning subcontractor within the awarded budget. Its verified CSV becomes the summary input.</span></span></label>}
+        <label className="flex items-start gap-3"><input type="checkbox" name="requiresHumanReview" defaultChecked={initial ? initial.requiresHumanReview ?? true : false} className="mt-1 shrink-0" /><span>Require human review of acceptance notes<span className="muted block text-xs mt-1">Automatic verification covers the selected template and columns. Extra subjective requirements need your recorded decision before payment.</span></span></label>
+      </div>
       <Button type="submit" className="w-fit" disabled={busy}>
         {busy ? "Saving…" : initial ? "Save changes" : "Create private mission"}
       </Button>

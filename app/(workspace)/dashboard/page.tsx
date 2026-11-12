@@ -1,102 +1,59 @@
 "use client";
 import Link from "next/link";
-import { usePaginatedQuery } from "convex/react";
+import { useId } from "react";
+import { usePaginatedQuery, useQuery } from "convex/react";
+import { ArrowUpRight, Check, CircleDashed, FileSpreadsheet, Network, ShieldCheck, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
 import { PUBLIC_AGENTS } from "@/lib/agent-directory";
 import { DemoControls } from "@/components/demo-controls";
+
+function DotNumber({ value, label }: { value: number | undefined; label: string }) {
+  const id = useId().replaceAll(":", "");
+  return <svg className="metric-number" viewBox="0 0 240 95" role="img" aria-label={`${label}: ${value ?? "Loading"}`}>
+    <defs><pattern id={id} width="7" height="7" patternUnits="userSpaceOnUse"><rect width="4.5" height="4.5" fill="#fff" /></pattern></defs>
+    <text x="0" y="80" fontSize="95" fill={`url(#${id})`}>{value ?? "—"}</text>
+  </svg>;
+}
 export default function Dashboard() {
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.missions.list,
-    {},
-    { initialNumItems: 20 },
-  );
-  return (
-    <>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="eyebrow">Your workspace</p>
-          <h1>Missions</h1>
-          <p className="muted mt-3">
-            Prepare real data work with a clear scope and budget.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/missions/new">+ New mission</Link>
-        </Button>
-      </div>
-      <DemoControls />
-      {status === "LoadingFirstPage" ? (
-        <p role="status" className="muted">
-          Loading missions…
-        </p>
-      ) : results.length === 0 ? (
-        <section className="panel py-12 text-center">
-          <h2>Your first mission starts here.</h2>
-          <p className="muted mt-2">
-            Add a CSV dataset and choose a processing template.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/missions/new">Create a mission</Link>
-          </Button>
-        </section>
-      ) : (
-        <ul className="grid gap-3">
-          {results.map((mission) => (
-            <li key={mission._id}>
-              <Link
-                href={`/missions/${mission._id}`}
-                className="panel flex flex-wrap items-center justify-between gap-5 hover:border-emerald-700"
-              >
-                <div>
-                  <span className="text-xs text-emerald-300">
-                    {mission.state.toUpperCase()} ·{" "}
-                    {mission.serviceType === "csv_normalize"
-                      ? "CSV normalization"
-                      : "CSV statistics"}
-                  </span>
-                  <h2 className="mt-2">{mission.title}</h2>
-                  <p className="muted mt-1 text-xs">
-                    Due {new Date(mission.deadlineAt).toLocaleString()}
-                  </p>
-                </div>
-                <span className="text-sm">
-                  {formatNear(mission.maxBudgetYocto)} testnet NEAR →
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      {status === "CanLoadMore" && (
-        <Button variant="outline" className="mt-5" onClick={() => loadMore(20)}>
-          Load more
-        </Button>
-      )}
-      {status === "LoadingMore" && <p role="status">Loading…</p>}
-      <section className="mt-10">
-        <h2>Initial agent definitions</h2>
-        <p className="muted mt-2 text-sm">
-          Static profiles only. Discovery, bidding, and execution are not
-          active.
-        </p>
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PUBLIC_AGENTS.map((agent) => (
-            <li key={agent.id} className="panel">
-              <Link
-                href={`/agents/${agent.id}`}
-                className="font-medium text-emerald-300"
-              >
-                {agent.name} →
-              </Link>
-              <p className="muted mt-2 text-xs">
-                {agent.role} · {agent.strategy ?? "support role"}
-              </p>
-            </li>
-          ))}
-        </ul>
+  const { results, status, loadMore } = usePaginatedQuery(api.missions.list, {}, { initialNumItems: 20 });
+  const overview = useQuery(api.marketViews.overview, {});
+  const loading = status === "LoadingFirstPage";
+  const drafts = results.filter((m) => m.state === "draft").length;
+  const active = results.filter((m) => m.state === "active").length;
+  const ready = overview?.payments.filter((p) => p.status === "READY" && !p.authorizedAt) ?? [];
+  const latest = overview?.events.slice(0, 3) ?? [];
+  return <>
+    <div className="dashboard-heading">
+      <div><p className="eyebrow">Your private workspace</p><h1>A little order. More possibility.</h1><p className="muted mt-2 text-sm">Your missions, independent agents and every step in between.</p></div>
+      <Button asChild><Link href="/missions/new">+ New mission</Link></Button>
+    </div>
+    <div className="workspace-grid">
+      <section className="panel brief-card">
+        <div className="card-kicker"><div className="flex items-center gap-3"><span className="round-icon"><Sparkles size={17} /></span><div><p className="font-medium">Workspace brief</p><p className="muted text-[10px]">Built from your recorded activity</p></div></div><span className="state-pill">Overview</span></div>
+        <p className="brief-text">{loading ? "Getting your workspace ready…" : results.length ? <>{drafts} {drafts === 1 ? "mission is" : "missions are"} in draft. {active} {active === 1 ? "brief is" : "briefs are"} locked for work. <span className="text-[#6e7867]">Your next step is right here.</span></> : <>A clear brief is where good work begins. <span className="text-[#6e7867]">Give your data a mission.</span></>}</p>
+        <div className="brief-actions"><Link className="soft-link" href="/economy"><Network size={12} /> Recorded activity</Link><Link className="soft-link" href="/security"><ShieldCheck size={12} /> Security lab</Link><Link href="/missions/new" className="ml-auto inline-flex items-center gap-1 text-xs">Create a brief <ArrowUpRight size={13} /></Link></div>
       </section>
-    </>
-  );
+      <section className="panel approval-card">
+        <div className="card-title"><h2>Needs your approval <span className="count-pill">{overview ? ready.length : "—"}</span></h2><Link href="/economy">View all</Link></div>
+        {ready.length ? <div className="mt-5 grid gap-3">{ready.slice(0,2).map((p) => <Link key={p._id} href={overview!.jobs.some((j) => j._id === p.jobId) ? `/missions/${overview!.jobs.find((j) => j._id === p.jobId)!.missionId}` : "/economy"} className="flex items-center gap-3 rounded-2xl bg-white/60 p-3"><span className="round-icon purple"><Check size={16} /></span><div className="min-w-0 flex-1"><p className="text-xs font-medium">Review exact payment</p><p className="muted text-[10px] break-all">{formatNear(p.amountYocto)} testnet NEAR · {p.recipient}</p></div><ArrowUpRight size={14} /></Link>)}</div> : <div className="quiet-empty"><span className="round-icon purple"><Check size={17} /></span><div><p>{overview ? "All clear for now." : "Checking approvals…"}</p><p className="muted text-[11px]">Prepared payments appear here for your review.</p></div></div>}
+        <p className="muted mt-4 text-[10px]">Every payment needs approved work and your confirmation.</p>
+      </section>
+      <div className="metrics-grid">
+        <section className="metric-card metric-green"><div className="flex justify-between items-center"><h2 className="metric-label">Locked mission briefs</h2><ArrowUpRight size={14} /></div><DotNumber value={loading ? undefined : active} label="Locked mission briefs" /><div className="metric-caption"><span className="rounded-full bg-white/60 px-2 py-1 w-fit">{loading ? "Loading" : active ? "Published briefs" : "Ready when you are"}</span><span>In loaded missions</span></div><div className="metric-bars" aria-hidden="true" /></section>
+        <section className="metric-card metric-orange"><div className="flex justify-between items-center"><h2 className="metric-label">Drafts to shape</h2><FileSpreadsheet size={14} /></div><DotNumber value={loading ? undefined : drafts} label="Draft missions" /><div className="metric-caption"><span className="rounded-full bg-white/60 px-2 py-1 w-fit">Planning only</span><span>No funds moved</span></div><div className="metric-bars" aria-hidden="true" /></section>
+        <section className="panel activity-card"><div className="card-title"><h2>Latest activity</h2><Link href="/economy">Open economy ↗</Link></div><p className="muted mt-1 text-[11px]">Actual events, as they happen.</p>{latest.length ? latest.map((e) => <div key={e._id} className="activity-row"><span className="activity-dot" /><div className="min-w-0"><Link href={`/missions/${e.missionId}`}>{e.type.replaceAll("_", " ").toLowerCase()}</Link><p className="muted text-[11px] line-clamp-1">{e.detail}</p><time>{new Date(e.createdAt).toLocaleString()}</time></div></div>) : <div className="quiet-empty"><CircleDashed size={25} className="text-[#9eac93] shrink-0" /><div><p>{overview ? "A quiet start." : "Loading activity…"}</p><p className="muted text-[11px]">Launch a mission to start its recorded timeline.</p></div></div>}</section>
+      </div>
+      <section className="panel mission-section">
+        <div className="card-title"><h2>Missions</h2><span className="muted text-[11px]">{loading ? "Loading…" : `${results.length} loaded · ${drafts} in draft`}</span></div>
+        {loading ? <p role="status" className="muted mt-6">Loading missions…</p> : !results.length ? <div className="py-8"><span className="round-icon green mb-4"><FileSpreadsheet size={18} /></span><h2 className="!text-base">Your first mission starts here.</h2><p className="muted mt-2 text-sm">Add a CSV dataset and choose a processing template.</p><Button asChild className="mt-5" variant="outline"><Link href="/missions/new">Create a mission <ArrowUpRight size={14} /></Link></Button></div> : <ul className="mission-list">{results.map((mission) => <li className="mission-item" key={mission._id}><Link href={`/missions/${mission._id}`}><span className="text-[#81906f]"><FileSpreadsheet size={16} /></span><div className="mission-copy"><h2>{mission.title}</h2><p>{mission.serviceType === "csv_normalize" ? "Column normalization" : "Summary statistics"} · {formatNear(mission.maxBudgetYocto)} testnet NEAR</p><p>Due {new Date(mission.deadlineAt).toLocaleString()}</p></div><span className={`state-pill ${mission.state}`}>{mission.state === "active" ? "Locked" : "Draft"}</span><ArrowUpRight size={13} className="text-[#89947f] shrink-0" /></Link></li>)}</ul>}
+        {status === "CanLoadMore" && <Button variant="outline" className="mt-5" onClick={() => loadMore(20)}>Load more</Button>}
+        {status === "LoadingMore" && <p role="status">Loading…</p>}
+      </section>
+      <section className="panel team-section"><div className="card-title"><h2>Your agent directory</h2><span className="muted text-[11px]">{PUBLIC_AGENTS.length} built-in profiles</span></div><p className="muted mt-1 text-[11px]">Five service sellers. Two support roles.</p><div className="agent-grid">{PUBLIC_AGENTS.map((agent, i) => <Link className="agent-card" href={`/agents/${agent.id}`} key={agent.id}><div className="flex items-center justify-between"><span className={`round-icon ${i % 3 === 0 ? "green" : i % 3 === 1 ? "purple" : ""}`}><span className="text-xs font-medium">{agent.name[0]}</span></span><ArrowUpRight size={12} className="text-[#8a9680]" /></div><div><h3>{agent.name}</h3><p>{agent.role} · {agent.strategy ?? "support"}</p></div></Link>)}</div><p className="muted mt-4 text-[10px]">Fixed strategies. Service agents compete on price, capability, reputation and completion time.</p></section>
+    </div>
+    <div className="dashboard-tools"><p>Need a starting point?</p><DemoControls /></div>
+    {overview && Object.values(overview.truncated).some(Boolean) && <p className="muted mt-3 text-xs">Recent overview only: up to 50 jobs, 100 events and 50 payment intents. Mission counts reflect the loaded page.</p>}
+  </>;
 }

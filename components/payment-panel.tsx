@@ -75,7 +75,7 @@ export function PaymentPanel({
           {intent.lastReason && <p className="muted">{intent.lastReason}</p>}
           {intent.txHash && (
             <a
-              className="break-all text-emerald-300 underline"
+              className="break-all text-emerald-800 underline"
               target="_blank"
               rel="noreferrer"
               href={`https://testnet.nearblocks.io/txns/${encodeURIComponent(intent.txHash)}`}
@@ -142,7 +142,7 @@ export function PaymentPanel({
         </div>
       )}
       {message && (
-        <p role="alert" className="mt-4 text-amber-200">
+        <p role="alert" className="mt-4 text-amber-800">
           {message}
         </p>
       )}

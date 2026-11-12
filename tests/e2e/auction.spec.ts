@@ -1,54 +1,62 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-test("owner opens, reloads and cancels a persisted auction without fabricated worker activity", async ({
-  page,
-}) => {
+test("real automatic bidding, negotiation, subcontracted processing and verified downloads persist after reload", async ({ page, browser }) => {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
-  await page
-    .getByLabel("Email", { exact: true })
-    .fill(`auction-${randomBytes(8).toString("hex")}@example.com`);
-  await page
-    .getByLabel("Password", { exact: true })
-    .fill(randomBytes(24).toString("base64url"));
-  await page
-    .getByRole("button", { name: "Create account", exact: true })
-    .click();
+  await page.getByLabel("Email", { exact: true }).fill(`auction-${randomBytes(8).toString("hex")}@example.com`);
+  await page.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "+ New mission" }).click();
-  await page.getByLabel("Mission title").fill("Auction persistence test");
+  await page.getByLabel("Mission title").fill("Automatic sales analysis");
   await page.getByRole("button", { name: "Use synthetic sample CSV" }).click();
   await page.getByRole("button", { name: "Create private mission" }).click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: "Select 1–32 unique column names" }),
-  ).toBeVisible();
-  await expect(page).toHaveURL(/\/missions\/new$/);
+  await expect(page.getByRole("alert").filter({ hasText: "Select 1–32 unique column names" })).toBeVisible();
   await page.getByRole("checkbox", { name: "units", exact: true }).check();
   await page.getByRole("checkbox", { name: "price", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Clean before analysis" }).check();
   await page.getByRole("button", { name: "Create private mission" }).click();
   await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
   await expect(page.getByTestId("saved-options")).toHaveText("units, price");
   await page.reload();
-  await expect(page.getByTestId("saved-options")).toHaveText("units, price");
-  await page.getByRole("button", { name: "Open auction", exact: true }).click();
-  await expect(
-    page.getByText("Persisted job · bidding", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("AUCTION_OPENED", { exact: true })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Edit mission", exact: true }),
-  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Open auction", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Persisted job · bidding", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit mission", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Persisted job · approved", { exact: true }).first()).toBeVisible({ timeout: 25000 });
+  await expect(page.getByRole("heading", { name: "Verification: pass", exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/Utility \d+\/10000/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Negotiation transcript" }).first()).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download JSON", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  const artifact = await download;
+  const stream = await artifact.createReadStream();
+  const chunks = []; for await (const chunk of stream!) chunks.push(chunk);
+  expect(JSON.parse(Buffer.concat(chunks).toString())).toMatchObject({ serviceType: "csv_summary", rowCount: 4, columns: [{ name: "units", count: 3, missing: 1, sum: 10 }, { name: "price", sum: 33 }] });
+  await page.getByText("Cleaning subcontract · approved", { exact: true }).click();
+  await expect(page.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
   await page.reload();
-  await expect(
-    page.getByText("Persisted job · bidding", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Waiting for the execution engine.", { exact: false }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Cancel unawarded auction" }).click();
-  await expect(
-    page.getByText("Persisted job · cancelled", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("JOB_CANCELLED", { exact: true })).toBeVisible();
-  await expect(page.getByText("BID_SUBMITTED", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Persisted job · approved", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Work is approved; payment still requires your exact authorization.", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Status: CONFIRMED", { exact: false })).toHaveCount(0);
+  const html = await (await page.request.get(page.url())).text();
+  expect(html).not.toContain("Automatic sales analysis");
+  const outsider = await browser.newContext();
+  try {
+    const other = await outsider.newPage();
+    await other.goto("http://localhost:3000/sign-in");
+    await other.getByRole("button", { name: "Need an account? Sign up" }).click();
+    await other.getByLabel("Email", { exact: true }).fill(`result-outsider-${randomBytes(8).toString("hex")}@example.com`);
+    await other.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
+    await other.getByRole("button", { name: "Create account", exact: true }).click();
+    await expect(other).toHaveURL(/\/dashboard$/);
+    await other.goto(page.url());
+    await expect(other.getByRole("heading", { name: "Workspace unavailable." })).toBeVisible();
+    await expect(other.getByRole("link", { name: "Download JSON" })).toHaveCount(0);
+    await other.goto("http://localhost:3000/economy");
+    await expect(other.getByRole("heading", { name: "No jobs recorded yet." })).toBeVisible();
+    await expect(other.getByText("Automatic sales analysis")).toHaveCount(0);
+    await expect(other.locator(".react-flow__node")).toHaveCount(0);
+  } finally { await outsider.close(); }
 });

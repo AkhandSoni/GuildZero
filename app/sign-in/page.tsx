@@ -19,7 +19,7 @@ export default function SignInPage() {
   return (
     <main className="mx-auto max-w-md px-6 py-16">
       <Link href="/" className="text-lg font-bold">
-        guildzero<span className="text-emerald-300">.</span>
+        guildzero<span className="text-emerald-800">.</span>
       </Link>
       <div className="panel mt-12">
         <p className="eyebrow">Private mission workspace</p>
@@ -78,7 +78,7 @@ export default function SignInPage() {
             </span>
           </div>
           {error && (
-            <p role="alert" className="text-sm text-red-300">
+            <p role="alert" className="text-sm text-red-800">
               {error}
             </p>
           )}
@@ -91,7 +91,7 @@ export default function SignInPage() {
           </Button>
           <button
             type="button"
-            className="text-sm text-emerald-300 hover:underline"
+            className="text-sm text-emerald-800 hover:underline"
             disabled={busy}
             onClick={() => {
               setFlow(flow === "signIn" ? "signUp" : "signIn");

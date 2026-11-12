@@ -45,10 +45,10 @@ export default function Agent({ params }: { params: Promise<{ id: string }> }) {
           </p>
         ))}
         {data.truncated && (
-          <p className="text-amber-200">Limited to your latest 100 jobs.</p>
+          <p className="text-amber-800">Limited to your latest 100 jobs.</p>
         )}
       </section>
-      <Link className="mt-6 inline-block text-emerald-300" href="/economy">
+      <Link className="mt-6 inline-block text-emerald-800" href="/economy">
         Open economy view →
       </Link>
     </>

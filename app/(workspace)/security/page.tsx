@@ -79,7 +79,7 @@ export default function Security() {
           ))}
         </div>
         {message && (
-          <p role="status" className="mt-4 text-amber-200">
+          <p role="status" className="mt-4 text-amber-800">
             {message}
           </p>
         )}
@@ -95,7 +95,7 @@ export default function Security() {
             {history.map((e) => (
               <li
                 key={e._id}
-                className="border-l border-neutral-700 pl-4 text-sm"
+                className="border-l border-[#d5dccf] pl-4 text-sm"
               >
                 <p>
                   {e.scenario} · {e.decision}

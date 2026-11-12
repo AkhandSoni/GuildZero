@@ -13,9 +13,10 @@ export default function Economy() {
     ...n,
     data: { ...n.data, label: <Link href={n.data.href}>{n.data.label}</Link> },
     style: {
-      background: "#17201c",
-      color: "#d6f7e6",
-      border: "1px solid #486858",
+      background: "#fafcf7",
+      color: "#324b32",
+      border: "1px solid #becdb3",
+      borderRadius: 18,
       width: 250,
       whiteSpace: "pre-wrap" as const,
     },
@@ -38,11 +39,11 @@ export default function Economy() {
         </div>
       ) : (
         <div
-          className="mt-8 h-[480px] overflow-hidden rounded-lg border border-neutral-700"
+          className="mt-8 h-[480px] overflow-hidden rounded-lg border border-[#d5dccf]"
           aria-label="Recorded economy network"
         >
           <ReactFlow
-            colorMode="dark"
+            colorMode="light"
             nodes={nodes}
             edges={graph.edges}
             nodesDraggable={false}
@@ -58,7 +59,7 @@ export default function Economy() {
         </div>
       )}
       {(graph.truncated || Object.values(data.truncated).some(Boolean)) && (
-        <p className="mt-3 text-amber-200">
+        <p className="mt-3 text-amber-800">
           Bounded view: latest 50 jobs, 100 events, 50 payment intents and 150
           edges. Older records are omitted.
         </p>
@@ -67,9 +68,9 @@ export default function Economy() {
         <h2>Persisted activity</h2>
         <ol className="mt-4 grid gap-4">
           {data.events.map((e) => (
-            <li className="border-l border-neutral-700 pl-4" key={e._id}>
+            <li className="border-l border-[#d5dccf] pl-4" key={e._id}>
               <Link
-                className="text-sm text-emerald-300"
+                className="text-sm text-emerald-800"
                 href={`/missions/${e.missionId}`}
               >
                 {e.type}
@@ -95,7 +96,7 @@ export default function Economy() {
             </p>
             {p.txHash && (
               <a
-                className="break-all text-emerald-300 underline"
+                className="break-all text-emerald-800 underline"
                 target="_blank"
                 rel="noreferrer"
                 href={`https://testnet.nearblocks.io/txns/${encodeURIComponent(p.txHash)}`}
