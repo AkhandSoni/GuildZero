@@ -16,4 +16,4 @@
 14. **Convex Auth**.
 15. **Working complete economy first**; simplify visuals if necessary.
 
-Additional directions: two developers may use the handoff, but do **not** partition tasks by person. Work in 4 **sequential clusters** only, one at a time, gated by human approval. Four-day deadline and zero budget.
+Additional directions: work in 4 sequential clusters, with zero budget. The user subsequently authorized a bounded teammate package (economy kernel and data-service verification), and on 2026-11-12 authorized continued work and regular feature-branch pushes without waiting at every gate. Keep cluster acceptance criteria and report incomplete integration honestly.

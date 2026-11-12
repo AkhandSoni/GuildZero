@@ -1,11 +1,11 @@
 # Cluster execution status
 
-Current cluster: **Cluster 1 complete — stopped at the human review gate.**
+Current cluster: **Cluster 2 in progress on `feat/cluster-2-orchestration`. User authorized continued work and feature-branch pushes on 2026-11-12.**
 
 | Cluster | Status | Evidence |
 |---|---|---|
 | 1 Foundation + auth | COMPLETE | Local Convex deployment, 33 Vitest tests, live two-account browser test, lint/types/build, production smoke checks |
-| 2 Marketplace | BLOCKED BY GATE | — |
+| 2 Marketplace | IN PROGRESS | Convex lifecycle and integration tests; teammate engine not yet available |
 | 3 Security + NEAR | BLOCKED BY GATE | — |
 | 4 Demo + release | BLOCKED BY GATE | — |
 

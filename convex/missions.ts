@@ -63,14 +63,18 @@ export const create = mutation({
 export const update = mutation({
   args: { id: v.id("missions"), ...missionFields },
   handler: async (ctx, { id, ...args }) => {
-    await ownedMission(ctx, id);
+    const mission = await ownedMission(ctx, id);
+    if (mission.state !== "draft")
+      throw new ConvexError("MISSION_ALREADY_STARTED");
     await ctx.db.patch(id, { ...validated(args), updatedAt: Date.now() });
   },
 });
 export const remove = mutation({
   args: { id: v.id("missions") },
   handler: async (ctx, args) => {
-    await ownedMission(ctx, args.id);
+    const mission = await ownedMission(ctx, args.id);
+    if (mission.state !== "draft")
+      throw new ConvexError("MISSION_ALREADY_STARTED");
     await ctx.db.delete(args.id);
   },
 });

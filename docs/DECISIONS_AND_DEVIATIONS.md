@@ -2,6 +2,13 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-12 — continued implementation and teammate boundary
+
+- The user authorized continued implementation and regular commits/pushes to feature branches while away. This supersedes stopping for another approval after each completed cluster; implementation remains sequential and test results remain mandatory. No public submission is authorized.
+- The teammate owns the previously delivered economy kernel, CSV services, and independent verifier. No remote teammate branch exists at the start of this work. The lead is building the surrounding Convex lifecycle on `feat/cluster-2-orchestration` without duplicating or overwriting that package.
+- Internal workflow functions accept trusted worker outputs and independently enforce state, ownership, amount, capacity, negotiation and subcontract bounds. No public function accepts agent-authored verification, reputation deltas, or arbitrary awards. Tests using internal worker fixtures are explicitly persistence tests, not evidence of real CSV execution.
+- Until the teammate package is available and connected, opening an auction persists a real job but explicitly waits for the engine. No scheduled fake bids, fabricated outputs, or false completion claims are introduced. Cluster 2 cannot be accepted on persistence tests alone.
+
 ## 2026-11-10 — Cluster 1 implementation
 
 - The current master prompt supersedes the ancestor Counterparty Guard instructions. No Fastify, Rust contracts, or person-based work allocation applies to GuildZero. Existing planning documents are preserved.

@@ -10,7 +10,12 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as jobs from "../jobs.js";
+import type * as marketModel from "../marketModel.js";
 import type * as missions from "../missions.js";
+import type * as ownership from "../ownership.js";
+import type * as workflow from "../workflow.js";
+import type * as workflowHelpers from "../workflowHelpers.js";
 
 import type {
   ApiFromModules,
@@ -21,7 +26,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  jobs: typeof jobs;
+  marketModel: typeof marketModel;
   missions: typeof missions;
+  ownership: typeof ownership;
+  workflow: typeof workflow;
+  workflowHelpers: typeof workflowHelpers;
 }>;
 
 /**
