@@ -1,6 +1,6 @@
 import { internalMutation, internalQuery } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
-import { quote, audit } from "./paymentHelpers";
+import { quote, audit, bindingReason } from "./paymentHelpers";
 import { inspectReceipt } from "../lib/settlement/policy";
 import { event } from "./workflowHelpers";
 export const snapshot = internalQuery({
@@ -15,13 +15,19 @@ export const claim = internalMutation({
       return null;
     const job = await ctx.db.get(intent.jobId);
     if (!job) throw new ConvexError("JOB_NOT_FOUND");
-    const q = await quote(ctx, job);
-    if (
-      q.sender !== intent.sender ||
-      q.recipient !== intent.recipient ||
-      q.amountYocto !== intent.amountYocto
-    )
-      throw new ConvexError("PAYMENT_POLICY_CHANGED");
+    let reason: string | null;
+    try {
+      reason = bindingReason(intent, await quote(ctx, job));
+    } catch (error) {
+      reason = error instanceof ConvexError && typeof error.data === "string"
+        ? error.data : "PAYMENT_POLICY_CHANGED";
+    }
+    if (reason) {
+      // Return rather than throw so the denial/audit write is retained.
+      await audit(ctx, job, "CLAIM_PAYMENT", reason);
+      await ctx.db.patch(intentId, { authorizedAt: undefined, lastReason: reason });
+      return null;
+    }
     if (
       await ctx.db
         .query("signerLocks")

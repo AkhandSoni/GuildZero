@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { user, ownedJob } from "./ownership";
-import { audit, quote } from "./paymentHelpers";
+import { audit, quote, bindingReason } from "./paymentHelpers";
 import { configuration, candidateReason } from "../lib/settlement/policy";
 export const prepare = mutation({
   args: { jobId: v.id("jobs") },
@@ -19,6 +19,10 @@ export const prepare = mutation({
         ownerId: job.ownerId,
         jobId,
         contractId: q.contract._id,
+        policyVersion: q.policyVersion,
+        deliverableId: q.deliverableId,
+        verificationId: q.verificationId,
+        ...(q.disputeId ? { disputeId: q.disputeId } : {}),
         sender: q.sender,
         recipient: q.recipient,
         amountYocto: q.amountYocto,
@@ -60,13 +64,8 @@ export const authorize = mutation({
     if (!code)
       try {
         const q = await quote(ctx, job);
-        if (
-          q.recipient !== intent.recipient ||
-          q.amountYocto !== intent.amountYocto ||
-          q.sender !== intent.sender
-        )
-          code = "PAYMENT_POLICY_CHANGED";
-        else if (!configuration().enabled)
+        code = bindingReason(intent, q) ?? "";
+        if (!code && !configuration().enabled)
           code = "SETTLEMENT_CONFIGURATION_REQUIRED";
       } catch {
         code = "PAYMENT_POLICY_CHANGED";

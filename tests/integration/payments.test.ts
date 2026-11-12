@@ -33,7 +33,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.resetAllMocks();
 });
-async function setup() {
+async function setup(approval: "automatic" | "human" = "automatic") {
   vi.stubEnv("NEAR_OPERATOR_ACCOUNT_ID", "operator.testnet");
   vi.stubEnv(
     "NEAR_AGENT_RECIPIENTS_JSON",
@@ -100,7 +100,7 @@ async function setup() {
     await ctx.db.insert("verifications", {
       jobId,
       deliverableId,
-      verdict: "pass",
+      verdict: approval === "automatic" ? "pass" : "needs_human",
       checks: [
         {
           code: "TEST_ONLY",
@@ -109,6 +109,10 @@ async function setup() {
         },
       ],
       createdAt: Date.now(),
+    });
+    if (approval === "human") await ctx.db.insert("disputes", {
+      jobId, reason: "Explicit human approval fixture", decision: "approve",
+      decidedBy: owner, decidedAt: Date.now(),
     });
     return { owner, other, jobId };
   });
@@ -133,6 +137,9 @@ it("reuses one exact intent for idempotent prepare calls", async () => {
   expect(
     await s.t.run((ctx) => ctx.db.query("paymentIntents").collect()),
   ).toHaveLength(1);
+  expect(s.intent.policyVersion).toBe("guildzero-testnet-v1");
+  expect(s.intent.deliverableId).toBeTruthy();
+  expect(s.intent.verificationId).toBeTruthy();
 });
 it("keeps payment records private and refuses substituted recipients/amounts before claim", async () => {
   const s = await setup();
@@ -285,12 +292,93 @@ it("rechecks final work approval immediately before claim", async () => {
     await ctx.db.patch(s.intentId, { authorizedAt: Date.now() });
     await ctx.db.patch(s.jobId, { state: "disputed" });
   });
-  await expect(
-    s.t.mutation(internal.paymentWorker.claim, { intentId: s.intentId }),
-  ).rejects.toThrow("WORK_NOT_APPROVED");
+  expect(await s.t.mutation(internal.paymentWorker.claim, { intentId: s.intentId })).toBe(null);
   expect(
     await s.t.run((ctx) => ctx.db.query("signerLocks").collect()),
   ).toHaveLength(0);
+  expect((await s.owner.query(api.security.history, {}))).toEqual(
+    expect.arrayContaining([expect.objectContaining({ scenario: "CLAIM_PAYMENT", decision: "reject", reason: "WORK_NOT_APPROVED" })]),
+  );
+});
+it("refuses changed approved output before owner authorization and before signing", async () => {
+  const s = await setup();
+  vi.stubEnv("NEAR_NETWORK", "testnet");
+  vi.stubEnv("NEAR_SETTLEMENT_ENABLED", "true");
+  vi.stubEnv("NEAR_PRIVATE_KEY", "not-a-key-offline-test-only");
+  await s.t.run(async (ctx) => {
+    const deliverableId = await ctx.db.insert("deliverables", {
+      jobId: s.jobId, attempt: 1, format: "json", content: '{"fixture":"replacement"}',
+      createdAt: Date.now() + 1,
+    });
+    await ctx.db.insert("verifications", {
+      jobId: s.jobId, deliverableId, verdict: "pass", checks: [{ code: "FIXTURE", passed: true, detail: "Changed approval fixture" }], createdAt: Date.now() + 1,
+    });
+  });
+  expect(await s.owner.mutation(api.payments.authorize, {
+    intentId: s.intentId, recipient: s.intent.recipient, amountYocto: s.intent.amountYocto,
+  })).toEqual({ ok: false, code: "PAYMENT_APPROVAL_CHANGED" });
+  // Explicitly simulate an already-queued authorization seeing changed evidence.
+  await s.t.run((ctx) => ctx.db.patch(s.intentId, { authorizedAt: Date.now() }));
+  expect(await s.t.action(internal.nearSettlement.settle, { intentId: s.intentId }))
+    .toEqual({ ok: false, code: "NOT_CLAIMABLE" });
+  expect(transport.assertTestnet).not.toHaveBeenCalled();
+  expect(transport.rpc).not.toHaveBeenCalled();
+  expect(await s.t.run((ctx) => ctx.db.query("signerLocks").collect())).toEqual([]);
+  expect((await s.owner.query(api.payments.forJob, { jobId: s.jobId }))?.authorizedAt).toBeUndefined();
+  const audit = await s.owner.query(api.security.history, {});
+  expect(audit.filter((e) => e.reason === "PAYMENT_APPROVAL_CHANGED")).toHaveLength(2);
+});
+it("rejects replacement verification identity even when contract, price and output match", async () => {
+  const s = await setup();
+  await s.t.run(async (ctx) => {
+    const old = (await ctx.db.get(s.intent.verificationId!))!;
+    await ctx.db.delete(old._id);
+    await ctx.db.insert("verifications", {
+      jobId: old.jobId, deliverableId: old.deliverableId, verdict: old.verdict,
+      checks: old.checks, createdAt: Date.now(),
+    });
+    await ctx.db.patch(s.intentId, { authorizedAt: Date.now() });
+  });
+  expect(await s.t.mutation(internal.paymentWorker.claim, { intentId: s.intentId })).toBe(null);
+  expect((await s.owner.query(api.payments.forJob, { jobId: s.jobId }))?.lastReason)
+    .toBe("PAYMENT_APPROVAL_CHANGED");
+  expect(await s.t.run((ctx) => ctx.db.query("signerLocks").collect())).toEqual([]);
+});
+it("keeps historical unbound intents readable but blocks authorization/claim without inventing provenance", async () => {
+  const s = await setup();
+  await s.t.run((ctx) => ctx.db.patch(s.intentId, {
+    policyVersion: undefined, deliverableId: undefined, verificationId: undefined,
+  }));
+  expect(await s.owner.mutation(api.payments.authorize, {
+    intentId: s.intentId, recipient: s.intent.recipient, amountYocto: s.intent.amountYocto,
+  })).toEqual({ ok: false, code: "PAYMENT_APPROVAL_BINDING_REQUIRED" });
+  await s.t.run((ctx) => ctx.db.patch(s.intentId, { authorizedAt: Date.now() }));
+  expect(await s.t.mutation(internal.paymentWorker.claim, { intentId: s.intentId })).toBe(null);
+  const retained = await s.owner.query(api.payments.forJob, { jobId: s.jobId });
+  expect(retained?.status).toBe("READY");
+  expect(retained?.deliverableId).toBeUndefined();
+  expect(await s.owner.mutation(api.payments.prepare, { jobId: s.jobId }))
+    .toEqual({ ok: true, intentId: s.intentId });
+  expect(await s.t.run((ctx) => ctx.db.query("paymentIntents").collect())).toHaveLength(1);
+  expect(await s.t.run((ctx) => ctx.db.query("signerLocks").collect())).toEqual([]);
+});
+it("binds human-approved work to its exact owner decision and refuses substituted dispute evidence", async () => {
+  const legitimate = await setup("human");
+  expect(legitimate.intent.disputeId).toBeTruthy();
+  await legitimate.t.run((ctx) => ctx.db.patch(legitimate.intentId, { authorizedAt: Date.now() }));
+  expect(await legitimate.t.mutation(internal.paymentWorker.claim, { intentId: legitimate.intentId }))
+    .toMatchObject({ disputeId: legitimate.intent.disputeId, amountYocto: legitimate.intent.amountYocto });
+  const changed = await setup("human");
+  await changed.t.run(async (ctx) => {
+    await ctx.db.delete(changed.intent.disputeId!);
+    await ctx.db.insert("disputes", {
+      jobId: changed.jobId, reason: "Replacement fixture", decision: "approve",
+      decidedBy: changed.intent.ownerId, decidedAt: Date.now(),
+    });
+    await ctx.db.patch(changed.intentId, { authorizedAt: Date.now() });
+  });
+  expect(await changed.t.mutation(internal.paymentWorker.claim, { intentId: changed.intentId })).toBe(null);
+  expect((await changed.owner.query(api.payments.forJob, { jobId: changed.jobId }))?.lastReason).toBe("PAYMENT_APPROVAL_CHANGED");
 });
 it("mock RPC adapter persists transaction identity before its single broadcast and confirms matching final receipts", async () => {
   const s = await setup();

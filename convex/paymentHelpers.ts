@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { configuration, testnetAccount, yocto } from "../lib/settlement/policy";
+export const PAYMENT_POLICY_VERSION = "guildzero-testnet-v1";
 export async function audit(
   ctx: MutationCtx,
   job: Doc<"jobs">,
@@ -51,8 +52,12 @@ export async function quote(ctx: MutationCtx, job: Doc<"jobs">) {
   if (
     !deliverable ||
     !verification ||
+    verification.jobId !== job._id ||
     (verification.verdict !== "pass" && dispute?.decision !== "approve")
   )
+    throw new ConvexError("VERIFICATION_OR_BUYER_APPROVAL_REQUIRED");
+  if (verification.verdict !== "pass" &&
+      (dispute?.decidedBy !== job.ownerId || !Number.isSafeInteger(dispute.decidedAt)))
     throw new ConvexError("VERIFICATION_OR_BUYER_APPROVAL_REQUIRED");
   const config = configuration(),
     recipient = config.recipients[contract.agentId];
@@ -70,9 +75,32 @@ export async function quote(ctx: MutationCtx, job: Doc<"jobs">) {
   )
     throw new ConvexError("PAYMENT_EXCEEDS_RESERVATION");
   return {
+    policyVersion: PAYMENT_POLICY_VERSION,
+    deliverableId: deliverable._id,
+    verificationId: verification._id,
+    ...(verification.verdict !== "pass" && dispute ? { disputeId: dispute._id } : {}),
     contract,
     recipient,
     sender: config.sender,
     amountYocto: amount.toString(),
   };
+}
+
+/** Recheck the exact immutable approval snapshot before authorization/claim. */
+export function bindingReason(
+  intent: Doc<"paymentIntents">,
+  current: Awaited<ReturnType<typeof quote>>,
+): string | null {
+  if (intent.policyVersion !== PAYMENT_POLICY_VERSION ||
+      !intent.deliverableId || !intent.verificationId)
+    return "PAYMENT_APPROVAL_BINDING_REQUIRED";
+  if (intent.contractId !== current.contract._id ||
+      intent.deliverableId !== current.deliverableId ||
+      intent.verificationId !== current.verificationId ||
+      intent.disputeId !== current.disputeId)
+    return "PAYMENT_APPROVAL_CHANGED";
+  if (intent.sender !== current.sender || intent.recipient !== current.recipient ||
+      intent.amountYocto !== current.amountYocto)
+    return "PAYMENT_POLICY_CHANGED";
+  return null;
 }

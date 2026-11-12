@@ -15,6 +15,11 @@ export const missionFields = {
 export default defineSchema({
   ...authTables,
   paymentIntents: defineTable({
+    // Optional only for historical records. Unbound intents cannot be signed.
+    policyVersion: v.optional(v.string()),
+    deliverableId: v.optional(v.id("deliverables")),
+    verificationId: v.optional(v.id("verifications")),
+    disputeId: v.optional(v.id("disputes")),
     ownerId: v.id("users"),
     jobId: v.id("jobs"),
     contractId: v.id("contracts"),

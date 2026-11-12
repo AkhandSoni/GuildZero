@@ -2,6 +2,12 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-12 — payment approval binding (issue #8)
+
+- The issue audit identified missing persisted approval identity/policy version on payment intents. `fix/payment-approval-binding` stacks on the shared-contract fix and binds the exact approved deliverable, verification, optional owner dispute decision and policy version in addition to contract/sender/recipient/amount.
+- Authorization and signer claim reject changed or missing provenance before network/signing/lock acquisition. Claim rejection returns with a durable audit record and clears stale authorization; it no longer throws away denial evidence through transaction rollback.
+- Historical intents remain readable; unbound ones cannot authorize/claim and are not auto-migrated or replaced. Existing unknown/submitted transactions retain hash-based reconciliation. No real payout or integrated gate completion is claimed.
+
 ## 2026-11-12 — issue review and shared contracts
 
 - The user explicitly requested resolving repository issues and closing completed/unnecessary ones. Work is isolated on `fix/issue-1-economy-contracts`, based on the latest privacy fix; no feature branch is merged into main.
