@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { ownedJob, user } from "./ownership";
 import { optionsValidator } from "./marketModel";
 import { validateMission } from "../lib/missions";
+import { validateServiceOptions } from "../lib/economy";
 import { event, finish } from "./workflowHelpers";
 import {
   publicBid,
@@ -12,7 +13,8 @@ import {
   publicEvent,
 } from "./publicMarket";
 export const start = mutation({
-  args: { missionId: v.id("missions"), options: optionsValidator },
+  // options is a compatibility assertion, never an override of the saved brief.
+  args: { missionId: v.id("missions"), options: v.optional(optionsValidator) },
   handler: async (ctx, args) => {
     const ownerId = await user(ctx);
     const mission = await ctx.db.get(args.missionId);
@@ -24,7 +26,7 @@ export const start = mutation({
       .filter((q) => q.eq(q.field("depth"), 0))
       .unique();
     if (existing) {
-      if (JSON.stringify(existing.options) !== JSON.stringify(args.options))
+      if (args.options && JSON.stringify(existing.options) !== JSON.stringify(args.options))
         throw new ConvexError("START_OPTIONS_CHANGED");
       return existing._id;
     }
@@ -37,20 +39,14 @@ export const start = mutation({
       delimiter: ",",
       skipEmptyLines: "greedy",
     }).data[0];
-    if (
-      !args.options.columns.length ||
-      args.options.columns.length > 32 ||
-      new Set(args.options.columns).size !== args.options.columns.length ||
-      args.options.columns.some((c) => !columns.includes(c))
-    )
-      throw new ConvexError("INVALID_COLUMNS");
-    if (
-      mission.serviceType === "csv_summary" &&
-      args.options.caseMode !== undefined
-    )
-      throw new ConvexError("INVALID_OPTIONS");
-    if (mission.serviceType === "csv_normalize" && !args.options.caseMode)
-      throw new ConvexError("INVALID_OPTIONS");
+    const result = validateServiceOptions(mission.serviceType, mission.options, columns);
+    if (!result.ok) throw new ConvexError({ code: result.code, message: result.message });
+    if (args.options) {
+      const assertion = validateServiceOptions(mission.serviceType, args.options, columns);
+      if (!assertion.ok) throw new ConvexError({ code: assertion.code, message: assertion.message });
+      if (JSON.stringify(assertion.value) !== JSON.stringify(result.value))
+        throw new ConvexError("START_OPTIONS_CHANGED");
+    }
     const now = Date.now();
     const id = await ctx.db.insert("jobs", {
       ownerId,
@@ -58,7 +54,7 @@ export const start = mutation({
       depth: 0,
       serviceType: mission.serviceType,
       inputCsv: mission.inputCsv,
-      options: args.options,
+      options: result.value,
       budgetYocto: mission.maxBudgetYocto,
       reservedYocto: "0",
       state: "bidding",

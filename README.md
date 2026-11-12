@@ -40,12 +40,12 @@ Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions instead 
 
 1. Open `/sign-in`, choose **Sign up**, and create account A.
 2. On `/dashboard`, select **New mission**. Enter a title, choose `csv_normalize` or `csv_summary`, and select **Use synthetic sample CSV** or paste CSV.
-3. Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**.
+3. Select processing columns (numeric columns for statistics; case handling for normalization). Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**. Options persist with the draft and are visible after reload/edit.
 4. The saved `/missions/[id]` page shows the exact input and budget. Reload to confirm persistence; edit and save changes. Drafts move no funds.
 5. In a private browser window, create account B. Its dashboard does not list A's mission. Paste A's mission URL: access is denied without revealing the mission contents. Backend tests also exercise unauthorized edit/delete attempts.
 6. Sign back in as A and delete the draft using the confirmation step.
 
-On the orchestration branch, a draft also has **Open auction**. Select exact processing columns (and case mode for normalization), then open it. The job and `AUCTION_OPENED` event persist, and editing/deleting that mission is blocked. Refresh to see the same state. Until the teammate engine is integrated, it explicitly waits without generating activity. **Cancel unawarded auction** records cancellation and retains the immutable brief for audit. This does not transfer funds. Dispute decisions and actual submitted deliverables appear only when a trusted worker has persisted them.
+On the orchestration branch, **Open auction** uses the saved processing options. Older drafts without options remain editable but must save explicit selections before starting. The job and `AUCTION_OPENED` event persist, and editing/deleting the mission is blocked. Refresh to see the same state. Until the teammate engine is integrated, it explicitly waits without generating activity. **Cancel unawarded auction** records cancellation and retains the immutable brief for audit. This does not transfer funds. Dispute decisions and submitted deliverables appear only when a trusted worker has persisted them.
 
 On the experience branch, **Add sample missions** creates two owner-private synthetic drafts idempotently. **Remove unused samples** deletes only unused sample drafts; it preserves regular missions, active jobs, receipts and uncertain payment records. Open `/economy` to see the recorded job node and actual event stream; agent/award/subcontract edges appear only when those records exist. Use an agent profile link to inspect your own contract/reputation history; it is not a global rating.
 
@@ -87,7 +87,7 @@ For a production-build smoke check, run `npm run build`, then `npm start` while 
 - `app/`, `components/`: Next.js App Router UI, Tailwind, shadcn/ui-style Button/Input primitives, Convex client subscriptions, and authenticated navigation.
 - `convex/`: Convex Auth managed tables and HTTP routes; mission schema and owner-scoped query/create/update/delete functions. Owner IDs come exclusively from the verified session. Lists use indexed pagination; denied and nonexistent mission IDs return the same error.
 - `convex/jobs.ts`, `workflow.ts`, `workflowHelpers.ts`: owner-facing job controls and internal worker transitions. No public endpoint accepts bidder scores, verification verdicts or reputation deltas. Parent holdback plus child price equals the original award; child reservations are a breakdown of that award, not a second charge to the buyer. Rejected/pending obligations remain recorded conservatively for later settlement integration.
-- `lib/`: bounded mission validation, BigInt money conversion, static initial agents. No agent execution yet; the assigned teammate package remains untouched.
+- `lib/`: bounded mission validation, BigInt money conversion, static initial agents, and shared economy types/options validation. The teammate's decision algorithms, CSV executor and independent verifier remain pending.
 - `tests/`: unit, backend integration, and a live two-account browser smoke test.
 
 ## Branch combination and release

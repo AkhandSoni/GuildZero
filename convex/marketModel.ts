@@ -1,15 +1,7 @@
 import { v } from "convex/values";
+import { JOB_STATES } from "../lib/economy/types";
 export const jobState = v.union(
-  ...[
-    "bidding",
-    "working",
-    "verifying",
-    "revision",
-    "disputed",
-    "approved",
-    "rejected",
-    "cancelled",
-  ].map(v.literal),
+  ...JOB_STATES.map(v.literal),
 );
 export const optionsValidator = v.object({
   columns: v.array(v.string()),

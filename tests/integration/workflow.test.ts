@@ -25,6 +25,7 @@ async function setup() {
     title: "Summary",
     inputCsv: SAMPLE_CSV,
     serviceType: "csv_summary" as const,
+    options: { columns: ["units", "price"] },
     maxBudgetYocto: "10000000000000000000000000",
     acceptanceCriteria: "Summary",
     deadlineAt: Date.now() + 86400000,

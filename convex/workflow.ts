@@ -328,28 +328,21 @@ export const subcontract = internalMutation({
     // the child allocation a second time to the buyer's total reservation.
     const mission = await ctx.db.get(parent.missionId);
     if (!mission) throw new ConvexError("MISSION_NOT_FOUND");
+    const childOptions = {
+      columns: args.options.columns,
+      caseMode: args.options.caseMode ?? "preserve" as const,
+    };
     try {
       validateMission({
         ...mission,
         serviceType: "csv_normalize",
+        options: childOptions,
         inputCsv: parent.inputCsv,
         maxBudgetYocto: args.budgetYocto,
       });
     } catch {
       throw new ConvexError("INVALID_SUBCONTRACT_INPUT");
     }
-    // Every child transforms only explicit columns of the real parent dataset.
-    const headers = (await import("papaparse")).default.parse<string[]>(
-      parent.inputCsv,
-      { delimiter: ",", skipEmptyLines: "greedy" },
-    ).data[0];
-    if (
-      !args.options.columns.length ||
-      args.options.columns.length > 32 ||
-      new Set(args.options.columns).size !== args.options.columns.length ||
-      args.options.columns.some((c) => !headers.includes(c))
-    )
-      throw new ConvexError("INVALID_COLUMNS");
     const now = Date.now();
     const id = await ctx.db.insert("jobs", {
       ownerId: parent.ownerId,
@@ -358,10 +351,7 @@ export const subcontract = internalMutation({
       depth: 1,
       serviceType: "csv_normalize",
       inputCsv: parent.inputCsv,
-      options: {
-        ...args.options,
-        caseMode: args.options.caseMode ?? "preserve",
-      },
+      options: childOptions,
       budgetYocto: args.budgetYocto,
       reservedYocto: "0",
       state: "bidding",

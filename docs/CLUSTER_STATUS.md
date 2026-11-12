@@ -4,6 +4,14 @@ Current work: **User explicitly authorized independent Cluster 3/4 feature branc
 
 Latest follow-up branch: **`fix/negotiation-roles-pricing-privacy`**, based on the experience branch. The screenshot audit gaps are addressed in code; engine/live settlement/hosting acceptance remains pending.
 
+## GitHub issue follow-up — 2026-11-12
+
+Branch `fix/issue-1-economy-contracts` stacks on the pricing privacy fix. Issue #1 now has shared JSON engine contracts, validated saved processing options across mission CRUD/form/schema, explicit legacy-draft migration behavior, immutable launch options, and documented transition/idempotency boundaries. Only types and option validation occupy the shared engine directory; teammate algorithm/service/verifier implementations remain pending in #2/#3. A regression caught parent summary options being inherited during child normalization validation; children now use their own options. Old callers omitting options on edit clear stale selections, and launch cannot inject missing/changed options.
+
+Actual results: `npm test` **96 passed across 10 files**; `npm run test:integration` **52 passed** (included in the 96); lint/typecheck/build passed; the updated schema/functions deployed on the existing local backend; **4 production-browser tests passed** (summary options, normalization case mode, exact one-yocto budget, editing/reload, auth/privacy, graph/security samples). Client-boundary check passed on 25 assets; audit reported zero vulnerabilities; `git diff --check` passed. An initial browser selector collided with Next's route announcer; the selector was narrowed and the complete suite passed. No engine work, payment, cloud release or main merge is claimed by these results.
+
+The 13 open roadmap issues were reviewed against their full acceptance criteria, not titles. #1 is ready to close on its feature branch; the others remain necessary: #2/#3 engine, #4 scheduled integration, #5 meaningful subcontract execution, #6 earned reputation affecting later ranking, #7 full economy gate, #8 policy evidence/integration, #9 real finalized payment, #10 payment/security recovery gate, #11 complete live workflow/accessibility checks, #12 reproducible integrated release/recovery, #13 actual demo/submission and owner authorization. Earlier user approval permits feature work, but does not satisfy these functional gates. Main remains the foundation until the requested later combination.
+
 | Cluster | Status | Evidence |
 |---|---|---|
 | 1 Foundation + auth | COMPLETE | Local Convex deployment, 33 Vitest tests, live two-account browser test, lint/types/build, production smoke checks |

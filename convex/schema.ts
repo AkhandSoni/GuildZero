@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { jobState, optionsValidator, checkValidator } from "./marketModel";
 import { paymentState } from "./paymentModel";
 export const missionFields = {
+  options: v.optional(optionsValidator),
   title: v.string(),
   serviceType: v.union(v.literal("csv_normalize"), v.literal("csv_summary")),
   inputCsv: v.string(),

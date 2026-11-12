@@ -1,8 +1,8 @@
 # Cluster 2 worker integration
 
-The teammate implements `lib/economy/*`, its unit tests and fixtures. The lead owns these Convex transitions; no engine replacement or hardcoded bidder/service implementation is included here. This note is the integration boundary, not evidence that the worker is already running.
+The teammate implements the economy algorithms, CSV executor and independent verifier, with their unit tests and fixtures. Shared contracts are committed in `lib/economy/types.ts` and re-exported by `lib/economy/index.ts`; the lead owns the Convex transitions. No placeholder engine functions are exported. This note is the integration boundary, not evidence that the worker is already running.
 
-1. `api.jobs.start` authenticates the owner, validates selected columns/options and mission deadline, persists the root job, freezes the brief, and emits `AUCTION_OPENED`. Idempotent retries reuse the root job; changed options are rejected.
+1. Mission create/update accepts an optional `options` field, validates it against the service and exact CSV header names, and stores it on the draft. The form requires explicit selections. `api.jobs.start({ missionId })` authenticates the owner, requires saved options and a valid deadline, persists the root job/input/options snapshot, freezes the brief, and emits `AUCTION_OPENED`. Idempotent retries reuse the root job. The optional legacy launch `options` argument is only an equality assertion; it cannot override saved options or make an old draft executable.
 2. Once the engine package is available, connect a bounded internal scheduler/driver to compute individual bids and ranking using its real exports. Persist offers with `internal.workflow.recordBid`; negotiate using `negotiate` (rounds 2–3); award using `award` with the actual ranking explanation. Every write rechecks current state and financial/capacity bounds. Do not submit fixture worker data as demo evidence.
 3. For an eligible summary job, `subcontract` opens one normalization child within the parent award. It initially reduces parent holdback by the allocated child budget. Awarding the child sets parent holdback to parent award minus actual child price, preserving the original obligation exactly. The parent reservation includes the child; do not add them again at settlement.
 4. Call `internal.workflow.executionContext` before running a service. It returns the real source CSV for a direct job, or the approved child's stored CSV and `dependencyDeliverableId` for a parent with a child. Incomplete child work blocks this read. Use this returned input in the real service and independent verifier; do not bypass it with the original dataset.
@@ -24,4 +24,31 @@ New `workflow.negotiate` calls require `actorRole`. The existing bounded message
 
 Actor fields are optional in storage solely to preserve legacy rows. Old rows lacking either actor identity/role are labeled unknown and cannot be continued or used for new awards. Do not guess or silently backfill roles; cancel an unawarded legacy auction and create a new mission, or perform a separately reviewed provenance-preserving migration. Existing awarded contracts, approvals, receipts and reservations are not rewritten. Recheck current private floors before award; a changed floor requires reassessment.
 
-CSV parsing now uses an explicit comma delimiter consistently for mission validation and selected-column parsing, including a valid one-column CSV. This avoids delimiter-guessing failures without altering the exported service/action types. The teammate's `lib/economy/*` files remain untouched.
+CSV parsing uses an explicit comma delimiter consistently, including a valid one-column CSV. The shared type/validation files now occupy `lib/economy`; no teammate algorithm implementations have been replaced.
+
+## Shared contracts and draft migration (issue #1)
+
+Public types cover `Workload`, `CostModel`, `CostInput`/`CostEstimate`, `BidInput`/`BidOffer`/`BidDecision`, `BidSnapshot`/`RankingInput`/`RankedBid`, `CounterofferInput`/`NegotiationDecision`/`NegotiationRound`, `ServiceRequest`/`ServiceOutput`/`ColumnStatistics`, and `VerificationRequest`/`VerificationResult`/`VerificationCheck`. `EconomyEngine` specifies the six agreed function signatures. Import these types rather than creating competing definitions. Implementing the functions remains issues #2/#3; none is claimed available until implemented and exported. Existing `AgentProfile`, agent IDs, `ServiceType` and money helpers are reused.
+
+`Result<T>` is `{ ok: true, value: T } | { ok: false, code: ReasonCode, message: string }`. `REASON_CODES` in the entry point is the exact exported catalog. Validation errors are bounded messages, never input echoes; mission money/options failures use `{ code, message }` in `ConvexError.data`. Convex shape validation also rejects unknown keys. The engine must validate runtime inputs despite static types and return plain JSON: decimal integer monetary strings, finite numbers, explicit nulls for missing statistics, no `undefined`, BigInt, Maps or Dates. The handoff's arithmetic/input/output limits remain mandatory. Monetary round trips use `nearToYocto`/`formatNear` without conversion to Number. Normalization trims selected values; `caseMode` explicitly chooses preserve/lowercase. Summary options have only `columns`. Names match raw headers exactly, including whitespace; trimmed headers must still be unique/nonempty. Preserve selected-column order. No natural-language planning is introduced.
+
+Old drafts without options are not backfilled. They remain readable/editable/deletable; starting fails with `OPTIONS_REQUIRED` even when options are supplied only at launch. Save options through mission update first. Older update callers omitting options clear the field rather than leaving stale options attached to changed CSV. Already-started jobs retain their snapshots, relationships, approvals and financial records. Frontend/backend must deploy together. Child normalization uses its own validated options, never the summary parent's options.
+
+### Current persisted transition contract
+
+Timestamps are backend epoch milliseconds. Missions, jobs, bids, contracts, deliverables, verification, reputation and events have `createdAt`; mission/job changes have `updatedAt`. A negotiation's persisted Convex `_creationTime` is its audit timestamp; the pure worker receives explicit `createdAtMs` snapshots. Disputes record `decidedAt` only on the human decision. No historical timestamps are invented.
+
+| Entity / state | Allowed next state and authority |
+|---|---|
+| Mission `draft` | Owner edit/delete, or `active` when a valid saved brief starts |
+| Mission `active` | Brief remains immutable; job history represents outcome |
+| Job `bidding` | Internal award → `working`; owner may cancel an unawarded root → `cancelled` |
+| Job `working` / `revision` | Internal submission → `verifying` |
+| Job `verifying` | Verification pass → `approved`; first fail → `revision`; next fail or `needs_human` → `disputed` |
+| Job `disputed` | Owner decision → `approved` / `rejected`; incomplete child blocks parent approval |
+| Job `approved` / `rejected` / `cancelled` | Terminal here; payment state is separate |
+| Contract `active` | Finalized job → `completed` / `failed`; terminal contracts are immutable |
+
+Idempotency identities: mission's root job, `(jobId, agentId)` bid, `(bidId, round)` negotiation, job award, parent child, `(jobId, attempt)` submission, deliverable verification, and job reputation outcome. Existing functions return identical root/bid records where supported; other duplicate/stale transitions reject. The driver must read persisted state before repeating them. Scheduler crash/retry integration remains #4/#7.
+
+Convex mutations write each transition/event in the same transaction. Award atomically checks capacity and reserves the root award; child allocation splits it rather than adding another buyer charge. Parent holdback plus actual child price equals the original award after selection. Root cancellation is permitted before commitment only. Rejected/uncertain obligations remain conservative; settlement reconciliation owns release policy. Shared contracts add no network calls, signing or new auctions.

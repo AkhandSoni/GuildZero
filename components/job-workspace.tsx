@@ -1,7 +1,6 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import Papa from "papaparse";
 import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
@@ -13,11 +12,6 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const start = useMutation(api.jobs.start);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const headers =
-    Papa.parse<string[]>(mission.inputCsv, {
-      delimiter: ",",
-      skipEmptyLines: "greedy",
-    }).data[0] ?? [];
   const root = jobs?.find((j) => j.depth === 0);
   if (jobs === undefined)
     return (
@@ -26,11 +20,15 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
       </p>
     );
   if (root) return <JobDetail id={root._id} />;
+  if (!mission.options) return <section className="panel mt-8">
+    <h2>Processing options needed</h2>
+    <p className="muted mt-3">Edit this draft and save explicit processing columns before opening an auction. Existing input and budget are preserved.</p>
+  </section>;
   return (
     <section className="panel mt-8">
       <h2>Open an auction</h2>
       <p className="muted mt-2 text-sm">
-        Choose exact processing columns. Opening locks the brief and records an
+        Opening uses the saved processing options, locks the brief and records an
         auction. Automated bidding and execution await the economy engine; no
         work or payments are simulated.
       </p>
@@ -38,28 +36,16 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
         className="mt-5 grid gap-4"
         onSubmit={async (e) => {
           e.preventDefault();
-          const data = new FormData(e.currentTarget);
           setError("");
           setBusy(true);
           try {
             await start({
               missionId: mission._id,
-              options: {
-                columns: data.getAll("column").map(String),
-                ...(mission.serviceType === "csv_normalize"
-                  ? {
-                      caseMode:
-                        data.get("caseMode") === "lowercase"
-                          ? ("lowercase" as const)
-                          : ("preserve" as const),
-                    }
-                  : {}),
-              },
             });
           } catch (err) {
             setError(
               err instanceof ConvexError
-                ? String(err.data)
+                ? typeof err.data === "object" && err.data !== null && "message" in err.data ? String(err.data.message) : String(err.data)
                 : "Could not open auction.",
             );
           } finally {
@@ -67,24 +53,7 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
           }
         }}
       >
-        <fieldset className="grid gap-2">
-          <legend className="mb-2 text-sm">Columns to process</legend>
-          {headers.map((h) => (
-            <label key={h} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="column" value={h} />
-              {h}
-            </label>
-          ))}
-        </fieldset>
-        {mission.serviceType === "csv_normalize" && (
-          <label className="field">
-            Case handling
-            <select name="caseMode" className="control">
-              <option value="preserve">Preserve case</option>
-              <option value="lowercase">Lowercase</option>
-            </select>
-          </label>
-        )}
+        <p className="muted text-sm">Columns: {mission.options.columns.join(", ")}. Edit the draft to change processing options.</p>
         {error && (
           <p role="alert" className="text-red-300">
             {error}

@@ -19,13 +19,17 @@ test("owner opens, reloads and cancels a persisted auction without fabricated wo
   await page.getByLabel("Mission title").fill("Auction persistence test");
   await page.getByRole("button", { name: "Use synthetic sample CSV" }).click();
   await page.getByRole("button", { name: "Create private mission" }).click();
-  await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
-  await page.getByRole("button", { name: "Open auction", exact: true }).click();
   await expect(
-    page.getByText("INVALID_COLUMNS", { exact: true }),
+    page.getByRole("alert").filter({ hasText: "Select 1–32 unique column names" }),
   ).toBeVisible();
+  await expect(page).toHaveURL(/\/missions\/new$/);
   await page.getByRole("checkbox", { name: "units", exact: true }).check();
   await page.getByRole("checkbox", { name: "price", exact: true }).check();
+  await page.getByRole("button", { name: "Create private mission" }).click();
+  await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
+  await expect(page.getByTestId("saved-options")).toHaveText("units, price");
+  await page.reload();
+  await expect(page.getByTestId("saved-options")).toHaveText("units, price");
   await page.getByRole("button", { name: "Open auction", exact: true }).click();
   await expect(
     page.getByText("Persisted job · bidding", { exact: true }),

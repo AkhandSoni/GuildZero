@@ -16,6 +16,7 @@ async function setup() {
   const missionId = await buyer.mutation(api.missions.create, {
     title: "Pricing privacy test",
     serviceType: "csv_summary",
+    options: { columns: ["x"] },
     inputCsv: "x\n1",
     maxBudgetYocto: "1000000000000000000000000",
     acceptanceCriteria: "Fixture",

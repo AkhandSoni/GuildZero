@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Papa from "papaparse";
 import { ConvexError } from "convex/values";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,11 @@ export function MissionForm({
   onSave: (input: MissionInput) => Promise<unknown>;
 }) {
   const [csv, setCsv] = useState(initial?.inputCsv ?? "");
+  const [serviceType, setServiceType] = useState<ServiceType>(initial?.serviceType ?? "csv_summary");
+  const [selectedColumns, setSelectedColumns] = useState(initial?.options?.columns ?? []);
+  const headers = Papa.parse<string[]>(csv.slice(0, 65536), {
+    delimiter: ",", skipEmptyLines: "greedy", preview: 1,
+  }).data[0] ?? [];
   const [deadline] = useState(() =>
     localDate(initial?.deadlineAt ?? Date.now() + 86400000),
   );
@@ -41,6 +47,9 @@ export function MissionForm({
           const input = validateMission({
             title: String(data.get("title")),
             serviceType: String(data.get("serviceType")) as ServiceType,
+            options: serviceType === "csv_normalize"
+              ? { columns: selectedColumns, caseMode: data.get("caseMode") === "lowercase" ? "lowercase" : "preserve" }
+              : { columns: selectedColumns },
             inputCsv: csv,
             maxBudgetYocto: nearToYocto(String(data.get("budget"))),
             acceptanceCriteria: String(data.get("acceptanceCriteria")),
@@ -50,7 +59,7 @@ export function MissionForm({
         } catch (err) {
           setError(
             err instanceof ConvexError
-              ? String(err.data)
+              ? typeof err.data === "object" && err.data !== null && "message" in err.data ? String(err.data.message) : String(err.data)
               : err instanceof Error
                 ? err.message
                 : "Unable to save mission.",
@@ -76,7 +85,8 @@ export function MissionForm({
           <select
             className="control"
             name="serviceType"
-            defaultValue={initial?.serviceType ?? "csv_summary"}
+            value={serviceType}
+            onChange={(e) => setServiceType(e.target.value as ServiceType)}
           >
             <option value="csv_summary">CSV summary statistics</option>
             <option value="csv_normalize">CSV column normalization</option>
@@ -129,6 +139,31 @@ export function MissionForm({
       >
         Use synthetic sample CSV
       </Button>
+      <fieldset className="grid gap-2">
+        <legend className="mb-2 text-sm">Columns to process</legend>
+        <p className="muted mb-2 text-xs">
+          {serviceType === "csv_summary" ? "Select numeric columns for summary statistics." : "Selected columns are trimmed; choose how to handle letter case."}
+          {" "}These options are saved with the mission. Column names match the CSV header exactly.
+        </p>
+        {headers.length > 0 && headers.length <= 32 ? headers.map((header, i) => (
+          <label key={`${i}:${header}`} className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="column" value={header}
+              checked={selectedColumns.includes(header)}
+              onChange={(e) => setSelectedColumns(e.target.checked
+                ? [...selectedColumns, header]
+                : selectedColumns.filter((column) => column !== header))} />
+            {header}
+          </label>
+        )) : <p className="muted text-sm">Enter a CSV dataset to choose its columns.</p>}
+      </fieldset>
+      {serviceType === "csv_normalize" && <label className="field">
+        Case handling
+        <select name="caseMode" className="control"
+          defaultValue={initial?.options && "caseMode" in initial.options ? initial.options.caseMode : "preserve"}>
+          <option value="preserve">Preserve case</option>
+          <option value="lowercase">Lowercase</option>
+        </select>
+      </label>}
       <label className="field">
         Acceptance criteria
         <textarea
@@ -142,8 +177,7 @@ export function MissionForm({
           }
         />
         <span className="muted text-xs">
-          Notes for the mission; automatic execution and verification arrive in
-          Cluster 2.
+          Human review notes. Processing uses the saved template options; these notes cannot change execution or payment rules.
         </span>
       </label>
       {error && (

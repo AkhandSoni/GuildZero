@@ -29,6 +29,9 @@ export const seed = mutation({
               : "Sample: CSV normalization",
           serviceType,
           inputCsv: SAMPLE_CSV,
+          options: serviceType === "csv_summary"
+            ? { columns: ["units", "price"] }
+            : { columns: ["product", "region"], caseMode: "preserve" },
           maxBudgetYocto: "1000000000000000000000000",
           acceptanceCriteria:
             "Synthetic sample dataset. Process only the explicitly selected template columns.",

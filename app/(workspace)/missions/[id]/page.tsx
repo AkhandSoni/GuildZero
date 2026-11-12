@@ -73,6 +73,12 @@ export default function MissionPage({
             </div>
           </dl>
           <div>
+            <h2>Saved processing options</h2>
+            <p className="muted mt-3" data-testid="saved-options">
+              {mission.options ? `${mission.options.columns.join(", ")}${mission.options.caseMode ? ` · ${mission.options.caseMode}` : ""}` : "Not set. Edit the draft before opening an auction."}
+            </p>
+          </div>
+          <div>
             <h2>Acceptance criteria</h2>
             <p className="muted mt-3 whitespace-pre-wrap">
               {mission.acceptanceCriteria}

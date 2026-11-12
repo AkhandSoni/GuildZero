@@ -60,7 +60,7 @@ it("keeps graph data, agent contract history and events private between owners",
   const sample = await s.alice.mutation(api.demo.seed, {});
   const jobId = await s.alice.mutation(api.jobs.start, {
     missionId: sample.missionIds[1],
-    options: { columns: ["units"] },
+    options: { columns: ["units", "price"] },
   });
   const bidId = await s.t.mutation(internal.workflow.recordBid, {
     jobId,
@@ -96,7 +96,7 @@ it("reset preserves active sample missions, job history and uncertain payment re
   const samples = await s.alice.mutation(api.demo.seed, {});
   const jobId = await s.alice.mutation(api.jobs.start, {
     missionId: samples.missionIds[1],
-    options: { columns: ["units"] },
+    options: { columns: ["units", "price"] },
   });
   const bidId = await s.t.mutation(internal.workflow.recordBid, {
     jobId,

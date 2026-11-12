@@ -4,7 +4,7 @@ import { ConvexError, v } from "convex/values";
 import { query, mutation, type QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { missionFields } from "./schema";
-import { validateMission, type MissionInput } from "../lib/missions";
+import { validateMission, MissionValidationError, type MissionInput } from "../lib/missions";
 async function requireUser(ctx: QueryCtx) {
   const id = await getAuthUserId(ctx);
   if (!id || !(await ctx.db.get(id))) throw new ConvexError("UNAUTHENTICATED");
@@ -21,6 +21,8 @@ function validated(input: MissionInput) {
   try {
     return validateMission(input);
   } catch (error) {
+    if (error instanceof MissionValidationError)
+      throw new ConvexError({ code: error.code, message: error.message });
     throw new ConvexError(
       error instanceof Error ? error.message : "Invalid mission.",
     );
@@ -66,7 +68,8 @@ export const update = mutation({
     const mission = await ownedMission(ctx, id);
     if (mission.state !== "draft")
       throw new ConvexError("MISSION_ALREADY_STARTED");
-    await ctx.db.patch(id, { ...validated(args), updatedAt: Date.now() });
+    const input = validated(args);
+    await ctx.db.patch(id, { ...input, options: input.options, updatedAt: Date.now() });
   },
 });
 export const remove = mutation({

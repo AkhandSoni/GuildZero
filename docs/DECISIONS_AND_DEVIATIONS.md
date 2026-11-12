@@ -2,6 +2,13 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-12 — issue review and shared contracts
+
+- The user explicitly requested resolving repository issues and closing completed/unnecessary ones. Work is isolated on `fix/issue-1-economy-contracts`, based on the latest privacy fix; no feature branch is merged into main.
+- Shared type contracts and option validation are now committed under `lib/economy` for issue #1. These support the teammate's assigned algorithms/CSV/verifier work rather than replacing it. The integration signatures follow the existing handoff, with no runtime stubs or claims of a functioning engine.
+- Processing options are stored on drafts and become part of the immutable launch snapshot. Existing missing-option drafts remain editable but cannot run until options are saved; a legacy launch argument cannot bypass that requirement. Existing active jobs are not rewritten. Older edit callers omitting options invalidate stale selections. Frontend/backend updates must ship together.
+- Issue closure requires the ticket's acceptance evidence. Backend fixtures and completed surrounding UI do not establish real service execution, payment success, hosted deployment or final submission; those issues remain open until demonstrated.
+
 ## 2026-11-12 — continued implementation and teammate boundary
 
 - The user authorized continued implementation and regular commits/pushes to feature branches while away. This supersedes stopping for another approval after each completed cluster; implementation remains sequential and test results remain mandatory. No public submission is authorized.
