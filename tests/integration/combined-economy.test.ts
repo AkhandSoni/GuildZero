@@ -30,7 +30,7 @@ async function setup() {
     acceptanceCriteria: "Selected column statistics must match the source.",
     deadlineAt: Date.now() + 86400000,
   });
-  const jobId = await owner.mutation(api.jobs.start, { missionId });
+  const jobId = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   return { t, owner, outsider, ownerId, missionId, jobId };
 }
 type Setup = Awaited<ReturnType<typeof setup>>;
@@ -99,7 +99,8 @@ async function submit(s: Setup, jobId: Id<"jobs">, output: ServiceOutput) {
 }
 async function verifyStored(s: Setup, jobId: Id<"jobs">, deliverableId: Id<"deliverables">, request: ServiceRequest) {
   const detail = await s.owner.query(api.jobs.detail, { id: jobId });
-  const stored = detail.deliverables.find((d) => d._id === deliverableId)!;
+  const stored = (await s.t.run(ctx => ctx.db.get(deliverableId)))!;
+  expect(detail.deliverables.find(d => d._id === deliverableId)?.content).toBeNull();
   const source = value(runService(request));
   const actual: unknown = request.serviceType === "csv_normalize"
     ? { ...source, csv: stored.content }

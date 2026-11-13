@@ -22,7 +22,7 @@ async function setup() {
     acceptanceCriteria: "Fixture",
     deadlineAt: Date.now() + 86400000,
   });
-  const jobId = await buyer.mutation(api.jobs.start, {
+  const jobId = await buyer.mutation(api.jobs.start, { allowUnfundedPreview: true,
     missionId,
     options: { columns: ["x"] },
   });

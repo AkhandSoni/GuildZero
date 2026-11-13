@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { user } from "./ownership";
-import { PAYMENT_POLICY_VERSION } from "./paymentHelpers";
+import { deliveryAccess } from "./deliveryAccess";
 
 const removed = "Content removed by owner";
 const terminal = new Set(["approved", "rejected", "cancelled", "unawarded"]);
@@ -37,15 +37,15 @@ async function snapshot(ctx: QueryCtx, id: Id<"missions">) {
       const lock = await ctx.db.query("signerLocks").withIndex("by_sender", q => q.eq("sender", payment.sender)).unique();
       if (payment.status !== "CONFIRMED" || lock?.intentId === payment._id || payment.ownerId !== ownerId || !payment.txHash || !payment.blockHash || !payment.nonce) reason = "Settlement remains unresolved; keep content for reconciliation.";
     }
-    for (const contract of row.contracts) {
-      if (contract.state !== "completed") continue;
-      const latest = row.deliverables[0];
-      const verification = row.verifications.find(v => v.deliverableId === latest?._id);
-      const dispute = row.disputes[0];
-      const payment = row.payments[0];
-      if (!latest || !verification || !payment || payment.status !== "CONFIRMED" || payment.contractId !== contract._id || payment.amountYocto !== contract.holdbackYocto || payment.policyVersion !== PAYMENT_POLICY_VERSION || payment.deliverableId !== latest._id || payment.verificationId !== verification._id || (verification.verdict !== "pass" && (!dispute || dispute.decision !== "approve" || dispute.decidedBy !== ownerId || !dispute.decidedAt || payment.disputeId !== dispute._id)) || (verification.verdict === "pass" && payment.disputeId !== undefined)) reason = "Every completed obligation needs its exact approved, confirmed payment before removal.";
-    }
     if (row.payments.some(p => !row.contracts.some(c => c._id === p.contractId && c.state === "completed"))) reason = "Financial history requires operator review.";
+  }
+  if (!reason && rows.some(row => row.contracts.some(contract => contract.state === "completed"))) {
+    const root = jobs.find(job => job.depth === 0)!;
+    // Irreversible deletion must require exactly the same complete group proof
+    // as full delivery: final evidence, distinct transfers, conserved allocation
+    // and latest parent/child dependency bindings. Never duplicate this policy.
+    const access = await deliveryAccess(ctx, root);
+    if (!access.released) reason = `Confirmed delivery evidence required before removal: ${access.reason}.`;
   }
   return { mission, rows, reason };
 }

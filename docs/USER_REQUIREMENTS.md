@@ -45,7 +45,7 @@ Validation must connect these IDs to unit, backend ownership/pagination/copy and
 - [U9: Define a safe account-recovery path before real business adoption](https://github.com/AkhandSoni/GuildZero/issues/24) — follow-up backlog.
 - [U10: Validate business-user requirements with representative task sessions](https://github.com/AkhandSoni/GuildZero/issues/25) — follow-up backlog.
 
-U8 records accidental loss of unsaved edits; no browser or in-app dirty-form warning is implemented yet. U9 records the existing no-recovery demo-account limitation; a safe recovery channel and configuration must be agreed before any implementation. U10 records the lack of representative-user validation; no interview results or adoption metrics are invented.
+U8 now has browser/in-app dirty-form warnings, explicit discard and guarded cancellation; see docs/issue-23-plan.md for implementation and validation. Private inputs remain in React memory, with no browser-storage autosave. U9 records the existing no-recovery demo-account limitation; a safe recovery channel and configuration must be agreed before any implementation. U10 records the lack of representative-user validation; no interview results or adoption metrics are invented.
 
 ## Implementation evidence
 
@@ -74,3 +74,18 @@ Account recovery, representative-user research and public release remain separat
 The owner observed that a workspace-only revision left the public home and account/form/detail pages looking like unrelated prototypes. The approved follow-up covers the entire existing app. [Linear's interface hierarchy](https://linear.app/now/behind-the-latest-design-refresh), [Geist foundations](https://vercel.com/geist/introduction) and [Trigger.dev's inspector](https://trigger.dev/changelog/run-page-inspector) informed subdued navigation, consistent typography, meaningful public examples and evidence available on demand. These references inform design; GuildZero does not claim their capabilities or reuse their screen artwork.
 
 Acceptance includes the public home, authentication, all private routes and fallback states; actual sample calculations, usable service links, structured mission creation, clear result/evidence presentation, readable contrast, keyboard-accessible controls and responsive layouts. Original CSV, deliverable and negotiation evidence stays available behind explicit expanders. Metrics, transaction states and private ownership remain unchanged. Only observed source/test evidence can close #30.
+
+## Business findings and selected implementation (#31–#36)
+
+The owner observed that a complete output was accessible even when payment failed. This establishes a concrete unpaid-delivery gap, distinct from visual design. [Stripe's fulfillment guidance](https://docs.stripe.com/checkout/fulfillment) informed payment-bound fulfillment, and [Upwork's funded milestone/review flow](https://support.upwork.com/hc/en-us/articles/211063718-How-payments-for-milestones-and-fixed-price-contracts-work) informed the distinction between planning budget, committed funds and accepted work. These are requirements inputs; GuildZero does not integrate Stripe or implement Upwork escrow/automatic release.
+
+| Issue | Business impact | Disposition |
+|---|---|---|
+| #31 Confirmed, bound deliverable release | A buyer can take full output without settling | Claimed and implemented in this pass; metadata-only prepayment, latest bound output after all required receipts. |
+| #32 Shared operator spending allowance | Another app login can consume the shared demo treasury | Open/unclaimed; no per-owner allowance is represented as implemented. |
+| #33 Recovery of proven pre-broadcast failures | Completed work can remain locked behind a permanent failed intent | Open/unclaimed; no intent recycling or blind payment retry. |
+| #34 Payment-readiness before commitment | Users can confuse a planning budget with payable/funded work | Claimed and implemented: configuration/recipient preflight, explicit unfunded-preview acknowledgment, conservative automated award cap and no funding promise. |
+| #35 Dataset retention and deletion | Business CSVs/results persist after work without an agreed retention workflow | Open/unclaimed; [ICO storage-limitation guidance](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/) is a requirements reference, not a compliance claim. |
+| #36 Locale/currency CSV interpretation | Real exports contain formatting rejected by strict numeric input | Open/unclaimed; [OpenRefine input exploration](https://openrefine.org/docs/manual/exploring) motivates explicit interpretation. No automatic conversion or broader revenue service added. |
+
+Only #31/#34 were selected after the owner's instruction to claim and solve a few issues. No interviews, paid services, mainnet integration, trial subscriptions or new live payment were introduced. Full confirmed-release backend coverage uses offline fixtures; live browser checks are separately identified.

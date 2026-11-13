@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { testBackend, asUser } from "../helpers/backend";
 import schema from "../../convex/schema";
 import type { Id } from "../../convex/_generated/dataModel";
+import { deliveryAccess } from "../../convex/deliveryAccess";
 import { api, internal } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
 const secret = "PRIVATE_DATASET_MARKER";
@@ -15,7 +16,7 @@ async function setup(child = false) {
     const missionId = await ctx.db.insert("missions", { ownerId, title: secret, acceptanceCriteria: secret, inputCsv: secret, options: { columns: [secret] }, serviceType: "csv_summary", state: "active", maxBudgetYocto: "100", deadlineAt: Date.now() + 100000, createdAt: 1, updatedAt: 1 });
     const jobs = [];
     for (let i = 0; i < (child ? 2 : 1); i++) {
-      const jobId: Id<"jobs"> = await ctx.db.insert("jobs", { ownerId, missionId, depth: i as 0 | 1, ...(i ? { parentId: jobs[0].jobId } : {}), serviceType: "csv_summary", state: "approved", inputCsv: secret, options: { columns: [secret] }, workerError: secret, budgetYocto: "100", reservedYocto: child && i === 0 ? "100" : "50", revisionCount: 0, createdAt: 1, updatedAt: 1 });
+      const jobId: Id<"jobs"> = await ctx.db.insert("jobs", { ownerId, missionId, depth: i as 0 | 1, ...(i ? { parentId: jobs[0].jobId } : {}), serviceType: "csv_summary", state: "approved", cleanBeforeProcessing: child && i === 0, inputCsv: secret, options: { columns: [secret] }, workerError: secret, budgetYocto: "100", reservedYocto: child && i === 0 ? "100" : "50", revisionCount: 0, createdAt: 1, updatedAt: 1 });
       const bidId = await ctx.db.insert("bids", { jobId, agentId: "stats-core", priceYocto: child && i === 0 ? "100" : "50", minimumYocto: "20", etaMs: 1, rationale: secret, createdAt: 1 });
       const contractId = await ctx.db.insert("contracts", { jobId, bidId, agentId: "stats-core", amountYocto: child && i === 0 ? "100" : "50", holdbackYocto: "50", state: "completed", selectionReason: secret, createdAt: 1 });
       const deliverableId = await ctx.db.insert("deliverables", { jobId, attempt: 0, format: "json", content: secret, verificationPayload: secret, createdAt: 1 });
@@ -24,9 +25,10 @@ async function setup(child = false) {
       await ctx.db.insert("negotiations", { jobId, bidId, round: 1, action: "accept", priceYocto: "50", explanation: secret });
       await ctx.db.insert("economyEvents", { jobId, missionId, ownerId, type: "WORK_APPROVED", detail: secret, createdAt: 1 });
       await ctx.db.insert("securityEvents", { jobId, ownerId, scenario: "CHAIN_RESULT", decision: "allow", reason: secret, createdAt: 1 });
-      const intentId = await ctx.db.insert("paymentIntents", { jobId, contractId, deliverableId, verificationId, policyVersion: "guildzero-testnet-v1", ownerId, sender: "operator.testnet", recipient: "worker.testnet", amountYocto: "50", network: "testnet", status: "CONFIRMED", txHash: "fixture-hash", nonce: "1", blockHash: "fixture-block", createdAt: 1 });
+      const intentId = await ctx.db.insert("paymentIntents", { jobId, contractId, deliverableId, verificationId, policyVersion: "guildzero-testnet-v1", ownerId, sender: "operator.testnet", recipient: "worker.testnet", amountYocto: "50", network: "testnet", status: "CONFIRMED", txHash: String(i + 1).repeat(32), nonce: String(i + 1), blockHash: "3".repeat(32), authorizedAt: 1, lastCheckAt: 2, lastReason: "FINAL_MATCHING_TRANSFER", createdAt: 1 });
       jobs.push({ jobId, intentId, contractId, deliverableId, verificationId });
     }
+    if (child) await ctx.db.patch(jobs[0].deliverableId, { dependencyDeliverableId: jobs[1].deliverableId });
     return { ownerId, otherId, missionId, jobs };
   });
   return { t, ...ids, owner: await asUser(t, ids.ownerId), other: await asUser(t, ids.otherId) };
@@ -44,6 +46,7 @@ describe("owner dataset retention", () => {
     const s = await setup(true);
     const original = await s.t.run(ctx => ctx.db.query("paymentIntents").collect());
     expect((await s.owner.query(api.retention.status, { missionId: s.missionId })).eligible).toBe(true);
+    expect(await s.t.run(async ctx => (await deliveryAccess(ctx, (await ctx.db.get(s.jobs[0].jobId))!)).released)).toBe(true);
     await s.owner.mutation(api.retention.removeContent, { missionId: s.missionId, ...confirmation });
     const dump = await s.t.run(async ctx => ({
       missions: await ctx.db.query("missions").collect(), jobs: await ctx.db.query("jobs").collect(),
@@ -91,6 +94,44 @@ describe("owner dataset retention", () => {
     const s = await setup();
     await s.t.run(ctx => ctx.db.insert("signerLocks", { sender: "operator.testnet", intentId: s.jobs[0].intentId }));
     await expect(s.owner.mutation(api.retention.removeContent, { missionId: s.missionId, ...confirmation })).rejects.toThrow();
+  });
+  it.each([
+    "missing final reason", "wrong final reason", "malformed transaction hash", "malformed block hash", "malformed nonce",
+    "missing authorization", "invalid authorization", "missing evidence timestamp", "duplicate transaction", "duplicate sender nonce",
+    "broken allocation", "broken dependency", "missing required child",
+  ])("retains completed parent/child content when shared delivery rejects %s", async kind => {
+    const s = await setup(true);
+    const root = s.jobs[0], child = s.jobs[1];
+    const released = () => s.t.run(async ctx => (await deliveryAccess(ctx, (await ctx.db.get(root.jobId))!)).released);
+    expect(await released()).toBe(true);
+    await s.t.run(async ctx => {
+      switch (kind) {
+        case "missing final reason": await ctx.db.patch(child.intentId, { lastReason: undefined }); break;
+        case "wrong final reason": await ctx.db.patch(child.intentId, { lastReason: "SIGNED_NOT_YET_CONFIRMED" }); break;
+        case "malformed transaction hash": await ctx.db.patch(child.intentId, { txHash: "fixture-hash" }); break;
+        case "malformed block hash": await ctx.db.patch(child.intentId, { blockHash: "fixture-block" }); break;
+        case "malformed nonce": await ctx.db.patch(child.intentId, { nonce: "not-a-nonce" }); break;
+        case "missing authorization": await ctx.db.patch(child.intentId, { authorizedAt: undefined }); break;
+        case "invalid authorization": await ctx.db.patch(child.intentId, { authorizedAt: 1.5 }); break;
+        case "missing evidence timestamp": await ctx.db.patch(child.intentId, { lastCheckAt: undefined }); break;
+        case "duplicate transaction": await ctx.db.patch(child.intentId, { txHash: (await ctx.db.get(root.intentId))!.txHash }); break;
+        case "duplicate sender nonce": await ctx.db.patch(child.intentId, { nonce: (await ctx.db.get(root.intentId))!.nonce }); break;
+        case "broken allocation": await ctx.db.patch(root.contractId, { amountYocto: "99" }); break;
+        case "broken dependency": await ctx.db.patch(root.deliverableId, { dependencyDeliverableId: undefined }); break;
+        case "missing required child": await ctx.db.patch(child.jobId, { parentId: undefined }); break;
+      }
+    });
+    expect(await released()).toBe(false);
+    const before = await s.t.run(async ctx => ({
+      mission: await ctx.db.get(s.missionId), parent: await ctx.db.get(root.deliverableId), child: await ctx.db.get(child.deliverableId),
+      payments: await ctx.db.query("paymentIntents").collect(),
+    }));
+    expect((await s.owner.query(api.retention.status, { missionId: s.missionId })).eligible).toBe(false);
+    await expect(s.owner.mutation(api.retention.removeContent, { missionId: s.missionId, ...confirmation })).rejects.toThrow();
+    expect(await s.t.run(async ctx => ({
+      mission: await ctx.db.get(s.missionId), parent: await ctx.db.get(root.deliverableId), child: await ctx.db.get(child.deliverableId),
+      payments: await ctx.db.query("paymentIntents").collect(),
+    }))).toEqual(before);
   });
   it("requires recorded exact owner approval for human-reviewed work", async () => {
     const s = await setup();

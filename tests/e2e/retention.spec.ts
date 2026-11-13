@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { acknowledgePreview } from "./helpers";
 import { expect, test } from "@playwright/test";
 test("owner confirms content removal for unawarded work and removed source cannot be reused", async ({ page }) => {
   await page.goto("/sign-in");
@@ -16,6 +17,7 @@ test("owner confirms content removal for unawarded work and removed source canno
   await page.getByLabel("Maximum budget (testnet NEAR)").fill("0.000000000000000000000001");
   await page.getByRole("button", { name: "Create private mission" }).click();
   await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
+  await acknowledgePreview(page);
   await page.getByRole("button", { name: "Open auction", exact: true }).click();
   await expect(page.getByText("Main analysis · No eligible offer", { exact: true })).toBeVisible({ timeout: 15000 });
   const remove = page.getByRole("button", { name: "Remove dataset and outputs", exact: true });

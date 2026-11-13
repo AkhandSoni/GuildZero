@@ -70,6 +70,7 @@ export default defineSchema({
     .searchIndex("search_title", { searchField: "title", filterFields: ["ownerId", "state", "serviceType"] }),
   jobs: defineTable({
     contentRemovedAt: v.optional(v.number()),
+    unfundedPreviewAcknowledged: v.optional(v.boolean()),
     engineManaged: v.optional(v.boolean()),
     workerVersion: v.optional(v.number()),
     workerError: v.optional(v.string()),

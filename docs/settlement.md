@@ -38,6 +38,10 @@ Owner-triggered reconciliation queries the existing hash using `tx`; it does not
 
 Parent holdback plus actual child price equals the original award. Child payments are part of that same obligation, not added again to the buyer's total. Successful work/reputation is separate from chain settlement; an approved job does not imply a confirmed transfer.
 
+## Recovery design follow-up (#33)
+
+[The v2 attempt/fencing proposal](payment-recovery.md) defines the separate implementation and security gates for owner-controlled pre-sign recovery. It is not an enabled recovery feature. Existing `FAILED` records remain blocked; diagnostic reasons or missing transaction hashes are not proof that permits retry. No recovery endpoint, automatic retry or data migration is introduced by the proposal.
+
 ## Validation and controlled security probes
 
 Unit/backend tests cover policy binding, private access, idempotency, duplicate claims, unknown outcomes and conservative lock retention. Offline mocked-RPC adapter tests check that the hash is stored before broadcast, success handling, and timeout with no second broadcast. These mocks are not testnet execution evidence.
@@ -59,3 +63,13 @@ For this configured checkout, keep the existing environment/backend state. Do no
 Primary references: [official NEAR JavaScript tooling](https://docs.near.org/tools/near-api), [transaction RPC/finality](https://docs.near.org/api/rpc/transactions). A read-only request to the configured official RPC verified `chain_id=testnet` during development; it was not a payment.
 
 Account setup reference: [official NEAR faucet implementation](https://github.com/near/docs/blob/main/snippets/faucet.jsx), using the free testnet account helper. Recipient subaccounts were created with the official JavaScript SDK. No mainnet account or real-money purchase was involved.
+
+## Delivery access and launch readiness
+
+Owner-approved follow-up #31 makes full deliverables a backend-enforced entitlement. `jobs.detail` projects metadata and `content: null` until all required settlement evidence matches the latest approved output. Only the latest attempt is releasable. One-level subcontracted missions require both exact parent and child confirmations and conserve the original award. Queries do not infer payment from a hash or human approval, do not invoke RPC/signing, and do not change historical records. Current key or recipient configuration rotation does not invalidate a previously matching bound receipt. A newly complete payment group records one release event per job through the final confirmation transition; repeated finalization cannot duplicate that transition.
+
+Before paying, the owner can inspect output schema/row counts/size and verification checks, not complete numerical values or processed CSV rows. Prior exposed/downloaded data cannot be revoked. This is application access control in a custodial testnet demo, not cryptographic DRM or escrow. The input dataset still belongs to its owner; the public synthetic service example remains an unrestricted local calculation.
+
+Follow-up #34 adds an owner-scoped preflight and explicit acknowledgment for processing when payment configuration is unavailable. Automated **total awards** are conservatively limited to 1 NEAR, including later cleaning allocations, while each exact transfer remains independently capped at 1 NEAR. This is stricter than using a larger parent award whose unknown future split might exceed a payout limit. Larger mission planning budgets remain valid but are not funded balances or permission to exceed the cap. Before an automated award, recipient/configuration checks run again unless metadata-only processing was explicitly acknowledged; legacy non-engine-managed contracts are not silently repriced. Actual network/balance checks remain in the signing action, and no balance is reserved by a preflight.
+
+Previously failed attempts remain failed and results stay locked; #33 tracks explicit recovery for proven pre-broadcast failures. Unknown outcomes retain the existing reconciliation-only policy. This change authorizes no fresh live transfer or top-up.
