@@ -138,7 +138,7 @@ Validation: lint, typecheck, production build and client-boundary check (25 asse
 
 ### Current-main integration corrections — 2026-11-13
 
-Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 252 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+Merged current main `69d9c5e`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 255 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
 
 Added strict numeric preflight in the editor, saved-brief launch panel and authenticated launch mutation. Unsupported selected currency/locale/percentage/formula-like inputs remain in editable drafts but cannot create a job or contract. Diagnostics identify selected columns and CSV record numbers; original bytes and valid columns are preserved. Results explicitly distinguish column sums from derived revenue. No locale conversion or new calculation is implemented. Representative CSV-owning user validation remains pending.
 
