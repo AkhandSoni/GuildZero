@@ -9,6 +9,7 @@ import type {
   Result,
 } from "./types";
 import { validateServiceOptions } from "./contracts";
+import { runBusinessService } from "./business";
 export { validateServiceOptions } from "./contracts";
 
 import {
@@ -200,5 +201,6 @@ export function runService(input: ServiceRequest): Result<ServiceOutput> {
   if (input.serviceType === "csv_summary") {
     return executeSummarize(input);
   }
+  if (input.serviceType === "csv_validate" || input.serviceType === "csv_reconcile" || input.serviceType === "csv_report") return runBusinessService(input);
   return { ok: false, code: "INVALID_INPUT", message: "Unsupported service type." };
 }

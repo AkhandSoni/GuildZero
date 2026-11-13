@@ -1,6 +1,6 @@
 import { mutation } from "./_generated/server";
 import { user } from "./ownership";
-import { SAMPLE_CSV, SERVICE_TYPES } from "../lib/missions";
+import { SAMPLE_CSV } from "../lib/missions";
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
@@ -12,7 +12,7 @@ export const seed = mutation({
       )
       .take(2);
     const ids = [];
-    for (const serviceType of SERVICE_TYPES) {
+    for (const serviceType of ["csv_normalize", "csv_summary"] as const) {
       const previous = existing.find((m) => m.serviceType === serviceType);
       if (previous) {
         ids.push(previous._id);

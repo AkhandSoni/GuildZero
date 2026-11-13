@@ -1,0 +1,85 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { testBackend, asUser } from "../helpers/backend";
+import schema from "../../convex/schema";
+import { api, internal } from "../../convex/_generated/api";
+import { PUBLIC_AGENTS } from "../../lib/agent-directory";
+import { businessFixtures } from "../helpers/business-fixtures";
+import type { BusinessRequest } from "../../lib/economy/types";
+const modules=import.meta.glob("../../convex/**/*.ts");
+afterEach(()=>{vi.useRealTimers();vi.unstubAllEnvs();});
+async function setup(request: BusinessRequest, budget="1000000000000000000000000", human=false) {
+  vi.useFakeTimers(); vi.stubEnv("NEAR_SETTLEMENT_ENABLED","false");
+  const t=testBackend(schema,modules);
+  const [ownerId,otherId]=await t.run(ctx=>Promise.all([ctx.db.insert("users",{email:"business@example.com"}),ctx.db.insert("users",{email:"other@example.com"})]));
+  const owner=await asUser(t,ownerId), other=await asUser(t,otherId);
+  const fields={...request,title:"Business workflow",acceptanceCriteria:"Computed template checks",requiresHumanReview:human,maxBudgetYocto:budget,deadlineAt:Date.now()+86400000};
+  const missionId=await owner.mutation(api.missions.create,fields);
+  return {t,owner,other,ownerId,fields,missionId,drain:()=>t.finishAllScheduledFunctions(vi.runAllTimers)};
+}
+it.each(businessFixtures)("$serviceType competes, negotiates, verifies, withholds output, settles offline policy fixture and erases private content", async request=>{
+  const s=await setup(request);
+  await expect(s.other.query(api.missions.get,{id:s.missionId})).rejects.toThrow("MISSION_NOT_FOUND");
+  const id=await s.owner.mutation(api.jobs.start,{missionId:s.missionId,allowUnfundedPreview:true});await s.drain();
+  const detail=await s.owner.query(api.jobs.detail,{id});
+  expect(detail.job.state).toBe("approved");expect(detail.bids.length).toBeGreaterThanOrEqual(2);
+  expect(detail.negotiations.length).toBeGreaterThanOrEqual(2);expect(detail.negotiations.every(n=>n.round<=3)).toBe(true);
+  expect(detail.verifications[0].verdict).toBe("pass");expect(detail.contracts[0].score).toBeDefined();
+  expect(detail.children).toEqual([]);expect(detail.delivery.released).toBe(false);
+  expect(detail.deliverables[0]).toMatchObject({content:null,preview:{rowCount:request.inputCsv.split("\n").length-1,columns:request.options.columns}});
+  expect(detail.deliverables[0]).not.toHaveProperty("verificationPayload");
+  await expect(s.other.query(api.jobs.detail,{id})).rejects.toThrow("JOB_NOT_FOUND");
+  await expect(s.t.query(api.jobs.detail,{id})).rejects.toThrow("UNAUTHENTICATED");
+  const stored=(await s.t.run(ctx=>ctx.db.get(detail.deliverables[0]._id)))!;
+  expect(JSON.parse(stored.content).serviceType).toBe(request.serviceType);
+  const copy=await s.owner.mutation(api.missions.duplicate,{id:s.missionId});
+  expect((await s.owner.query(api.missions.get,{id:copy})).options).toEqual(request.options);
+  await s.owner.mutation(api.missions.remove,{id:copy});
+  // Explicit offline adapter receipt fixture only; no network or real signer.
+  vi.stubEnv("NEAR_NETWORK","testnet");vi.stubEnv("NEAR_OPERATOR_ACCOUNT_ID","operator.testnet");vi.stubEnv("NEAR_PRIVATE_KEY","offline-fixture-only");vi.stubEnv("NEAR_SETTLEMENT_ENABLED","true");
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON",JSON.stringify({[s.ownerId]:"10000000000000000000000000"}));vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO","10000000000000000000000000");
+  vi.stubEnv("NEAR_AGENT_RECIPIENTS_JSON",JSON.stringify(Object.fromEntries(PUBLIC_AGENTS.filter(a=>a.capabilities.length).map(a=>[a.id,`${a.id}.testnet`]))));
+  const prepared=await s.owner.mutation(api.payments.prepare,{jobId:id});if(!prepared.ok)throw Error(prepared.code);
+  const intent=(await s.owner.query(api.payments.forJob,{jobId:id}))!;
+  await expect(s.other.mutation(api.payments.authorize,{intentId:intent._id,recipient:intent.recipient,amountYocto:intent.amountYocto})).rejects.toThrow();
+  expect(await s.owner.mutation(api.payments.authorize,{intentId:intent._id,recipient:"substitution.testnet",amountYocto:intent.amountYocto})).toMatchObject({ok:false});
+  await s.t.run(ctx=>ctx.db.patch(intent._id,{authorizedAt:Date.now()}));
+  await s.t.mutation(internal.paymentWorker.claim,{intentId:intent._id});
+  expect((await s.owner.query(api.jobs.detail,{id})).delivery.released).toBe(false);
+  const txHash="1".repeat(32);
+  await s.t.mutation(internal.paymentWorker.prepared,{intentId:intent._id,nonce:"1",txHash});
+  await s.t.mutation(internal.paymentWorker.outcome,{intentId:intent._id,receiptJson:JSON.stringify({final_execution_status:"FINAL",transaction:{hash:txHash,signer_id:intent.sender,receiver_id:intent.recipient,nonce:1,actions:[{Transfer:{deposit:intent.amountYocto}}]},transaction_outcome:{block_hash:"3".repeat(32)},status:{SuccessValue:""},receipts_outcome:[{outcome:{status:{SuccessValue:""}}}]})});
+  const released=await s.owner.query(api.jobs.detail,{id});
+  expect(released.delivery.released).toBe(true);expect(released.deliverables[0].content).toBe(stored.content);
+  expect((await s.owner.query(api.retention.status,{missionId:s.missionId})).eligible).toBe(true);
+  await s.owner.mutation(api.retention.removeContent,{missionId:s.missionId,confirm:"REMOVE_DATASET_AND_OUTPUTS"});
+  const erased=await s.owner.query(api.missions.get,{id:s.missionId});expect(erased.inputCsv).toBe("");expect(erased.options).toBeUndefined();
+  expect((await s.t.run(ctx=>ctx.db.get(id)))!.options).toEqual({columns:[]});
+  expect((await s.t.run(ctx=>ctx.db.get(stored._id)))!.content).toBe("");
+  expect((await s.owner.query(api.payments.forJob,{jobId:id}))!.status).toBe("CONFIRMED");
+});
+it("keeps ambiguous reconciliation drafts editable and blocks all commitment writes",async()=>{
+  const s=await setup({serviceType:"csv_reconcile",inputCsv:"id,n\na,1\na,2",options:{columns:["n"],keyColumn:"id",comparisonCsv:"id,n\na,1"}});
+  await expect(s.owner.mutation(api.jobs.start,{missionId:s.missionId,allowUnfundedPreview:true})).rejects.toThrow("unique");
+  expect((await s.owner.query(api.missions.get,{id:s.missionId})).state).toBe("draft");
+  expect(await s.t.run(ctx=>ctx.db.query("jobs").collect())).toEqual([]);
+  expect(await s.t.run(ctx=>ctx.db.query("economyEvents").collect())).toEqual([]);
+  await s.owner.mutation(api.missions.update,{id:s.missionId,...s.fields,inputCsv:"id,n\na,1\nb,2"});
+  const id=await s.owner.mutation(api.jobs.start,{missionId:s.missionId,allowUnfundedPreview:true});await s.drain();expect((await s.owner.query(api.jobs.detail,{id})).job.state).toBe("approved");
+});
+it("quality findings support human review without unlocking unpaid results",async()=>{
+  const s=await setup(businessFixtures[0],undefined,true);
+  const id=await s.owner.mutation(api.jobs.start,{missionId:s.missionId,allowUnfundedPreview:true});await s.drain();
+  expect((await s.owner.query(api.jobs.detail,{id})).job.state).toBe("disputed");
+  await s.owner.mutation(api.jobs.resolveDispute,{id,decision:"approve",reason:"Accept the verified audit; its findings require source review."});
+  const approved=await s.owner.query(api.jobs.detail,{id});expect(approved.job.state).toBe("approved");expect(approved.deliverables[0].content).toBeNull();
+});
+it("removes both private reconciliation inputs after an unawarded run without financial records",async()=>{
+  const s=await setup(businessFixtures[1],"1");
+  const id=await s.owner.mutation(api.jobs.start,{missionId:s.missionId,allowUnfundedPreview:true});await s.drain();
+  expect((await s.owner.query(api.jobs.detail,{id})).job.state).toBe("unawarded");
+  await expect(s.other.mutation(api.retention.removeContent,{missionId:s.missionId,confirm:"REMOVE_DATASET_AND_OUTPUTS"})).rejects.toThrow();
+  await s.owner.mutation(api.retention.removeContent,{missionId:s.missionId,confirm:"REMOVE_DATASET_AND_OUTPUTS"});
+  expect((await s.owner.query(api.missions.get,{id:s.missionId})).options).toBeUndefined();
+  expect((await s.t.run(ctx=>ctx.db.get(id)))!.options).toEqual({columns:[]});
+  await expect(s.owner.mutation(api.missions.duplicate,{id:s.missionId})).rejects.toThrow("DATASET_REMOVED");
+});

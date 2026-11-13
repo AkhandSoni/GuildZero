@@ -2,6 +2,8 @@
 import { readSummary, summaryCsv } from "@/lib/dataset-preview";
 import { parseBoundedCsv } from "@/lib/economy/csv-input";
 import { Button } from "@/components/ui/button";
+import { readBusinessOutput } from "@/lib/business-output";
+import { BusinessResult } from "./business-result";
 export function ResultPreview({ content, format }: { content: string; format: "json" | "csv" }) {
   if (format === "csv") {
     const data = parseBoundedCsv(content);
@@ -10,6 +12,8 @@ export function ResultPreview({ content, format }: { content: string; format: "j
       <table className="w-full text-left text-xs"><caption className="text-left pb-2">Normalized data · {data.value.rawRows.length} rows · first five shown</caption><thead><tr>{data.value.rawHeader.map((h) => <th scope="col" className="p-2" key={h}>{h}</th>)}</tr></thead><tbody>{data.value.rawRows.slice(0,5).map((row,i) => <tr key={i}>{row.map((cell,j) => <td key={j} className="p-2 max-w-64 break-words whitespace-pre-wrap">{cell || "—"}</td>)}</tr>)}</tbody></table>
     </div>;
   }
+  const business = readBusinessOutput(content);
+  if (business) return <BusinessResult report={business}/>;
   const summary = readSummary(content);
   if (!summary) return null;
   const csv = summaryCsv(summary);

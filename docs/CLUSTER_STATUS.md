@@ -1,6 +1,20 @@
 # Cluster execution status
 
-Current work: **Integrated local prototype validated. The owner authorized a full tester audit followed by resuming bounded business-data expansion. Audit repairs are recorded below; expansion is authorized but is not yet delivered. Public hosting, recording and submission remain pending.**
+Current work: **The current local prototype passed a full tester audit, its reproduced startup/save defects are fixed, and the authorized quality-audit/reconciliation/grouped-report expansion is implemented. Final validation and push evidence are recorded below. Public hosting, recording, submission and the remaining operational/security gates are pending.**
+
+## Business-data workflows (#46) — 2026-11-14
+
+Implemented three additional service templates throughout the existing mission/schema/options/editor, capability discovery, cost/bidding/negotiation, scheduled execution, independent verification, review, private result projections, payment-gated release and retention paths. Each has competing fixed-profile sellers. Reconciliation cost/duration accounts for both bounded inputs. Original normalization/summary briefs and summary cleaning remain compatible. No new runtime, dependency, provider, signing permission or payment retry was added.
+
+Quality audits report complete missing/duplicate/whitespace counts plus explicitly requested numeric issues; findings do not fail a correctly verified audit. Reconciliation compares explicit shared columns by one nonblank unique exact key, reports all full-outer categories and bounded difference examples, and rejects ambiguous keys before commitment while preserving editable drafts. Grouped reports compute actual per-group numeric statistics using compensated sums; the verifier uses separate reference arithmetic. All inputs remain unchanged.
+
+The UI includes comparison upload/paste/preview, explicit key/group/numeric controls, saved options/source, launch diagnostics, typed search labels, five public service descriptions, structured result tables and JSON downloads after matching final settlement. A compatible synthetic primary/comparison pair lets users try reconciliation without supplying a dataset. Comparison CSV lives in owner-private options and is cleared from mission/job copies by retention; no comparison content enters generic economic events or verification explanations.
+
+Bounds remain 64 KiB/500 rows/32 columns per CSV and 128 KiB output. Quality examples cap at 100; reconciliation at 25 keys/three fields/80-character values with omission flags, and the encoded byte cap may reduce example prefixes further. Grouped reports allow 50 groups/128 group-measure combinations plus an encoded-size preflight. These are numerical/exact-text workflows, not fuzzy matching or financial accounting. New business reports export JSON; existing summary/normalization CSV exports remain available.
+
+Validation: **337 unit/backend tests in 37 files**, including a separate **185-test integration run in 21 files**, lint, typecheck, production build, **29-asset client scan** and zero-vulnerability npm audit pass. New tests independently check expected results, tampering/schema/count rejection, unsafe numeric inputs, grouping/cancellation, prototype-like labels, exact reconciliation, key ambiguity, example/byte limits, ownership, negotiation, human review, locked projections, offline receipt-bound release, copying and removal of both private inputs. The new real-auth mobile browser journey exercises all three templates, invalid-key correction, persisted options, filtering, withheld unpaid output and the synthetic pair. All **19 production browser scenarios pass** on the final build (3.0 minutes). An initial browser failure came from reloading while an edit save/guard cleanup was still pending; the test now waits for the saved form transition.
+
+Settlement release tests use explicitly isolated offline receipt fixtures, not fabricated transactions in the browser backend. Existing real receipt evidence is unchanged; no new mission payment was authorized. Real customer sessions (#25), recovery activation (#44), live settlement restart proof (#9/#10), independent handoff/release gates (#12/#13) and any public deployment/submission remain pending.
 
 ## Full-system tester audit (#45) — 2026-11-13
 

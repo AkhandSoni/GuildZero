@@ -23,7 +23,7 @@ export function DeliverablePanel({ deliverable: d, delivery, approved }: { deliv
       <p className="outcome-pill approved mt-3">Full result released · mission payments confirmed</p>
       <ResultPreview content={content} format={d.format}/>
       <details className="audit-details"><summary>View raw deliverable</summary><pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap text-xs">{content}</pre></details>
-      {d.format === "json" && <Button asChild className="mt-3" variant="outline"><a download="guildzero-summary.json" href={`data:application/json;charset=utf-8,${encodeURIComponent(content)}`}>Download JSON</a></Button>}
+      {d.format === "json" && <Button asChild className="mt-3" variant="outline"><a download="guildzero-deliverable.json" href={`data:application/json;charset=utf-8,${encodeURIComponent(content)}`}>Download JSON</a></Button>}
       {d.format === "csv" && (safeCsv(content)
         ? <Button asChild className="mt-3" variant="outline"><a download="guildzero-normalized.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(content)}`}>Download CSV</a></Button>
         : <p className="muted text-xs mt-3">CSV download blocked: unsafe spreadsheet values or invalid CSV.</p>)}

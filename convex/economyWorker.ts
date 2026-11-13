@@ -10,7 +10,8 @@ import { privateProfiles } from "./agentPolicies";
 import { event, reviewCapacity } from "./workflowHelpers";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { makeBid, rankBids, respondToCounteroffer, runService, verifyDeliverable } from "../lib/economy";
-import type { Offer, Result, ServiceRequest } from "../lib/economy";
+import type { Offer, Result } from "../lib/economy";
+import { serviceRequest } from "../lib/economy/business-input";
 const args = { jobId: v.id("jobs"), version: v.number() };
 function value<T>(result: Result<T>): T {
   if (!result.ok) throw new ConvexError(result.code);
@@ -51,6 +52,11 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
     let bids = await ctx.db.query("bids").withIndex("by_job", (q) => q.eq("jobId", job._id)).take(10);
     if (!bids.length) {
       const source = value(parseBoundedCsv(job.inputCsv));
+      const comparison = job.serviceType === "csv_reconcile" && job.options.comparisonCsv
+        ? value(parseBoundedCsv(job.options.comparisonCsv)) : null;
+      const rows = source.rawRows.length + (comparison?.rawRows.length ?? 0);
+      const columnCount = Math.max(source.rawHeader.length, comparison?.rawHeader.length ?? 0);
+      const hasMissing = [...source.rawRows, ...(comparison?.rawRows ?? [])].some(row => row.some(cell => !cell.trim()));
       for (const agent of profiles.filter((p) => p.capabilities.length)) {
         await event(ctx, job, "AGENT_DISCOVERED", `${agent.name} inspected this service brief.`);
         const active = await ctx.db.query("contracts").withIndex("by_agent_state", (q) => q.eq("agentId", agent.id).eq("state", "active")).take(agent.capacity);
@@ -58,11 +64,11 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
         const reputationBps = Math.min(10000, Math.max(0, 5000 + reputation.reduce((total, e) => total + e.delta * 10, 0)));
         const scale = agent.role === "cleaning" ? 1n : agent.role === "statistics" ? 2n : 3n;
         const decision = value(makeBid({
-          agent, workload: { serviceType: job.serviceType, rowCount: source.rawRows.length, columnCount: source.rawHeader.length,
-            complexityBps: job.serviceType === "csv_summary" ? 500 : 0, riskBps: source.rawRows.some((r) => r.some((c) => !c.trim())) ? 500 : 0 },
+          agent, workload: { serviceType: job.serviceType, rowCount: rows, columnCount,
+            complexityBps: job.serviceType === "csv_reconcile" ? 2000 : job.serviceType === "csv_report" ? 1500 : job.serviceType === "csv_normalize" ? 0 : 500, riskBps: hasMissing ? 500 : 0 },
           costModel: { baseCostYocto: (scale * 10n ** 23n + (job.depth === 0 && job.cleanBeforeProcessing ? 15n * 10n ** 22n : 0n)).toString(), perRowCostYocto: (scale * 10n ** 20n).toString(), perCellCostYocto: (scale * 10n ** 19n).toString() },
           activeAssignments: active.length, budgetYocto: job.budgetYocto, nowMs: Date.now(), deadlineAtMs: mission.deadlineAt,
-          estimatedDurationMs: 1000 + source.rawRows.length * source.rawHeader.length * (agent.strategy === "conservative" ? 3 : 2),
+          estimatedDurationMs: 1000 + rows * columnCount * (agent.strategy === "conservative" ? 3 : 2),
           bidId: `${job._id}:${agent.id}`,
         }));
         if (decision.decision === "decline") {
@@ -131,9 +137,7 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
     }
     if (child && child.state !== "approved") return;
     const context = await ctx.runQuery(internal.workflow.executionContext, { jobId: job._id });
-    const request: ServiceRequest = job.serviceType === "csv_normalize"
-      ? { serviceType: "csv_normalize", inputCsv: context.inputCsv, options: { columns: job.options.columns, caseMode: job.options.caseMode ?? "preserve" } }
-      : { serviceType: "csv_summary", inputCsv: context.inputCsv, options: { columns: job.options.columns } };
+    const request = serviceRequest(job.serviceType, context.inputCsv, job.serviceType === "csv_normalize" ? { columns: job.options.columns, caseMode: job.options.caseMode ?? "preserve" } : job.options);
     const executed = runService(request);
     if (!executed.ok) {
       // Input that cannot be executed must not become a fabricated deliverable.
@@ -155,9 +159,7 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
     const dependency = child ? await ctx.db.query("deliverables").withIndex("by_job", (q) => q.eq("jobId", child._id)).order("desc").first() : null;
     if (child && (child.state !== "approved" || dependency?._id !== deliverable.dependencyDeliverableId)) throw new ConvexError("DEPENDENCY_OUTPUT_NOT_BOUND");
     const inputCsv = dependency?.content ?? job.inputCsv;
-    const request: ServiceRequest = job.serviceType === "csv_normalize"
-      ? { serviceType: "csv_normalize", inputCsv, options: { columns: job.options.columns, caseMode: job.options.caseMode ?? "preserve" } }
-      : { serviceType: "csv_summary", inputCsv, options: { columns: job.options.columns } };
+    const request = serviceRequest(job.serviceType, inputCsv, job.serviceType === "csv_normalize" ? { columns: job.options.columns, caseMode: job.options.caseMode ?? "preserve" } : job.options);
     const actual = job.serviceType === "csv_normalize"
       ? { ...JSON.parse(deliverable.verificationPayload), csv: deliverable.content }
       : JSON.parse(deliverable.content);

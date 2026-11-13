@@ -2,8 +2,8 @@ import { parseBoundedCsv } from "./economy/csv-input";
 import { validateBudget } from "./money";
 import { validateServiceOptions } from "./economy/contracts";
 import type { ServiceOptions, ReasonCode } from "./economy/types";
-export const SERVICE_TYPES = ["csv_normalize", "csv_summary"] as const;
-export type ServiceType = (typeof SERVICE_TYPES)[number];
+import { SERVICE_TYPES, type ServiceType } from "./services";
+export { SERVICE_TYPES, type ServiceType } from "./services";
 export const SAMPLE_CSV =
   "product,region,units,price\n Canvas bag ,North,3,12.50\nNotebook, South ,5,4.00\nCanvas bag,North,2,12.50\nNotebook,South,,4.00";
 export type MissionInput = {

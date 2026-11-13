@@ -1,5 +1,6 @@
 // Cost estimation for deterministic economy kernel
 import type { CostInput, CostEstimate, Result, Workload } from "./types";
+import { isServiceType } from "../services";
 
 const NONNEGATIVE_YOCTO_REGEX = /^(0|[1-9]\d{0,27})$/;
 const POSITIVE_YOCTO_REGEX = /^[1-9]\d{0,27}$/;
@@ -36,11 +37,12 @@ export function validateWorkload(workload: unknown): Result<Workload> {
     return { ok: false, code: "INVALID_INPUT", message: "Workload must be an object." };
   }
   const w = workload as Record<string, unknown>;
-  if (w.serviceType !== "csv_normalize" && w.serviceType !== "csv_summary") {
+  if (!isServiceType(w.serviceType)) {
     return { ok: false, code: "INVALID_INPUT", message: "Unsupported workload serviceType." };
   }
-  if (!Number.isSafeInteger(w.rowCount) || (w.rowCount as number) < 1 || (w.rowCount as number) > 500) {
-    return { ok: false, code: "INVALID_INPUT", message: "Workload rowCount must be an integer between 1 and 500." };
+  const maxRows = w.serviceType === "csv_reconcile" ? 1000 : 500;
+  if (!Number.isSafeInteger(w.rowCount) || (w.rowCount as number) < 1 || (w.rowCount as number) > maxRows) {
+    return { ok: false, code: "INVALID_INPUT", message: `Workload rowCount must be an integer between 1 and ${maxRows}.` };
   }
   if (!Number.isSafeInteger(w.columnCount) || (w.columnCount as number) < 1 || (w.columnCount as number) > 32) {
     return { ok: false, code: "INVALID_INPUT", message: "Workload columnCount must be an integer between 1 and 32." };

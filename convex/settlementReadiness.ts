@@ -4,6 +4,7 @@ import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { configuration, PAYMENT_CAP, testnetAccount } from "../lib/settlement/policy";
 import { PUBLIC_AGENTS } from "../lib/agent-directory";
+import type { ServiceType } from "../lib/services";
 export function awardPaymentBlock(job: Pick<Doc<"jobs">,"engineManaged"|"serviceType"|"cleanBeforeProcessing"|"unfundedPreviewAcknowledged">, agentId: string, price: string) {
   if (!job.engineManaged) return null; // Existing legacy orchestration is not silently repriced.
   if (!/^[1-9]\d{0,27}$/.test(price) || BigInt(price) > PAYMENT_CAP) return "AWARD_EXCEEDS_SETTLEMENT_CAP";
@@ -23,7 +24,7 @@ export async function settlementReadiness(ctx: QueryCtx, mission: Doc<"missions"
     const config=configuration();
     sender=testnetAccount(config.sender)?config.sender:null;
     if (!config.enabled) reasons.push("Testnet settlement is disabled or its operator signing configuration is incomplete.");
-    const configured=(service:"csv_normalize"|"csv_summary")=>PUBLIC_AGENTS.some(agent=>agent.capabilities.some(capability => capability === service) && typeof config.recipients[agent.id]==="string" && testnetAccount(config.recipients[agent.id] as string) && config.recipients[agent.id]!==config.sender);
+    const configured=(service:ServiceType)=>PUBLIC_AGENTS.some(agent=>agent.capabilities.some(capability => capability === service) && typeof config.recipients[agent.id]==="string" && testnetAccount(config.recipients[agent.id] as string) && config.recipients[agent.id]!==config.sender);
     if (!configured(mission.serviceType)) reasons.push("No eligible seller has a valid testnet recipient for this service.");
     if (mission.cleanBeforeProcessing && !configured("csv_normalize")) reasons.push("The required cleaning service has no valid testnet recipient.");
   } catch { reasons.push("Testnet recipient configuration is invalid."); }

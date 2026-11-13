@@ -1,6 +1,7 @@
 // Independent deliverable verification for deterministic economy kernel
 // Never imports or invokes runService / executeNormalize / executeSummarize.
 import Papa from "papaparse";
+import { verifyBusinessDeliverable } from "./business-verification";
 import type {
   VerificationRequest,
   VerificationResult,
@@ -94,6 +95,8 @@ export function verifyDeliverable(input: VerificationRequest): Result<Verificati
     return { ok: false, code: "INVALID_OPTIONS", message: "ServiceRequest contains unknown fields." };
   }
 
+  if (request.serviceType === "csv_validate" || request.serviceType === "csv_reconcile" || request.serviceType === "csv_report")
+    return verifyBusinessDeliverable(request, deliverable, !!(input.acceptanceCriteria?.trim() || input.unsupportedCriteria?.trim()));
   if (request.serviceType !== "csv_normalize" && request.serviceType !== "csv_summary") {
     return { ok: false, code: "INVALID_INPUT", message: "Unsupported serviceType in verification request." };
   }

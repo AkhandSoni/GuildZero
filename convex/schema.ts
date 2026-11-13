@@ -3,12 +3,13 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { jobState, optionsValidator, checkValidator, scoreValidator } from "./marketModel";
 import { paymentState } from "./paymentModel";
+import { SERVICE_TYPES } from "../lib/services";
 export const missionFields = {
   cleanBeforeProcessing: v.optional(v.boolean()),
   requiresHumanReview: v.optional(v.boolean()),
   options: v.optional(optionsValidator),
   title: v.string(),
-  serviceType: v.union(v.literal("csv_normalize"), v.literal("csv_summary")),
+  serviceType: v.union(...SERVICE_TYPES.map(v.literal)),
   inputCsv: v.string(),
   maxBudgetYocto: v.string(),
   acceptanceCriteria: v.string(),

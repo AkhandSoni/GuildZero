@@ -13,6 +13,9 @@ import { PaymentPanel } from "@/components/payment-panel";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import { eventLabel, statusLabels, workLabel } from "@/lib/workflow-view";
 import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "@/lib/summary-preflight";
+import { SERVICE_LABELS } from "@/lib/services";
+import { isBusinessService, serviceRequest, validateBusinessInput } from "@/lib/economy/business-input";
+import type { BusinessRequest } from "@/lib/economy/types";
 export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const jobs = useQuery(api.jobs.forMission, { missionId: mission._id });
   const start = useMutation(api.jobs.start);
@@ -34,11 +37,12 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   </section>;
   const dataset = inspectDataset(mission.inputCsv);
   const summaryInput = mission.serviceType === "csv_summary" ? inspectSummaryInput(mission.inputCsv, mission.options.columns) : null;
-  const inputBlocked = summaryInput !== null && (!summaryInput.ok || summaryInput.value.length > 0);
+  const businessInput = isBusinessService(mission.serviceType) ? validateBusinessInput(serviceRequest(mission.serviceType, mission.inputCsv, mission.options) as BusinessRequest) : null;
+  const inputBlocked = summaryInput !== null && (!summaryInput.ok || summaryInput.value.length > 0) || businessInput !== null && !businessInput.ok;
   return (
     <section className="panel mt-8">
       <h2>Open an auction</h2>
-      <p className="mt-3 text-sm">Review before starting: {mission.serviceType === "csv_summary" ? "Summary statistics" : "Column normalization"}{dataset.ok ? ` · ${dataset.value.rowCount} data rows` : ""} · maximum {formatNear(mission.maxBudgetYocto)} testnet NEAR. {mission.requiresHumanReview === false ? "Template checks can approve work automatically." : "You must review the work after template checks."}</p>
+      <p className="mt-3 text-sm">Review before starting: {SERVICE_LABELS[mission.serviceType]}{dataset.ok ? ` · ${dataset.value.rowCount} data rows` : ""} · maximum {formatNear(mission.maxBudgetYocto)} testnet NEAR. {mission.requiresHumanReview === false ? "Template checks can approve work automatically." : "You must review the work after template checks."}</p>
       <p className="muted mt-2 text-sm">
         Opening uses the saved processing options, locks the brief and records an
         auction. Agents calculate offers, negotiate and process your dataset.
@@ -69,7 +73,8 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
       >
         {readiness?.blocked && <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={allowPreview} onChange={event=>setAllowPreview(event.target.checked)} required/><span>I understand only a metadata preview will be available until settlement is configured and confirmed.</span></label>}
         <p className="muted text-sm">Columns: {mission.options.columns.join(", ")}. Edit the draft to change processing options.</p>
-        {inputBlocked && <div role="alert" className="input-problem"><h3>Correct summary input before opening</h3>{summaryInput?.ok ? <ul>{summaryInput.value.map(issue => <li key={issue.column}>{summaryIssueMessage(issue)}</li>)}</ul> : <p>{summaryInput?.message}</p>}<p>{STRICT_SUMMARY_INPUT}</p><p>Edit this draft to correct the source or deselect the affected columns. The original dataset is unchanged.</p></div>}
+        {summaryInput !== null && inputBlocked && <div role="alert" className="input-problem"><h3>Correct summary input before opening</h3>{summaryInput?.ok ? <ul>{summaryInput.value.map(issue => <li key={issue.column}>{summaryIssueMessage(issue)}</li>)}</ul> : <p>{summaryInput?.message}</p>}<p>{STRICT_SUMMARY_INPUT}</p><p>Edit this draft to correct the source or deselect the affected columns. The original dataset is unchanged.</p></div>}
+        {businessInput && !businessInput.ok && <div role="alert" className="input-problem"><h3>Correct report input before opening</h3><p>{businessInput.message}</p><p>Edit the saved draft to correct its inputs or options. No auction or payment has started.</p></div>}
         {error && (
           <p role="alert" className="text-red-800">
             {error}

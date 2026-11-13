@@ -1,3 +1,4 @@
+import { SERVICE_LABELS, isServiceType } from "./services";
 export type WorkJob = { _id: string; missionId: string; parentId?: string | null; state: string; serviceType: string; title?: string; deliveryReleased?: boolean; deliveryConfirmedPayments?: number; deliveryRequiredPayments?: number };
 export type WorkEvent = { _id: string; jobId: string; missionId: string; type: string; detail: string; createdAt: number };
 export type StepTone = "done" | "current" | "attention" | "stopped" | "pending";
@@ -6,7 +7,7 @@ export const statusLabels: Record<string, string> = {
   approved: "Work accepted", disputed: "Needs your review", rejected: "Work rejected", cancelled: "Cancelled", unawarded: "No eligible offer",
 };
 export function workLabel(job: Pick<WorkJob, "serviceType" | "parentId">) {
-  return job.parentId ? "Cleaning subcontract" : job.serviceType === "csv_summary" ? "Main analysis" : "Data normalization";
+  return job.parentId ? "Cleaning subcontract" : job.serviceType === "csv_summary" ? "Main analysis" : job.serviceType === "csv_normalize" ? "Data normalization" : isServiceType(job.serviceType) ? SERVICE_LABELS[job.serviceType] : "Data service";
 }
 export function workflowSteps(state: string, eventTypes: readonly string[], paymentStatus = "NONE") {
   const has = (type: string) => eventTypes.includes(type);

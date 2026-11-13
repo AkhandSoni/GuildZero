@@ -1,4 +1,5 @@
 "use client";
+import { SERVICE_LABELS } from "@/lib/services";
 import { use } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
@@ -55,7 +56,7 @@ export default function MissionPage({
           <dl className="brief-metadata">
             <div>
               <dt className="muted text-xs">Service</dt>
-              <dd className="mt-1">{mission.serviceType}</dd>
+              <dd className="mt-1">{SERVICE_LABELS[mission.serviceType]}</dd>
             </div>
             <div>
               <dt className="muted text-xs">Budget limit</dt>
@@ -81,6 +82,9 @@ export default function MissionPage({
             <p className="muted mt-3" data-testid="saved-options">
               {mission.options ? `${mission.options.columns.join(", ")}${mission.options.caseMode ? ` · ${mission.options.caseMode}` : ""}` : "Not set. Edit the draft before opening an auction."}
             </p>
+            {mission.options?.keyColumn && <p className="muted mt-2 text-xs">Matching key: {mission.options.keyColumn} · exact comparison</p>}
+            {mission.options?.groupBy && <p className="muted mt-2 text-xs">Grouping column: {mission.options.groupBy}</p>}
+            {mission.options?.numericColumns && <p className="muted mt-2 text-xs">Numeric audit checks: {mission.options.numericColumns.join(", ") || "None requested"}</p>}
             <p className="muted mt-2 text-xs">Cleaning subcontract: {mission.cleanBeforeProcessing ? "enabled, within the award" : "off"}. Acceptance: {mission.requiresHumanReview === false ? "automatic template checks" : "template checks plus human review"}.</p>
           </div>
           <div>
@@ -93,7 +97,8 @@ export default function MissionPage({
             <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-[#eef1e9] p-4 text-xs leading-relaxed">
               {mission.contentRemovedAt !== undefined ? "Input removed by owner." : mission.inputCsv}
             </pre>
-          </details></div>
+          </details>
+          {mission.options?.comparisonCsv && <details className="brief-source"><summary>Comparison CSV · view saved source</summary><pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap text-xs">{mission.options.comparisonCsv}</pre></details>}</div>
         </section>
       )}
       {!editing && mission.contentRemovedAt === undefined && <div className="mt-5"><Button variant="outline" disabled={busy} onClick={async () => {

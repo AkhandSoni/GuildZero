@@ -15,6 +15,10 @@ import {
   type ServiceType,
 } from "@/lib/missions";
 import { formatNear, nearToYocto } from "@/lib/money";
+import { SERVICE_LABELS, SERVICE_TYPES } from "@/lib/services";
+import { BusinessControls, type BusinessDraft } from "./business-controls";
+import type { ServiceOptions } from "@/lib/economy/types";
+import { RECONCILIATION_SAMPLE } from "@/lib/business-samples";
 function localDate(value: number) {
   const date = new Date(value);
   return new Date(value - date.getTimezoneOffset() * 60000)
@@ -41,6 +45,17 @@ export function MissionForm({
   const [csv, setCsv] = useState(initial?.inputCsv ?? "");
   const [serviceType, setServiceType] = useState<ServiceType>(initial?.serviceType ?? defaultService);
   const [selectedColumns, setSelectedColumns] = useState(initial?.options?.columns ?? []);
+  const [business, setBusiness] = useState<BusinessDraft>(() => ({
+    numericColumns: initial?.options && "numericColumns" in initial.options ? initial.options.numericColumns : [],
+    keyColumn: initial?.options && "keyColumn" in initial.options ? initial.options.keyColumn : "",
+    groupBy: initial?.options && "groupBy" in initial.options ? initial.options.groupBy : "",
+    comparisonCsv: initial?.options && "comparisonCsv" in initial.options ? initial.options.comparisonCsv : "",
+  }));
+  const processingOptions: ServiceOptions = serviceType === "csv_normalize" ? { columns: selectedColumns, caseMode }
+    : serviceType === "csv_validate" ? { columns: selectedColumns, numericColumns: business.numericColumns.filter(c => selectedColumns.includes(c)) }
+    : serviceType === "csv_report" ? { columns: selectedColumns, groupBy: business.groupBy }
+    : serviceType === "csv_reconcile" ? { columns: selectedColumns, keyColumn: business.keyColumn, comparisonCsv: business.comparisonCsv }
+    : { columns: selectedColumns };
   const [readingFile, setReadingFile] = useState(false);
   const [fileName, setFileName] = useState("");
   const [importError, setImportError] = useState("");
@@ -64,7 +79,7 @@ export function MissionForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const snapshot = JSON.stringify({ title, budget, criteria, caseMode, cleanFirst, humanReview, csv, serviceType, selectedColumns, deadline });
+  const snapshot = JSON.stringify({ title, budget, criteria, caseMode, cleanFirst, humanReview, csv, serviceType, selectedColumns, deadline, business });
   const [baseline, setBaseline] = useState(snapshot);
   const dirty = snapshot !== baseline;
   const guard = useUnsavedMission(dirty);
@@ -81,9 +96,7 @@ export function MissionForm({
           const input = validateMission({
             title,
             serviceType,
-            options: serviceType === "csv_normalize"
-              ? { columns: selectedColumns, caseMode }
-              : { columns: selectedColumns },
+            options: processingOptions,
             inputCsv: csv,
             maxBudgetYocto: nearToYocto(budget),
             acceptanceCriteria: criteria,
@@ -136,6 +149,7 @@ export function MissionForm({
           >
             <option value="csv_summary">CSV summary statistics</option>
             <option value="csv_normalize">CSV column normalization</option>
+            {SERVICE_TYPES.filter(s => s !== "csv_summary" && s !== "csv_normalize").map(s => <option key={s} value={s}>{SERVICE_LABELS[s]}</option>)}
           </select>
         </label>
         <label className="field">
@@ -209,7 +223,7 @@ export function MissionForm({
         variant="outline"
         className="w-fit"
         disabled={readingFile || busy}
-        onClick={() => changeCsv(SAMPLE_CSV)}
+        onClick={() => changeCsv(serviceType === "csv_reconcile" ? RECONCILIATION_SAMPLE : SAMPLE_CSV)}
       >
         Use synthetic sample CSV
       </Button>
@@ -217,15 +231,15 @@ export function MissionForm({
       <DatasetPreview csv={csv} data={dataset} />
       </section>
       <section className="form-section"><div className="form-section-heading"><span>03</span><div><h2>Configure processing</h2><p>Only your selected template and columns control the transformation.</p></div></div>
-      <p className="service-description text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Full result downloads unlock as JSON or CSV after confirmed settlement." : "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. The full CSV download unlocks after confirmed settlement."}</p>
+      <p className="service-description text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Full result downloads unlock as JSON or CSV after confirmed settlement." : serviceType === "csv_normalize" ? "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. The full CSV download unlocks after confirmed settlement." : serviceType === "csv_validate" ? "Audit missing cells, repeated values and whitespace, with optional numeric checks. Findings are the report's useful result; they do not mean the service failed verification." : serviceType === "csv_reconcile" ? "Compare two files by an explicit unique key. Report unchanged, changed and unmatched records without guessing conversions. Counts are complete; examples show up to 25 differing keys, three changed fields per key and 80 characters per value." : "Compute a separate numeric summary for each exact group label. This produces real counts, missing values, totals and descriptive statistics, without changing the source."}</p>
       <fieldset className="grid gap-2">
         <legend className="mb-2 text-sm">Columns to process</legend>
         <p className="muted mb-2 text-xs">
-          {serviceType === "csv_summary" ? "Select numeric columns for summary statistics." : "Selected columns are trimmed; choose how to handle letter case."}
+          {serviceType === "csv_summary" || serviceType === "csv_report" ? "Select numeric measures. The grouping column is configured separately." : serviceType === "csv_normalize" ? "Selected columns are trimmed; choose how to handle letter case." : serviceType === "csv_reconcile" ? "Select the shared value columns to compare, excluding the key." : "Select columns to audit; configure optional numeric checks below."}
           {" "}These options are saved with the mission. Column names match the CSV header exactly.
         </p>
         <div className="flex flex-wrap gap-3 mb-2">
-          {serviceType === "csv_summary" && dataset.ok && dataset.value.numericColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([...dataset.value.numericColumns])}>Select numeric columns</Button>}
+          {(serviceType === "csv_summary" || serviceType === "csv_report") && dataset.ok && dataset.value.numericColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns(dataset.value.numericColumns.filter(c => serviceType !== "csv_report" || c !== business.groupBy))}>Select numeric columns</Button>}
           {selectedColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([])}>Clear column selection</Button>}
         </div>
         {serviceType === "csv_summary" && <div className="grid gap-2 text-sm" aria-label="Summary input requirements">
@@ -243,6 +257,7 @@ export function MissionForm({
           </label>
         )) : <p className="muted text-sm">Enter a CSV dataset to choose its columns.</p>}</div>
       </fieldset>
+      <BusinessControls serviceType={serviceType} headers={headers} columns={selectedColumns} value={business} onChange={setBusiness} onReading={setReadingFile} onReservedColumn={column => setSelectedColumns(previous => previous.filter(c => c !== column))}/>
       {serviceType === "csv_normalize" && <label className="field">
         Case handling
         <select name="caseMode" className="control"

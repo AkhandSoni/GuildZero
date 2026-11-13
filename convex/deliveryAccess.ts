@@ -5,6 +5,7 @@ import { testnetAccount, PAYMENT_CAP } from "../lib/settlement/policy";
 import { event } from "./workflowHelpers";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { readSummary } from "../lib/dataset-preview";
+import { readBusinessOutput } from "../lib/business-output";
 
 const validHash = (value: string | undefined) => !!value && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
 const positive = (value: string) => /^[1-9]\d{0,27}$/.test(value);
@@ -57,9 +58,10 @@ export async function deliveryAccess(ctx: QueryCtx, requested: Doc<"jobs">) {
 export function deliverablePreview(deliverable: Doc<"deliverables">) {
   const summary = deliverable.format === "json" ? readSummary(deliverable.content) : null;
   const csv = deliverable.format === "csv" ? parseBoundedCsv(deliverable.content) : null;
-  const headers = summary?.columns.map(column => column.name) ?? (csv?.ok ? csv.value.rawHeader : []);
+  const business = deliverable.format === "json" ? readBusinessOutput(deliverable.content) : null;
+  const headers = business?.columns ?? summary?.columns.map(column => column.name) ?? (csv?.ok ? csv.value.rawHeader : []);
   return {
-    rowCount: summary?.rowCount ?? (csv?.ok ? csv.value.rawRows.length : null),
+    rowCount: business?.rowCount ?? summary?.rowCount ?? (csv?.ok ? csv.value.rawRows.length : null),
     columnCount: headers.length, columns: headers.slice(0, 5),
     columnsTruncated: headers.length > 5, bytes: new TextEncoder().encode(deliverable.content).length,
   };

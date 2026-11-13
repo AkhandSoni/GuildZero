@@ -44,7 +44,7 @@ export type Result<T> =
 /** Workload description used by cost and bidding */
 export type Workload = {
   readonly serviceType: ServiceType;
-  readonly rowCount: number; // 1-500
+  readonly rowCount: number; // 1–500 per input; reconciliation prices both inputs, up to 1,000
   readonly columnCount: number; // 1-32
   readonly complexityBps: number; // basis points, 0-10000
   readonly riskBps: number; // basis points, 0-10000
@@ -220,7 +220,10 @@ export type SummaryOptions = {
   readonly columns: string[];
 };
 
-export type ServiceOptions = NormalizeOptions | SummaryOptions;
+export type ValidateOptions = { readonly columns: string[]; readonly numericColumns: string[] };
+export type ReconcileOptions = { readonly columns: string[]; readonly keyColumn: string; readonly comparisonCsv: string };
+export type ReportOptions = { readonly columns: string[]; readonly groupBy: string };
+export type ServiceOptions = NormalizeOptions | SummaryOptions | ValidateOptions | ReconcileOptions | ReportOptions;
 
 /** Service request union */
 export type NormalizeRequest = {
@@ -235,7 +238,11 @@ export type SummaryRequest = {
   readonly options: SummaryOptions;
 };
 
-export type ServiceRequest = NormalizeRequest | SummaryRequest;
+export type BusinessRequest =
+  | { readonly serviceType: "csv_validate"; readonly inputCsv: string; readonly options: ValidateOptions }
+  | { readonly serviceType: "csv_reconcile"; readonly inputCsv: string; readonly options: ReconcileOptions }
+  | { readonly serviceType: "csv_report"; readonly inputCsv: string; readonly options: ReportOptions };
+export type ServiceRequest = NormalizeRequest | SummaryRequest | BusinessRequest;
 
 export type ColumnStatistics = {
   readonly name: string;
@@ -247,7 +254,14 @@ export type ColumnStatistics = {
   readonly mean: number | null;
 };
 
-export type ServiceOutput =
+export type QualityColumn = { name: string; missing: number; duplicates: number; distinct: number; whitespace: number; invalidNumeric: number | null };
+export type QualityExample = { record: number; column: string; rule: "missing" | "duplicate" | "whitespace" | "non_numeric" };
+export type ReconcileExample = { key: string; status: "changed" | "left_only" | "right_only"; totalChangedColumns: number; changes: { column: string; left: string; right: string; truncated: boolean }[] };
+export type BusinessOutput =
+  | { serviceType: "csv_validate"; format: "json"; rowCount: number; columns: string[]; checks: QualityColumn[]; examples: QualityExample[]; examplesTruncated: boolean }
+  | { serviceType: "csv_reconcile"; format: "json"; rowCount: number; comparisonRowCount: number; columns: string[]; keyColumn: string; counts: { unchanged: number; changed: number; leftOnly: number; rightOnly: number }; examples: ReconcileExample[]; examplesTruncated: boolean }
+  | { serviceType: "csv_report"; format: "json"; rowCount: number; columns: string[]; groupBy: string; groups: { key: string; rowCount: number; statistics: ColumnStatistics[] }[] };
+export type ServiceOutput = BusinessOutput
   | {
       readonly serviceType: "csv_normalize";
       readonly format: "csv";

@@ -1,6 +1,7 @@
 // Bidding implementation for deterministic economy kernel
 
 import type { BidInput, BidDecision, Offer, Result } from "./types";
+import { SERVICE_TYPES } from "../services";
 import {
   ceilDiv,
   estimateCost,
@@ -53,7 +54,7 @@ export function makeBid(input: BidInput): Result<BidDecision> {
   if (typeof agent.id !== "string" || !agent.id.trim() || typeof agent.name !== "string" || !agent.name.trim()) {
     return { ok: false, code: "INVALID_INPUT", message: "Agent must have a valid id and name." };
   }
-  if (!Array.isArray(agent.capabilities) || agent.capabilities.some((c) => c !== "csv_normalize" && c !== "csv_summary")) {
+  if (!Array.isArray(agent.capabilities) || agent.capabilities.some((c) => !SERVICE_TYPES.includes(c))) {
     return { ok: false, code: "INVALID_INPUT", message: "Agent capabilities must be valid service types." };
   }
   if (agent.strategy !== null && !isSellerStrategy(agent.strategy)) {

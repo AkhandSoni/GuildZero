@@ -2,9 +2,9 @@
 
 GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
-**Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The application has labeled navigation, outcome metrics, scoped workflow stories and a read-only operator wallet. Next.js and Convex are the only application runtimes.
+**Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, quality audits, keyed reconciliation and grouped numeric reports, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The application has labeled navigation, outcome metrics, scoped workflow stories and a read-only operator wallet. Next.js and Convex are the only application runtimes.
 
-Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. No LLM, model training, mainnet payments or fabricated activity is involved. Broader service expansion is paused. Public hosting, final demo recording and hackathon submission remain pending.
+Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. No LLM, model training, mainnet payments or fabricated activity is involved. The bounded business-data expansion adds three typed services without changing the application runtimes or payment rules. Public hosting, final demo recording and hackathon submission remain pending.
 
 ## Local setup (no account or paid service required)
 
@@ -44,7 +44,7 @@ Dependencies are pinned with their lockfile. The application uses Next.js 16.4.6
 ## Foundation walkthrough
 
 1. Open `/sign-in`, choose **Sign up**, and create account A.
-2. On `/dashboard`, select **New mission**. Enter a title, choose `csv_normalize` or `csv_summary`, and upload a UTF-8 `.csv` file, select **Use synthetic sample CSV**, or paste CSV.
+2. On `/dashboard`, select **New mission**. Enter a title, choose one of the five CSV templates, and upload a UTF-8 `.csv` file, select **Use synthetic sample CSV**, or paste CSV.
 3. Review the real dataset preview and column-quality counts. Use **Select numeric columns** for summary-ready columns or select them individually. Select processing columns (numeric columns for statistics; case handling for normalization). Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**. Options persist with the draft and are visible after reload/edit.
 4. The saved `/missions/[id]` page shows the exact input and budget. Reload to confirm persistence; edit and save changes. Drafts move no funds.
 5. In a private browser window, create account B. Its dashboard does not list A's mission. Paste A's mission URL: access is denied without revealing the mission contents. Backend tests also exercise unauthorized edit/delete attempts.
@@ -66,6 +66,26 @@ Summary values use finite JavaScript numbers within ±1e12; nonzero literals tha
 
 Summary launch uses a strict-input preflight, including for older drafts: selected columns must contain only blank cells or plain decimal/scientific numbers (for example `-1234.50` or `1.25e3`). The CSV delimiter is a comma; quote fields containing commas, but quoting does not turn `"1,234.50"`, `"1234,50"`, `$12.50`, or `25%` into supported numbers. Currency, thousands separators, decimal commas and percentages are never guessed or converted. Choose the desired format/units explicitly in your source export or deselect those columns, then save the edited draft. The editor and saved brief identify selected columns and CSV record numbers before an auction can start; invalid drafts remain saved and editable. Cleaning trims whitespace only. Original CSV remains unchanged. A price-column sum is literally that column's sum, not quantity-times-price revenue. These numerical summaries do not infer currency or accounting precision. Representative CSV-owning user validation remains pending.
 
+
+## Business-data services
+
+All five templates use the same private mission, competing agents, bounded negotiation, independent verification, owner review and guarded testnet settlement. Full output and downloads stay locked until required payments have matching final receipts. No additional credentials or dependency installation is needed for the new services.
+
+| Template | Explicit options | Result |
+|---|---|---|
+| Column normalization | Columns and preserve/lowercase mode | Trimmed CSV with row count preserved |
+| Summary statistics | Numeric columns; optional one-level cleaning | Counts, missing values, min/max, sum and mean |
+| Data quality audit | Columns and optional numeric-check columns | Missing cells, repeated nonblank values, whitespace and invalid-number findings |
+| Keyed reconciliation | Two CSVs, one shared unique key and shared value columns | Unchanged/changed/primary-only/comparison-only counts and bounded difference examples |
+| Grouped numeric report | One grouping column and numeric measure columns | Numeric summaries per exact group, including missing values |
+
+Quality findings are useful report results, not failed verification. Duplicate counts include occurrences after the first nonblank exact value. Reconciliation requires nonblank unique keys up to 100 characters in each input; key/value comparison is exact and case-sensitive, with whitespace and numeric formatting significant. It does not guess equivalence between 1 and 1.00 or perform fuzzy matching. Comparison files use the same UTF-8 / 64 KiB / 500-row / 32-column bounds as primary files. Stored comparison CSV lives in private processing options and is erased with both mission/job options by the existing retention workflow.
+
+Grouped reports allow at most 50 groups, 128 group/measure combinations and 100-character group labels; a conservative encoded-size preflight can require fewer measures. Blank labels form a separate group. Numeric input uses the existing finite plain-decimal/scientific limits; totals do not infer currency, quantity-times-price revenue or accounting precision. Source inputs remain unchanged.
+
+All report JSON stays within 128 KiB. Quality reports include up to 100 record-number findings. Reconciliation reports include up to 25 differing keys, three changed fields per key and 80 characters per displayed value; flags/counts explicitly identify omissions, and examples may be reduced further by the byte cap. Counts cover the entire bounded input. Each new service has its own structured result view plus a JSON download after confirmed settlement. Cleaning subcontracting remains available for the established summary template.
+
+To try reconciliation, create a Keyed reconciliation mission, select **Use synthetic sample CSV** and **Use synthetic comparison CSV**, choose **order_id** as the key, and select **amount** and **status** as compared columns. Save and open the auction. The synthetic source pair contains one unchanged order, one changed order, and one unmatched order on each side. With settlement disabled, acknowledge metadata-only delivery; actual processing/verification still runs and full output remains locked. These are input fixtures, not fabricated deliverables or receipts.
 
 ## Validation
 

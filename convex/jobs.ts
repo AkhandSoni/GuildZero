@@ -1,4 +1,6 @@
 import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "../lib/summary-preflight";
+import { isBusinessService, serviceRequest, validateBusinessInput } from "../lib/economy/business-input";
+import type { BusinessRequest } from "../lib/economy/types";
 import { settlementReadiness } from "./settlementReadiness";
 import { deliveryAccess, deliverablePreview } from "./deliveryAccess";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
@@ -55,6 +57,10 @@ export const start = mutation({
       const preflight = inspectSummaryInput(mission.inputCsv, result.value.columns);
       if (!preflight.ok) throw new ConvexError({ code: preflight.code, message: preflight.message });
       if (preflight.value.length) throw new ConvexError({ code: preflight.value[0].code, message: `${summaryIssueMessage(preflight.value[0])} ${STRICT_SUMMARY_INPUT}` });
+    }
+    if (isBusinessService(mission.serviceType)) {
+      const preflight = validateBusinessInput(serviceRequest(mission.serviceType, mission.inputCsv, result.value) as BusinessRequest);
+      if (!preflight.ok) throw new ConvexError({ code: preflight.code, message: preflight.message });
     }
     const readiness = await settlementReadiness(ctx, mission);
     if (readiness.blocked && args.allowUnfundedPreview !== true) throw new ConvexError("SETTLEMENT_NOT_READY_ACKNOWLEDGE_PREVIEW");

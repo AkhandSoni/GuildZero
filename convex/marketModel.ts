@@ -6,6 +6,10 @@ export const jobState = v.union(
 export const optionsValidator = v.object({
   columns: v.array(v.string()),
   caseMode: v.optional(v.union(v.literal("preserve"), v.literal("lowercase"))),
+  numericColumns: v.optional(v.array(v.string())),
+  keyColumn: v.optional(v.string()),
+  comparisonCsv: v.optional(v.string()),
+  groupBy: v.optional(v.string()),
 });
 export const checkValidator = v.object({
   code: v.string(),
