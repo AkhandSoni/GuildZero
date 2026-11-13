@@ -1,3 +1,4 @@
+import { awardPaymentBlock } from "./settlementReadiness";
 // Bounded deterministic workflow. Every stage is an atomic, versioned mutation.
 // There are no network calls, browser worker endpoints or automatic payments.
 import { ConvexError, v } from "convex/values";
@@ -100,10 +101,10 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
       const contracts = await ctx.db.query("contracts").withIndex("by_agent_state", (q) => q.eq("agentId", profile.id).eq("state", "active")).take(profile.capacity);
       if (contracts.length >= profile.capacity) active.add(profile.id);
     }
-    const eligible = candidates.filter((b) => !active.has(b.agentId));
+    const eligible = candidates.filter((b) => !active.has(b.agentId) && !awardPaymentBlock(job,b.agentId,b.priceYocto));
     const ranked = value(rankBids({ budgetYocto: job.budgetYocto, availableDurationMs: Math.max(1, mission.deadlineAt - Date.now()),
       offers: eligible, reputationBps: eligible.map((b) => bids.find((stored) => stored._id === b.bidId)?.reputationBps ?? 5000), capabilityMatchBps: eligible.map(() => 10000) }));
-    if (!ranked.length) { await unavailable(ctx, job, "No offer was accepted within the bounded negotiation and eligibility rules. Create a revised mission to try again."); return; }
+    if (!ranked.length) { await unavailable(ctx, job, "No accepted offer meets current settlement configuration, the 1 NEAR award cap, capacity and negotiation rules. Create a revised mission to try again."); return; }
     const best = ranked[0];
     await ctx.runMutation(internal.workflow.award, { bidId: best.offer.bidId as Id<"bids">,
       selectionReason: `Normalized utility ${best.totalScore} bps. Deterministic tiebreak: ${best.tieBreakExplanation}.`,

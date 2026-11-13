@@ -1,3 +1,5 @@
+import { settlementReadiness } from "./settlementReadiness";
+import { deliveryAccess, deliverablePreview } from "./deliveryAccess";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
@@ -15,7 +17,7 @@ import {
 } from "./publicMarket";
 export const start = mutation({
   // options is a compatibility assertion, never an override of the saved brief.
-  args: { missionId: v.id("missions"), options: v.optional(optionsValidator) },
+  args: { missionId: v.id("missions"), options: v.optional(optionsValidator), allowUnfundedPreview: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
     const ownerId = await user(ctx);
     const mission = await ctx.db.get(args.missionId);
@@ -47,12 +49,15 @@ export const start = mutation({
       if (JSON.stringify(assertion.value) !== JSON.stringify(result.value))
         throw new ConvexError("START_OPTIONS_CHANGED");
     }
+    const readiness = await settlementReadiness(ctx, mission);
+    if (readiness.blocked && args.allowUnfundedPreview !== true) throw new ConvexError("SETTLEMENT_NOT_READY_ACKNOWLEDGE_PREVIEW");
     const now = Date.now();
     const id = await ctx.db.insert("jobs", {
       ownerId,
       missionId: mission._id,
       depth: 0,
       engineManaged: true,
+      unfundedPreviewAcknowledged: args.allowUnfundedPreview === true,
       workerVersion: 0,
       retryCount: 0,
       cleanBeforeProcessing: mission.cleanBeforeProcessing ?? false,
@@ -74,6 +79,7 @@ export const start = mutation({
       "AUCTION_OPENED",
       "Mission opened for independent service offers. No funds have moved.",
     );
+    if (readiness.blocked) await event(ctx, (await ctx.db.get(id))!, "UNFUNDED_PREVIEW_ACKNOWLEDGED", "Owner acknowledged settlement is not ready. Only metadata preview is available until configured payments are confirmed.");
     await ctx.scheduler.runAfter(1500, internal.economyWorker.step, { jobId: id, version: 0 });
     return id;
   },
@@ -137,12 +143,16 @@ export const detail = query({
         .order("desc")
         .take(100),
     ]);
+    const access = await deliveryAccess(ctx, job);
+    const latest = access.obligations.find(row => row.job._id === job._id)?.deliverable
+      ?? await ctx.db.query("deliverables").withIndex("by_job", q => q.eq("jobId", id)).order("desc").first();
     return {
+      delivery: { released: access.released, reason: access.reason, requiredPayments: access.obligations.length, confirmedPayments: access.obligations.filter(row => row.confirmed).length },
       job,
       bids: bids.map(publicBid),
       negotiations: negotiations.map(publicNegotiation),
       contracts: contracts.map(publicContract),
-      deliverables: deliverables.map((d) => ({ _id: d._id, _creationTime: d._creationTime, jobId: d.jobId, attempt: d.attempt, format: d.format, content: d.content, createdAt: d.createdAt, dependencyDeliverableId: d.dependencyDeliverableId ?? null })),
+      deliverables: deliverables.map((d) => ({ _id: d._id, _creationTime: d._creationTime, jobId: d.jobId, attempt: d.attempt, format: d.format, isLatest: d._id === latest?._id, preview: deliverablePreview(d), content: access.released && d._id === latest?._id ? d.content : null, createdAt: d.createdAt, dependencyDeliverableId: d.dependencyDeliverableId ?? null })),
       verifications,
       children,
       disputes,
@@ -212,3 +222,5 @@ export const resolveDispute = mutation({
     await event(ctx, job, "DISPUTE_RESOLVED", args.reason.trim());
   },
 });
+
+export const preflight = query({args:{missionId:v.id("missions")},handler:async(ctx,{missionId})=>{const ownerId=await user(ctx);const mission=await ctx.db.get(missionId);if(!mission||mission.ownerId!==ownerId)throw new ConvexError("MISSION_NOT_FOUND");return settlementReadiness(ctx,mission);}});

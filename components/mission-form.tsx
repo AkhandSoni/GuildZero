@@ -203,7 +203,7 @@ export function MissionForm({
       <DatasetPreview csv={csv} data={dataset} />
       </section>
       <section className="form-section"><div className="form-section-heading"><span>03</span><div><h2>Configure processing</h2><p>Only your selected template and columns control the transformation.</p></div></div>
-      <p className="service-description text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Download the result as JSON or CSV." : "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. Download the result as CSV."}</p>
+      <p className="service-description text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Full result downloads unlock as JSON or CSV after confirmed settlement." : "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. The full CSV download unlocks after confirmed settlement."}</p>
       <fieldset className="grid gap-2">
         <legend className="mb-2 text-sm">Columns to process</legend>
         <p className="muted mb-2 text-xs">

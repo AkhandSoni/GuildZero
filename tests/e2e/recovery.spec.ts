@@ -1,3 +1,4 @@
+import { acknowledgePreview } from "./helpers";
 import { randomBytes } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 async function signup(page: Page) {
@@ -13,14 +14,14 @@ async function create(page: Page, title: string, csv = "units\n3\n5", budget = "
   await page.getByLabel("Maximum budget (testnet NEAR)").fill(budget);
   if (human) await page.getByRole("checkbox", { name: "Require human review of acceptance notes" }).check();
   await page.getByRole("button", { name: "Create private mission" }).click(); await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
-  await page.getByRole("button", { name: "Open auction", exact: true }).click();
+  await acknowledgePreview(page); await page.getByRole("button", { name: "Open auction", exact: true }).click();
 }
 test("human review, invalid input and insufficient budget have actionable outcomes without fake payments", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await signup(page);
   await create(page, "Human acceptance decision", "units\n3\n5", "1", true);
   await expect(page.getByText("Main analysis · Needs your review", { exact: true })).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole("heading", { name: "Verification: needs_human" })).toBeVisible();
-  await page.getByLabel("Reason", { exact: true }).fill("I checked the actual sums and accept this result.");
+  await page.getByLabel("Reason", { exact: true }).fill("I reviewed the output metadata and verification checks and accept this work.");
   await page.getByRole("combobox", { name: /^Decision/ }).selectOption("approve");
   await page.getByRole("button", { name: "Record final decision" }).click();
   await expect(page.getByText("Main analysis · Work accepted", { exact: true })).toBeVisible();

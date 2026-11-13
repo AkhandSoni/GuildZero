@@ -50,7 +50,7 @@ it("denies anonymous discovery/copy and copying another owner's mission", async 
 it("copies completed owned work as a fresh draft without execution records or payment authority", async () => {
   vi.useFakeTimers();const s=await setup();
   const id=await s.alice.mutation(api.missions.create,brief("Original sales"));
-  const jobId=await s.alice.mutation(api.jobs.start,{missionId:id});
+  const jobId=await s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true, missionId:id});
   await s.t.finishAllScheduledFunctions(()=>vi.runAllTimers());
   const before=await s.alice.query(api.jobs.detail,{id:jobId});expect(before.job.state).toBe("approved");
   const copyId=await s.alice.mutation(api.missions.duplicate,{id});

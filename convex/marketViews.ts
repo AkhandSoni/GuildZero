@@ -1,3 +1,4 @@
+import { deliveryAccess } from "./deliveryAccess";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { user } from "./ownership";
@@ -27,7 +28,11 @@ export const overview = query({
     const jobs = await Promise.all(
       rows.slice(0, 50).map(async (j) => {
         const m = await ctx.db.get(j.missionId);
+        const access = await deliveryAccess(ctx,j);
         return {
+          deliveryReleased: access.released,
+          deliveryConfirmedPayments: access.obligations.filter(row=>row.confirmed).length,
+          deliveryRequiredPayments: access.obligations.length,
           _id: j._id,
           missionId: j.missionId,
           parentId: j.parentId ?? null,

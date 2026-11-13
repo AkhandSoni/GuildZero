@@ -22,7 +22,7 @@ async function setup(overrides: Record<string, unknown> = {}) {
     acceptanceCriteria: "Review the computed results.", deadlineAt: Date.now() + 86400000,
     requiresHumanReview: false, ...overrides,
   });
-  const jobId = await owner.mutation(api.jobs.start, { missionId });
+  const jobId = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   const drain = () => t.finishAllScheduledFunctions(() => vi.runAllTimers());
   const detail = () => owner.query(api.jobs.detail, { id: jobId });
   return { t, owner, outsider, missionId, jobId, drain, detail };
@@ -35,7 +35,7 @@ it("automatically completes a scored competitive auction, negotiation and indepe
   expect(d.negotiations.every((n) => n.round <= 3)).toBe(true);
   expect(d.contracts).toHaveLength(1); expect(d.contracts[0].score?.total).toBeGreaterThan(0);
   expect(d.verifications[0].verdict).toBe("pass");
-  expect(JSON.parse(d.deliverables[0].content)).toMatchObject({ rowCount: 2, columns: [{ name: "units", sum: 8 }, { name: "price", sum: 16.5 }] });
+  expect(JSON.parse((await s.t.run(ctx => ctx.db.get(d.deliverables[0]._id)))!.content)).toMatchObject({ rowCount: 2, columns: [{ name: "units", sum: 8 }, { name: "price", sum: 16.5 }] });
   expect(d.deliverables[0]).not.toHaveProperty("verificationPayload");
   await s.t.mutation(internal.economyWorker.step, { jobId: s.jobId, version: 0 });
   expect((await s.detail()).deliverables).toHaveLength(1);
@@ -50,7 +50,8 @@ it("automatically hires one real cleaning subcontractor, consumes its approved o
   expect(parent.children).toHaveLength(1);
   const child = await s.owner.query(api.jobs.detail, { id: parent.children[0]._id });
   expect(child.job.state).toBe("approved"); expect(child.job.depth).toBe(1); expect(child.children).toEqual([]);
-  expect(child.deliverables[0].content).toBe("product,units,price\nBag,3,12.5\nNotebook,5,4");
+  expect(child.deliverables[0].content).toBeNull();
+  expect((await s.t.run(ctx => ctx.db.get(child.deliverables[0]._id)))!.content).toBe("product,units,price\nBag,3,12.5\nNotebook,5,4");
   expect(parent.deliverables[0].dependencyDeliverableId).toBe(child.deliverables[0]._id);
   expect(BigInt(parent.contracts[0].holdbackYocto) + BigInt(child.contracts[0].amountYocto)).toBe(BigInt(parent.contracts[0].amountYocto));
   expect(BigInt(parent.job.reservedYocto)).toBeLessThanOrEqual(BigInt(parent.job.budgetYocto));
@@ -97,7 +98,7 @@ it("detects tampering in stored output, runs one real revision and records reput
   // Move the actual driver through bidding, award and submission without advancing timers.
   for (let version = 0; version < 3; version++) await s.t.mutation(internal.economyWorker.step, { jobId: s.jobId, version });
   let d = await s.detail(); expect(d.job.state).toBe("verifying");
-  await s.t.run(async (ctx) => { const actual = JSON.parse(d.deliverables[0].content); actual.columns[0].sum = 999; await ctx.db.patch(d.deliverables[0]._id, { content: JSON.stringify(actual) }); });
+  await s.t.run(async (ctx) => { const actual = JSON.parse((await ctx.db.get(d.deliverables[0]._id))!.content); actual.columns[0].sum = 999; await ctx.db.patch(d.deliverables[0]._id, { content: JSON.stringify(actual) }); });
   await s.t.mutation(internal.economyWorker.step, { jobId: s.jobId, version: 3 });
   expect((await s.detail()).job.state).toBe("revision"); await s.drain(); d = await s.detail();
   expect(d.job.state).toBe("approved"); expect(d.deliverables).toHaveLength(2);
@@ -111,7 +112,7 @@ it("pending human decisions preserve obligations without exhausting execution ca
   await expect(s.owner.mutation(api.payments.prepare, { jobId: s.jobId })).resolves.toMatchObject({ ok: false, code: "WORK_NOT_APPROVED" });
   for (let i = 0; i < 5; i++) {
     const missionId = await s.owner.mutation(api.missions.create, { title: `Review backlog ${i}`, serviceType: "csv_summary", inputCsv: "units\n3\n5", options: { columns: ["units"] }, maxBudgetYocto: "1000000000000000000000000", acceptanceCriteria: "Owner review", requiresHumanReview: true, deadlineAt: Date.now() + 86400000 });
-    const jobId = await s.owner.mutation(api.jobs.start, { missionId }); await s.drain();
+    const jobId = await s.owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId }); await s.drain();
     expect((await s.owner.query(api.jobs.detail, { id: jobId })).job.state).toBe("disputed");
   }
   // Legacy repair changes only execution state and remains idempotent.
@@ -129,7 +130,7 @@ it("uses earned outcomes in later auctions without changing fixed strategies", a
   vi.stubEnv("AGENT_PRIVATE_FLOORS_JSON", "{}");
   const budget = "1000000000000000000000000000";
   const missionId = await s.owner.mutation(api.missions.create, { title: "Second performance-priced auction", serviceType: "csv_summary", inputCsv: "units\n3\n5", options: { columns: ["units"] }, maxBudgetYocto: budget, acceptanceCriteria: "Template", requiresHumanReview: false, deadlineAt: Date.now() + 86400000 });
-  const jobId = await s.owner.mutation(api.jobs.start, { missionId }); await s.drain();
+  const jobId = await s.owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId }); await s.drain();
   const bids = await s.t.run((ctx) => ctx.db.query("bids").withIndex("by_job", (q) => q.eq("jobId", jobId)).collect());
   expect(bids.find((b) => b.agentId === first.contracts[0].agentId)?.reputationBps).toBe(5100);
   expect(bids.filter((b) => b.agentId !== first.contracts[0].agentId).every((b) => b.reputationBps === 5000)).toBe(true);

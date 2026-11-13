@@ -33,7 +33,7 @@ async function setup() {
   };
   const missionId = await alice.mutation(api.missions.create, input);
   const options = { columns: ["units", "price"] };
-  const jobId = await alice.mutation(api.jobs.start, { missionId, options });
+  const jobId = await alice.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId, options });
   const bid = async (
     agentId = "stats-core",
     id = jobId,
@@ -52,13 +52,13 @@ async function setup() {
 it("starts idempotently and freezes mission edits/deletion", async () => {
   const s = await setup();
   expect(
-    await s.alice.mutation(api.jobs.start, {
+    await s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,
       missionId: s.missionId,
       options: s.options,
     }),
   ).toBe(s.jobId);
   await expect(
-    s.alice.mutation(api.jobs.start, {
+    s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,
       missionId: s.missionId,
       options: { columns: ["units"] },
     }),
@@ -80,7 +80,7 @@ it("denies anonymous and cross-user job controls, history and mission lookup", a
       caller.query(api.jobs.forMission, { missionId: s.missionId }),
     ).rejects.toThrow();
     await expect(
-      caller.mutation(api.jobs.start, {
+      caller.mutation(api.jobs.start, { allowUnfundedPreview: true,
         missionId: s.missionId,
         options: s.options,
       }),
@@ -101,7 +101,7 @@ it("rejects nonexistent columns and does not lock an invalid draft", async () =>
   const s = await setup();
   const id = await s.alice.mutation(api.missions.create, s.input);
   await expect(
-    s.alice.mutation(api.jobs.start, {
+    s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,
       missionId: id,
       options: { columns: ["unknown"] },
     }),
@@ -187,7 +187,7 @@ it("enforces capacity across private jobs atomically", async () => {
     selectionReason: "test",
   });
   const m = await s.alice.mutation(api.missions.create, s.input);
-  const j = await s.alice.mutation(api.jobs.start, {
+  const j = await s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,
     missionId: m,
     options: s.options,
   });
@@ -480,7 +480,7 @@ it.each([11, 32])("persists real normalization checks for %i maximum-length head
   const missionId = await s.alice.mutation(api.missions.create, {
     ...s.input, ...request,
   });
-  const jobId = await s.alice.mutation(api.jobs.start, { missionId });
+  const jobId = await s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   const bidId = await s.bid("clean-sprint", jobId);
   // Trusted worker fixture for selection; service and verification below are real.
   await s.t.mutation(internal.workflow.award, { bidId, selectionReason: "Boundary regression fixture" });

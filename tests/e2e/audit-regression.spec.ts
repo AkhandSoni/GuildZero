@@ -1,7 +1,8 @@
+import { acknowledgePreview } from "./helpers";
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
-test("cancellation-safe output is downloaded and underflow enters review without invented output", async ({ page }) => {
+test("verified output remains locked and underflow enters review without invented output", async ({ page }) => {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   await page.getByLabel("Email", { exact: true }).fill(`audit-${randomBytes(8).toString("hex")}@example.com`);
@@ -19,20 +20,14 @@ test("cancellation-safe output is downloaded and underflow enters review without
     if (clean) await page.getByRole("checkbox", { name: "Clean before analysis" }).check();
     await page.getByRole("button", { name: "Create private mission" }).click();
     await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
-    await page.getByRole("button", { name: "Open auction", exact: true }).click();
+    await acknowledgePreview(page); await page.getByRole("button", { name: "Open auction", exact: true }).click();
   }
 
   await launch("Cancellation regression", "units\n1000000000000\n0.00001\n-1000000000000");
   await expect(page.getByText("Main analysis · Work accepted", { exact: true })).toBeVisible({ timeout: 25000 });
   await page.reload();
-  const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download JSON", exact: true }).click();
-  const stream = await (await download).createReadStream();
-  const chunks = [];
-  for await (const chunk of stream!) chunks.push(chunk);
-  const result = JSON.parse(Buffer.concat(chunks).toString());
-  expect(result.columns[0].sum).toBeCloseTo(0.00001, 12);
-  expect(result.columns[0].mean).toBeCloseTo(0.00001 / 3, 12);
+  await expect(page.getByRole("region",{name:"Locked deliverable preview",exact:true})).toBeVisible();
+  await expect(page.getByRole("link",{name:/Download/})).toHaveCount(0);
 
   await launch("Underflow regression", "units\n1e-324");
   await expect(page.getByText("Main analysis · Needs your review", { exact: true })).toBeVisible({ timeout: 25000 });

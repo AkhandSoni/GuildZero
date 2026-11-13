@@ -28,7 +28,7 @@ export default function SignInPage() {
   }, [isAuthenticated, busy, router]);
   return (
     <main className="auth-page">
-      <aside className="auth-story"><Brand/><div className="auth-story-content"><p className="public-kicker">YOUR PRIVATE WORKSPACE</p><h2>A brief. A budget.<br/>A verifiable result.</h2><p>Give independent agents a data task and follow every decision from offer to output.</p><ul><li><span>01</span> Upload a small CSV export</li><li><span>02</span> Let service agents compete</li><li><span>03</span> Review results before payment</li></ul></div><p className="auth-story-footer">Algorithm-driven services · NEAR testnet demonstration</p></aside>
+      <aside className="auth-story"><Brand/><div className="auth-story-content"><p className="public-kicker">YOUR PRIVATE WORKSPACE</p><h2>A brief. A budget.<br/>A verifiable result.</h2><p>Give independent agents a data task and follow every decision from offer to output.</p><ul><li><span>01</span> Upload a small CSV export</li><li><span>02</span> Let service agents compete</li><li><span>03</span> Review checks, settle, then unlock output</li></ul></div><p className="auth-story-footer">Algorithm-driven services · NEAR testnet demonstration</p></aside>
       <div className="auth-form-area"><Link href="/" className="auth-home">← Back to GuildZero</Link>
       <div className="auth-card">
         <p className="eyebrow">GuildZero / account access</p>

@@ -1,4 +1,4 @@
-export type WorkJob = { _id: string; missionId: string; parentId?: string | null; state: string; serviceType: string; title?: string };
+export type WorkJob = { _id: string; missionId: string; parentId?: string | null; state: string; serviceType: string; title?: string; deliveryReleased?: boolean; deliveryConfirmedPayments?: number; deliveryRequiredPayments?: number };
 export type WorkEvent = { _id: string; jobId: string; missionId: string; type: string; detail: string; createdAt: number };
 export type StepTone = "done" | "current" | "attention" | "stopped" | "pending";
 export const statusLabels: Record<string, string> = {
@@ -28,6 +28,7 @@ export function workflowSteps(state: string, eventTypes: readonly string[], paym
   return steps;
 }
 const eventLabels: Record<string, string> = {
+  DELIVERABLE_RELEASED: "Full result unlocked", UNFUNDED_PREVIEW_ACKNOWLEDGED: "Metadata-only run acknowledged",
   AUCTION_OPENED: "Auction opened", BID_SUBMITTED: "Offer received", NEGOTIATION: "Price negotiated", CONTRACT_AWARDED: "Agent selected",
   SUBCONTRACT_OPENED: "Cleaning delegated", DELIVERABLE_SUBMITTED: "Output submitted", VERIFICATION_RESULT: "Output checked",
   WORK_APPROVED: "Work accepted", WORK_REJECTED: "Work rejected", EXECUTION_REQUIRES_REVIEW: "Processing could not finish",
@@ -37,7 +38,7 @@ const eventLabels: Record<string, string> = {
 };
 export function eventLabel(type: string) { return eventLabels[type] ?? "Marketplace update"; }
 export function eventTone(type: string): StepTone {
-  if (["WORK_APPROVED","DELIVERABLE_SUBMITTED"].includes(type)) return "done";
+  if (["WORK_APPROVED","DELIVERABLE_SUBMITTED","DELIVERABLE_RELEASED"].includes(type)) return "done";
   if (["EXECUTION_REQUIRES_REVIEW","AWAITING_OWNER_REVIEW","DEPENDENCY_FAILED","DEADLINE_REVIEW","WORKFLOW_PAUSED"].includes(type)) return "attention";
   if (["WORK_REJECTED","JOB_CANCELLED","AUCTION_UNAWARDED"].includes(type)) return "stopped";
   return "current";

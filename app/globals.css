@@ -327,3 +327,13 @@ caption { color:#4b515c; font-size:12px; }
 .negotiation-details summary span { font-size:11px; color:#697180; }
 .negotiation-details summary::after { content:"+"; color:#a45d39; }
 .negotiation-details[open] summary::after { content:"−"; }
+.locked-deliverable { margin-top:18px; padding:20px; border:1px dashed #cbd3df; border-radius:6px; background:#fafbfc; }
+.locked-deliverable h3 { font-size:14px; font-weight:600; margin:13px 0; }
+.locked-deliverable > p:not(.outcome-pill) { color:#697180; font-size:12px; margin-top:12px; }
+.locked-deliverable dl { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; padding:16px 0; border-top:1px solid #e1e6ee; border-bottom:1px solid #e1e6ee; }
+.locked-deliverable dt { font-size:10px; color:#697180; margin-bottom:6px; }
+.locked-deliverable dd { font-size:12px; }
+@media(max-width:640px){.locked-deliverable{padding:15px;}.locked-deliverable dl{grid-template-columns:1fr 1fr;}}
+.payment-preflight { border:1px solid #e2d9c8; background:#fffcf6; border-radius:6px; padding:16px; margin-top:18px; }
+.payment-preflight h3 { font-weight:600; font-size:13px; margin-bottom:8px; }
+.payment-preflight p { font-size:11px; color:#77613f; margin-top:7px; }

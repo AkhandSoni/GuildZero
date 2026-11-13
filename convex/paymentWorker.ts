@@ -1,3 +1,4 @@
+import { recordDeliveryRelease } from "./deliveryAccess";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { quote, audit, bindingReason } from "./paymentHelpers";
@@ -130,6 +131,7 @@ export const outcome = internalMutation({
         result.status === "CONFIRMED" ? "allow" : "reject",
       );
     }
+    if (job && result.status === "CONFIRMED") await recordDeliveryRelease(ctx, job);
     if (result.status === "CONFIRMED" || result.status === "FAILED") {
       const lock = await ctx.db
         .query("signerLocks")
