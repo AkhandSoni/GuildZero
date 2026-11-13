@@ -62,6 +62,12 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - Use the implemented PR's bidding/ranking/negotiation/result types and function exports, retaining application lifecycle state types and mutable JSON option arrays required by generated Convex write signatures. These are in-memory types, not changes to stored financial records or ownership checks. Future worker callers must use the implemented engine result shapes documented in `economy-kernel.md`, rather than the earlier proposed shapes in `worker-integration.md`.
 - Keep mission/public option validation codes and UI messages stable. CSV execution explicitly requests the kernel-compatible generic option error mode; both entry points share `lib/economy/contracts.ts` validation. Existing application and PR tests pass together. The engine remains a pure package until separately connected to the scheduled workflow; merging code alone does not prove automatic marketplace execution or settlement.
 
+## 2026-11-13 — Pre-broadcast recovery protocol proposal (#33)
+
+- The current records have no attempt-bound callback identity or durable signing-permit boundary. A failure reason, timeout, missing hash or cancelled schedule cannot establish that an older worker can never broadcast. Preserve existing locks and failed/uncertain histories rather than adding an unsafe reset endpoint.
+- The proposed v2 protocol records immutable attempt histories and fences all callbacks by attempt/token/generation. Only a trusted closure that wins before signing permission may permit an owner to prepare a new READY attempt, with separate exact authorization and current binding/allowance/signer checks. Signing errors, identity persistence ambiguity and broadcast admission are conservatively nonrecoverable in this bounded design.
+- The executable model is a specification fixture, not production code. Actual v2 implementation must integrate reviewed allowance/delivery/retention changes and pass independent code review and abrupt process tests before enablement. This design does not close #33 or authorize sending funds.
+
 ## 2026-11-12 — payment approval binding (issue #8)
 
 - The issue audit identified missing persisted approval identity/policy version on payment intents. `fix/payment-approval-binding` stacks on the shared-contract fix and binds the exact approved deliverable, verification, optional owner dispute decision and policy version in addition to contract/sender/recipient/amount.
