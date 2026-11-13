@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { fork } from "node:child_process";
+import { runWorkerProcess, stopWorkerProcesses } from "../helpers/worker-process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, it, vi } from "vitest";
@@ -29,7 +29,8 @@ const workerScript = fileURLToPath(
 const BLOCK_HASH = "1".repeat(32);
 const FINAL_BLOCK_HASH = "2".repeat(44);
 
-afterEach(() => {
+afterEach(async () => {
+  await stopWorkerProcesses();
   vi.unstubAllEnvs();
   vi.useRealTimers();
 });
@@ -73,6 +74,8 @@ async function runWorkerSubprocess(options: {
   code: number | null;
   signal: NodeJS.Signals | null;
   doneResult?: unknown;
+  signingAttempts: number;
+  signatures: number;
 }> {
   const {
     t,
@@ -82,25 +85,14 @@ async function runWorkerSubprocess(options: {
     crashStage = "none",
     env,
   } = options;
-  return new Promise((resolvePromise, rejectPromise) => {
-    let doneResult: unknown;
-    const child = fork(workerScript, [], {
-      execArgv: [],
-      env: {
-        ...process.env,
-        ...env,
-        WORKER_ACTION: action,
-        WORKER_INTENT_ID: intentId,
-      },
-      stdio: ["ignore", "pipe", "pipe", "ipc"],
-    });
-
-    child.on("error", rejectPromise);
-    child.on("exit", (code, signal) => {
-      resolvePromise({ code, signal, doneResult });
-    });
-
-    child.on("message", async (raw: unknown) => {
+  let doneResult: unknown;
+  let signingAttempts = 0;
+  let signatures = 0;
+  const exit = await runWorkerProcess({
+    script: workerScript,
+    env: { ...process.env, ...env, WORKER_ACTION: action, WORKER_INTENT_ID: intentId },
+    expectedSignal: crashStage === "none" ? undefined : "SIGKILL",
+    onMessage: async (raw, child) => {
       if (!raw || typeof raw !== "object") return;
       const msg = raw as {
         id: number;
@@ -112,151 +104,151 @@ async function runWorkerSubprocess(options: {
         params?: Record<string, unknown>;
         result?: unknown;
       };
-      try {
-        if (msg.type === "done") {
-          doneResult = msg.result;
-          child.send({ id: msg.id, ok: true, value: null });
-          return;
-        }
-        if (msg.type === "convex") {
-          let value: unknown;
-          if (msg.name === "paymentWorker:claim") {
-            value = await t.mutation(
-              internal.paymentWorker.claim,
-              msg.args as { intentId: Id<"paymentIntents"> },
-            );
-          } else if (msg.name === "paymentWorker:prepared") {
-            value = await t.mutation(
-              internal.paymentWorker.prepared,
-              msg.args as {
-                intentId: Id<"paymentIntents">;
-                txHash: string;
-                nonce: string;
-              },
-            );
-            if (crashStage === "post_hash_before_broadcast") {
-              child.kill("SIGKILL");
-              return;
-            }
-          } else if (msg.name === "paymentWorker:outcome") {
-            value = await t.mutation(
-              internal.paymentWorker.outcome,
-              msg.args as {
-                intentId: Id<"paymentIntents">;
-                receiptJson?: string;
-                preBroadcastFailure?: boolean;
-                preBroadcastReason?: string;
-              },
-            );
-          } else if (msg.name === "paymentWorker:snapshot") {
-            value = await t.query(
-              internal.paymentWorker.snapshot,
-              msg.args as { intentId: Id<"paymentIntents"> },
-            );
-          } else {
-            throw new Error(`Unexpected Convex call: ${String(msg.name)}`);
-          }
-          if (child.connected) child.send({ id: msg.id, ok: true, value });
-          return;
-        }
-        if (msg.type === "rpc_assert_testnet") {
-          if (child.connected) child.send({ id: msg.id, ok: true, value: null });
-          return;
-        }
-        if (msg.type === "rpc_call") {
-          const method = msg.method;
-          const params = msg.params ?? {};
-          let value: unknown;
-          if (method === "EXPERIMENTAL_protocol_config") {
-            value = {
-              runtime_config: { storage_amount_per_byte: "10000000000000000000" },
-            };
-          } else if (
-            method === "query" &&
-            params.request_type === "view_account"
-          ) {
-            value = {
-              amount: "10000000000000000000000000",
-              storage_usage: 100,
-            };
-          } else if (
-            method === "query" &&
-            params.request_type === "view_access_key"
-          ) {
-            if (crashStage === "pre_hash_access_key") {
-              child.kill("SIGKILL");
-              return;
-            }
-            value = {
-              nonce: Number(chain.accessKeyNonce),
-              permission: "FullAccess",
-            };
-          } else if (method === "block") {
-            value = { header: { hash: BLOCK_HASH } };
-          } else if (method === "send_tx") {
-            const rawBytes = Buffer.from(
-              String(params.signed_tx_base64),
-              "base64",
-            );
-            const decoded = decodeSignedTransaction(rawBytes);
-            const rawTxBytes = decoded.transaction.encode();
-            const digest = createHash("sha256").update(rawTxBytes).digest();
-            expect(
-              chain.keyPair.verify(digest, decoded.signature.data),
-            ).toBe(true);
-            const txHash = baseEncode(digest);
-            const txNonce = decoded.transaction.nonce;
-            expect(txNonce).toBe(chain.accessKeyNonce + 1n);
-            chain.accessKeyNonce = txNonce;
-            const deposit = String(
-              decoded.transaction.actions[0]?.transfer?.deposit ?? "",
-            );
-            chain.broadcasts.push({
-              txHash,
-              signerId: decoded.transaction.signerId,
-              receiverId: decoded.transaction.receiverId,
-              nonce: txNonce.toString(),
-              deposit,
-            });
-            const receipt = {
-              final_execution_status: "FINAL",
-              transaction: {
-                hash: txHash,
-                signer_id: decoded.transaction.signerId,
-                receiver_id: decoded.transaction.receiverId,
-                nonce: txNonce.toString(),
-                actions: [{ Transfer: { deposit } }],
-              },
-              transaction_outcome: { block_hash: FINAL_BLOCK_HASH },
-              status: { SuccessValue: "" },
-              receipts_outcome: [{ outcome: { status: { SuccessValue: "" } } }],
-            };
-            chain.receipts.set(txHash, receipt);
-            if (crashStage === "during_send_tx_after_chain_accepts") {
-              child.kill("SIGKILL");
-              return;
-            }
-            value = receipt;
-          } else if (method === "tx") {
-            const found = chain.receipts.get(String(params.tx_hash));
-            if (!found) throw new Error("RPC_RESULT_UNAVAILABLE");
-            value = found;
-          } else {
-            throw new Error(`Unexpected RPC method: ${String(method)}`);
-          }
-          if (child.connected) child.send({ id: msg.id, ok: true, value });
-        }
-      } catch (error) {
-        if (child.connected) {
-          child.send({
-            id: msg.id,
-            ok: false,
-            error: error instanceof Error ? error.message : "IPC_FAILURE",
-          });
-        }
+      if (msg.type === "signing_attempt" || msg.type === "signing_complete") {
+        if (msg.type === "signing_attempt") signingAttempts++;
+        else signatures++;
+        child.send({ id: msg.id, ok: true, value: null });
+        return;
       }
-    });
+      if (msg.type === "done") {
+        doneResult = msg.result;
+        child.send({ id: msg.id, ok: true, value: null });
+        return;
+      }
+      if (msg.type === "convex") {
+        let value: unknown;
+        if (msg.name === "paymentWorker:claim") {
+          value = await t.mutation(
+            internal.paymentWorker.claim,
+            msg.args as { intentId: Id<"paymentIntents"> },
+          );
+        } else if (msg.name === "paymentWorker:prepared") {
+          value = await t.mutation(
+            internal.paymentWorker.prepared,
+            msg.args as {
+              intentId: Id<"paymentIntents">;
+              txHash: string;
+              nonce: string;
+            },
+          );
+          if (crashStage === "post_hash_before_broadcast") {
+            child.kill("SIGKILL");
+            return;
+          }
+        } else if (msg.name === "paymentWorker:outcome") {
+          value = await t.mutation(
+            internal.paymentWorker.outcome,
+            msg.args as {
+              intentId: Id<"paymentIntents">;
+              receiptJson?: string;
+              preBroadcastFailure?: boolean;
+              preBroadcastReason?: string;
+            },
+          );
+        } else if (msg.name === "paymentWorker:snapshot") {
+          value = await t.query(
+            internal.paymentWorker.snapshot,
+            msg.args as { intentId: Id<"paymentIntents"> },
+          );
+        } else {
+          throw new Error(`Unexpected Convex call: ${String(msg.name)}`);
+        }
+        if (child.connected) child.send({ id: msg.id, ok: true, value });
+        return;
+      }
+      if (msg.type === "rpc_assert_testnet") {
+        if (child.connected) child.send({ id: msg.id, ok: true, value: null });
+        return;
+      }
+      if (msg.type === "rpc_call") {
+        const method = msg.method;
+        const params = msg.params ?? {};
+        let value: unknown;
+        if (method === "EXPERIMENTAL_protocol_config") {
+          value = {
+            runtime_config: { storage_amount_per_byte: "10000000000000000000" },
+          };
+        } else if (
+          method === "query" &&
+          params.request_type === "view_account"
+        ) {
+          value = {
+            amount: "10000000000000000000000000",
+            storage_usage: 100,
+          };
+        } else if (
+          method === "query" &&
+          params.request_type === "view_access_key"
+        ) {
+          if (crashStage === "pre_hash_access_key") {
+            child.kill("SIGKILL");
+            return;
+          }
+          value = {
+            nonce: Number(chain.accessKeyNonce),
+            permission: "FullAccess",
+          };
+        } else if (method === "block") {
+          value = { header: { hash: BLOCK_HASH } };
+        } else if (method === "send_tx") {
+          const rawBytes = Buffer.from(
+            String(params.signed_tx_base64),
+            "base64",
+          );
+          const decoded = decodeSignedTransaction(rawBytes);
+          const rawTxBytes = decoded.transaction.encode();
+          const digest = createHash("sha256").update(rawTxBytes).digest();
+          expect(
+            chain.keyPair.verify(digest, decoded.signature.data),
+          ).toBe(true);
+          const txHash = baseEncode(digest);
+          const txNonce = decoded.transaction.nonce;
+          expect(txNonce).toBe(chain.accessKeyNonce + 1n);
+          chain.accessKeyNonce = txNonce;
+          const deposit = String(
+            decoded.transaction.actions[0]?.transfer?.deposit ?? "",
+          );
+          chain.broadcasts.push({
+            txHash,
+            signerId: decoded.transaction.signerId,
+            receiverId: decoded.transaction.receiverId,
+            nonce: txNonce.toString(),
+            deposit,
+          });
+          const receipt = {
+            final_execution_status: "FINAL",
+            transaction: {
+              hash: txHash,
+              signer_id: decoded.transaction.signerId,
+              receiver_id: decoded.transaction.receiverId,
+              nonce: txNonce.toString(),
+              actions: [{ Transfer: { deposit } }],
+            },
+            transaction_outcome: { block_hash: FINAL_BLOCK_HASH },
+            status: { SuccessValue: "" },
+            receipts_outcome: [{ outcome: { status: { SuccessValue: "" } } }],
+          };
+          chain.receipts.set(txHash, receipt);
+          if (crashStage === "during_send_tx_after_chain_accepts") {
+            child.kill("SIGKILL");
+            return;
+          }
+          value = receipt;
+        } else if (method === "tx") {
+          const found = chain.receipts.get(String(params.tx_hash));
+          if (!found) {
+            child.send({ id: msg.id, ok: false, error: "RPC_RESULT_UNAVAILABLE" });
+            return;
+          }
+          value = found;
+        } else {
+          throw new Error(`Unexpected RPC method: ${String(method)}`);
+        }
+        if (child.connected) child.send({ id: msg.id, ok: true, value });
+      } else throw new Error("UNEXPECTED_WORKER_MESSAGE");
+    },
   });
+  return { ...exit, doneResult, signingAttempts, signatures };
 }
 
 function configureTestnetEnv(chain: SimulatedChain) {
@@ -386,6 +378,7 @@ it("retains signer lock and blocks duplicate/concurrent claims when worker proce
     crashStage: "pre_hash_access_key",
     env,
   });
+  expect(crashed).toMatchObject({ signingAttempts: 0, signatures: 0 });
   expect(crashed.signal).toBe("SIGKILL");
   expect(chain.broadcasts).toHaveLength(0);
 
@@ -406,6 +399,7 @@ it("retains signer lock and blocks duplicate/concurrent claims when worker proce
     intentId: prep1.intentId,
     env,
   });
+  expect(retryWorker).toMatchObject({ signingAttempts: 0, signatures: 0 });
   expect(retryWorker.signal).toBeNull();
   expect(retryWorker.doneResult).toEqual({ ok: false, code: "NOT_CLAIMABLE" });
   expect(
@@ -437,6 +431,7 @@ it("retains signer lock and blocks duplicate/concurrent claims when worker proce
     intentId: prep2.intentId,
     env,
   });
+  expect(secondWorker).toMatchObject({ signingAttempts: 0, signatures: 0 });
   expect(secondWorker.doneResult).toEqual({ ok: false, code: "NOT_CLAIMABLE" });
   const intent2 = (await owner.query(api.payments.forJob, { jobId: job2 }))!;
   expect(intent2.status).toBe("READY");
@@ -477,6 +472,7 @@ it("persists signed txHash and nonce before broadcast, survives post-hash SIGKIL
     crashStage: "post_hash_before_broadcast",
     env,
   });
+  expect(crashedBeforeSend).toMatchObject({ signingAttempts: 1, signatures: 1 });
   expect(crashedBeforeSend.signal).toBe("SIGKILL");
   expect(chain.broadcasts).toHaveLength(0);
 
@@ -494,6 +490,7 @@ it("persists signed txHash and nonce before broadcast, survives post-hash SIGKIL
     intentId: prepA.intentId,
     env,
   });
+  expect(duplicateAfterRestart).toMatchObject({ signingAttempts: 0, signatures: 0 });
   expect(duplicateAfterRestart.doneResult).toEqual({
     ok: false,
     code: "NOT_CLAIMABLE",
@@ -508,6 +505,7 @@ it("persists signed txHash and nonce before broadcast, survives post-hash SIGKIL
     action: "reconcile",
     env,
   });
+  expect(reconciledMissing).toMatchObject({ signingAttempts: 0, signatures: 0 });
   expect(reconciledMissing.doneResult).toEqual({ ok: false });
   const uncertainA = (await owner.query(api.payments.forJob, {
     jobId: jobUnbroadcast,
@@ -735,6 +733,7 @@ it("recovers partial parent/child subcontract settlement across post-broadcast S
     intentId: parentPrep.intentId,
     env,
   });
+  expect(parentSettled).toMatchObject({ signingAttempts: 1, signatures: 1 });
   expect(parentSettled.signal).toBeNull();
   expect(parentSettled.doneResult).toMatchObject({ ok: true });
 
@@ -778,6 +777,7 @@ it("recovers partial parent/child subcontract settlement across post-broadcast S
     crashStage: "during_send_tx_after_chain_accepts",
     env,
   });
+  expect(childCrashed).toMatchObject({ signingAttempts: 1, signatures: 1 });
   expect(childCrashed.signal).toBe("SIGKILL");
   expect(chain.broadcasts).toHaveLength(2);
   expect(chain.broadcasts.map((b) => b.nonce)).toEqual([
@@ -843,6 +843,7 @@ it("recovers partial parent/child subcontract settlement across post-broadcast S
     action: "reconcile",
     env,
   });
+  expect(childReconciled).toMatchObject({ signingAttempts: 0, signatures: 0 });
   expect(childReconciled.signal).toBeNull();
   expect(childReconciled.doneResult).toEqual({ ok: true });
 
@@ -886,13 +887,14 @@ it("recovers partial parent/child subcontract settlement across post-broadcast S
   ).toHaveLength(1);
 
   // Repeated reconciliation / outcome delivery does not emit duplicate DELIVERABLE_RELEASED events.
-  await runWorkerSubprocess({
+  const repeatedReconciliation = await runWorkerSubprocess({
     t,
     chain,
     intentId: childPrep.intentId,
     action: "reconcile",
     env,
   });
+  expect(repeatedReconciliation).toMatchObject({ signingAttempts: 0, signatures: 0 });
   await t.mutation(internal.paymentWorker.outcome, {
     intentId: childPrep.intentId,
     receiptJson: JSON.stringify(chain.receipts.get(childFinal.txHash!)!),

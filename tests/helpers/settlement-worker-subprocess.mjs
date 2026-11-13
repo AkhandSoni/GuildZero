@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { getFunctionName } from "convex/server";
+import { KeyPairSigner } from "near-api-js";
 
 const pending = new Map();
 let nextId = 1;
@@ -20,9 +21,26 @@ function callParent(payload) {
   const id = nextId++;
   return new Promise((resolvePromise, rejectPromise) => {
     pending.set(id, { resolve: resolvePromise, reject: rejectPromise });
-    process.send({ id, ...payload });
+    process.send({ id, ...payload }, (error) => {
+      if (error) { pending.delete(id); rejectPromise(new Error("IPC_DISCONNECTED")); }
+    });
   });
 }
+
+process.on("disconnect", () => {
+  for (const entry of pending.values()) entry.reject(new Error("IPC_DISCONNECTED"));
+  pending.clear();
+});
+
+// Observe the actual SDK call in this child process, including rejected claims.
+// Only finite event names cross IPC: no transaction, signature or key material.
+const signTransaction = KeyPairSigner.prototype.signTransaction;
+KeyPairSigner.prototype.signTransaction = async function (...args) {
+  await callParent({ type: "signing_attempt" });
+  const result = await signTransaction.apply(this, args);
+  await callParent({ type: "signing_complete" });
+  return result;
+};
 
 globalThis.__guildzeroIpcRpc = {
   assertTestnet: () => callParent({ type: "rpc_assert_testnet" }),
