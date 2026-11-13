@@ -62,6 +62,12 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - CSV parsing preserves explicit empty records and removes only the parser's one terminal-separator artifact. Malformed-width blank records reject rather than disappear; empty records count toward the 500-row cap. Empty one-column normalization output is quoted to distinguish data from a terminal separator. Verification uses the preserved source records and rejects row-deleted outputs.
 - Column verification checks retain their exact comparisons but describe only the column count/order, keeping explanations within the existing Convex persistence cap. The cap is not relaxed. Boundary tests forward actual executor/verifier output through the trusted workflow with 11 and 32 maximum-length headers.
 
+## 2026-11-13 — Strict summary preflight (#36)
+
+- Implement the documented strict-input path rather than guessing locale/currency/percentage conversions. Drafts can retain unsupported numeric content for correction, but authenticated `jobs.start` validates selected original cells before recording any auction, job, award or payment. Existing started work remains untouched and retains independent executor/verifier rejection.
+- Share the bounded numeric/CSV grammar with frontend diagnostics. Show selected column names and up to three CSV record numbers per column; do not echo raw offending values into errors. Empty cells remain missing and signed decimals/scientific literals retain the existing finite ±1e12 and no-underflow bounds. Unselected columns and normalization behavior remain unchanged.
+- Literal column sums are not derived revenue or precise financial accounting. No locale conversion, new calculation, live payment, public deployment, representative-user validation or compliance claim is introduced. User validation of examples remains outstanding; this PR does not close that acceptance gate.
+
 ## 2026-11-13 — Combine merged economy kernel with application branches
 
 - The user explicitly authorized including merged PR #14 and testing it with the completed application branches on local main. Preserve both histories through a merge; no push or public deployment is included.
