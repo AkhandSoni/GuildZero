@@ -46,8 +46,13 @@ export async function deliveryAccess(ctx: QueryCtx, requested: Doc<"jobs">) {
       BigInt(parent.contract.holdbackYocto) + BigInt(child.contract.amountYocto) === BigInt(parent.contract.amountYocto) &&
       parent.deliverable?.dependencyDeliverableId === child.deliverable?._id) : parent.contract.amountYocto === parent.contract.holdbackYocto;
   }
-  const released = allocated && obligations.every(row => row.confirmed);
-  return { released, reason: released ? "CONFIRMED_MISSION_SETTLEMENT" : "CONFIRMED_MISSION_SETTLEMENT_REQUIRED", obligations };
+  const allConfirmed = obligations.every(row => row.confirmed);
+  const distinctEvidence = new Set(obligations.map(row => row.payment?.txHash)).size === obligations.length
+    && new Set(obligations.map(row => `${row.payment?.sender}:${row.payment?.nonce}`)).size === obligations.length;
+  const released = allocated && allConfirmed && distinctEvidence;
+  const reason = released ? "CONFIRMED_MISSION_SETTLEMENT"
+    : allConfirmed && !distinctEvidence ? "PAYMENT_EVIDENCE_NOT_DISTINCT" : "CONFIRMED_MISSION_SETTLEMENT_REQUIRED";
+  return { released, reason, obligations };
 }
 export function deliverablePreview(deliverable: Doc<"deliverables">) {
   const summary = deliverable.format === "json" ? readSummary(deliverable.content) : null;

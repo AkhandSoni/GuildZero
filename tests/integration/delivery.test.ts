@@ -83,3 +83,16 @@ it("human work approval alone does not unlock content; its exact dispute binding
 it("normalization previews contain no processed CSV rows and unlock the exact stored file after confirmation",async()=>{
  const s=await setup(false,false,"csv_normalize");expect((await s.detail()).deliverables[0]).toMatchObject({content:null,preview:{rowCount:2,columnCount:2}});await s.confirm();expect((await s.detail()).deliverables[0].content).toBe("product,units\nBag,3\nBook,5");
 });
+it("cannot count one transaction identity or operator nonce twice across parent and child allocations",async()=>{
+ const s=await setup(true);const childId=(await s.detail()).children[0]._id;
+ const parentIntentId=await s.confirm();const childIntentId=await s.confirm(childId);
+ const parent=(await s.owner.query(api.payments.forJob,{jobId:s.jobId}))!;
+ const child=(await s.owner.query(api.payments.forJob,{jobId:childId}))!;
+ expect((await s.detail()).delivery.released).toBe(true);
+ for(const duplicate of [{txHash:parent.txHash},{nonce:parent.nonce}]){
+  await s.t.run(ctx=>ctx.db.patch(childIntentId,{txHash:child.txHash,nonce:child.nonce,...duplicate}));
+  const detail=await s.detail();expect(detail.delivery).toMatchObject({released:false,reason:"PAYMENT_EVIDENCE_NOT_DISTINCT"});
+  expect(detail.deliverables[0].content).toBeNull();expect((await s.detail(childId)).deliverables[0].content).toBeNull();
+ }
+ expect(parentIntentId).not.toBe(childIntentId);
+});

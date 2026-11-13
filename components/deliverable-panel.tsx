@@ -42,6 +42,7 @@ export function DeliverablePanel({ deliverable: d, delivery, approved }: { deliv
         ? `${delivery.confirmedPayments} of ${delivery.requiredPayments} required payments confirmed. Review verification below; use the payment receipt to settle the work.`
         : "This attempt was superseded. Only the latest approved deliverable can be released by its matching payment."}</p>
       {delivery.reason === "DELIVERY_STRUCTURE_INVALID" && <p>Saved job relationships could not be validated. Operator review is required before release.</p>}
+      {delivery.reason === "PAYMENT_EVIDENCE_NOT_DISTINCT" && <p>Each allocation needs its own distinct confirmed transaction. Operator review is required before release.</p>}
       {delivery.requiredPayments > 1 && <p>Both the main agent and cleaning allocation must settle. Expand the cleaning subcontract below to review its separate receipt; both amounts come from the original award.</p>}
       {!approved && <p>Work must be approved before payment can be prepared.</p>}
     </div>}
