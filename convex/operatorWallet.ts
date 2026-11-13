@@ -30,10 +30,11 @@ export const refresh = mutation({
   },
 });
 export const finish = internalMutation({
-  args: { id: v.id("operatorWalletSnapshots"), account: v.string(), requestedAt: v.number(), result: v.optional(v.object({ liquidYocto: v.string(), lockedYocto: v.string(), totalYocto: v.string(), storageYocto: v.string(), availableYocto: v.string(), blockHeight: v.number(), blockHash: v.string() })) },
-  handler: async (ctx, { id, account, requestedAt, result }) => {
+  args: { id: v.id("operatorWalletSnapshots"), account: v.string(), requestedAt: v.number(), failure: v.optional(v.union(v.literal("configuration"), v.literal("network"), v.literal("account"), v.literal("protocol"), v.literal("evidence"))), result: v.optional(v.object({ liquidYocto: v.string(), lockedYocto: v.string(), totalYocto: v.string(), storageYocto: v.string(), availableYocto: v.string(), blockHeight: v.number(), blockHash: v.string() })) },
+  handler: async (ctx, { id, account, requestedAt, result, failure }) => {
     const current = await ctx.db.get(id);
     if (!current || current.account !== account || current.requestedAt !== requestedAt || sender() !== account) return;
-    await ctx.db.patch(id, result ? { ...result, checkedAt: Date.now(), pending: false, error: undefined } : { pending: false, error: "Could not read NEAR testnet. Any previous balance below is the last successful reading." });
+    const step = failure ? ` (${failure} check)` : "";
+    await ctx.db.patch(id, result ? { ...result, checkedAt: Date.now(), pending: false, error: undefined } : { pending: false, error: `Could not read NEAR testnet${step}. Any previous balance below is the last successful reading.` });
   },
 });

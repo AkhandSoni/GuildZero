@@ -305,3 +305,12 @@ pre { overflow-wrap: anywhere; }
 .payment-history h3 { font-weight:600; }
 .payment-history strong { display:block; margin:.5rem 0; font-size:1.1rem; overflow-wrap:anywhere; }
 .payment-history a { color:#136252; text-decoration:underline; text-underline-offset:3px; }
+/* Keep every destination visible and helper text readable on small screens. */
+.workspace-app .dashboard-data-note,
+.workspace-app .dashboard-metric > span,
+.workspace-app .workflow-step span:not(.step-icon),
+.workspace-app .workflow-card-footer p { font-size:11px; color:#627058; }
+@media(max-width:640px) {
+  .workspace-nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:visible; gap:4px; }
+  .workspace-nav a { font-size:10px; padding:9px 7px; }
+}
