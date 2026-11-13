@@ -328,6 +328,10 @@ At the user's explicit request to test everything and push the completed foundat
 
 ## Dataset stewardship follow-up (#35) — 2026-11-13
 
+### Current-main integration corrections — 2026-11-13
+
+Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 274 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+
 Added an explicit demo retention policy and owner-confirmed terminal mission content removal. Parent/child source, result and free-text copies are cleared together; ownership, active-work and exact finalized-settlement checks fail closed. Financial rows remain unchanged and removed records cannot be reused or quoted for new payment. Representative-user/jurisdiction validation, account erasure and operator backup deletion/expiry remain separate requirements; no legal compliance or automatic expiry is claimed. Validation results are recorded in the issue plan/PR.
 
 
@@ -350,7 +354,3 @@ Preserved root environment files, user-started local services, existing financia
 Implemented in an isolated issue branch: full-brief dirty comparison, explicit same-tab link/Sign out/Cancel discard, native reload/close warning and guarded browser Back. Reverting every change returns to clean state. Mutation success releases protection before navigation; validation/persistence failures retain the brief. Private inputs remain in React memory only.
 
 Validation: lint, typecheck, production build and all 214 existing unit/backend tests passed. The focused live browser regression passed against a fresh isolated local Convex Auth 2 backend (ports 3323/3324) and Next frontend (3123), using the installed Chromium 1248 executable override. It exercises link/Back/reload cancellation, invalid-save retention, successful creation, clean reversion, edit cancellation and accepted Back. The first test run used an ambiguous alert locator, corrected before the passing run; the default browser revision was absent, so the installed compatible executable was used. No payment, public hosting or submission was performed. Broader release gates remain unchanged.
-
-## PR integration corrections for issue #35 — 2026-11-13
-
-Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 274 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
