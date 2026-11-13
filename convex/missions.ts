@@ -98,6 +98,7 @@ export const duplicate = mutation({
   args: { id: v.id("missions") },
   handler: async (ctx, { id }) => {
     const source = await ownedMission(ctx, id);
+    if (source.contentRemovedAt !== undefined) throw new ConvexError("DATASET_REMOVED");
     const now = Date.now();
     const input = validated({
       title: ("Copy of " + source.title).slice(0, 100), serviceType: source.serviceType,

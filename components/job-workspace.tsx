@@ -106,6 +106,11 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
       setBusy(false);
     }
   };
+  if (data.job.contentRemovedAt !== undefined) return <section className="mt-8 grid gap-5" id={data.job.depth === 0 ? "mission-progress" : undefined}>
+    <div className="panel"><h2>Private content removed</h2><p className="muted mt-3">Work state: {statusLabels[data.job.state] ?? data.job.state}. Dataset and result downloads are no longer available. Financial records remain available below.</p></div>
+    <div id={data.job.depth === 0 ? "mission-settlement" : undefined}><PaymentPanel jobId={id} approved={false} /></div>
+    {data.children.map(child => <details className="panel" key={child._id}><summary>Cleaning subcontract · {child.state}</summary><JobDetail id={child._id} /></details>)}
+  </section>;
   return (
     <section id={data.job.depth === 0 ? "mission-progress" : undefined} className="mt-8 grid gap-5">
       <div className="panel job-overview">

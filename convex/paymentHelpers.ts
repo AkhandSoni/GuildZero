@@ -20,6 +20,7 @@ export async function audit(
   });
 }
 export async function quote(ctx: MutationCtx, job: Doc<"jobs">) {
+  if (job.contentRemovedAt !== undefined) throw new ConvexError("DATASET_REMOVED");
   if (job.state !== "approved") throw new ConvexError("WORK_NOT_APPROVED");
   if (job.parentId) {
     const parent = await ctx.db.get(job.parentId);

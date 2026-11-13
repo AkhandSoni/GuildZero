@@ -296,6 +296,11 @@ At the user's explicit request to test everything and push the completed foundat
 - An additional walkthrough through the actual production UI confirmed a custom CSV is saved correctly, malformed CSV produces a visible error without saving, a one-yoctoNEAR budget preserves every decimal place after reload, editing updates the stored budget, canceling deletion preserves the mission, and confirming deletion removes it. Captured screenshots of the running mission workspace outside the repository.
 - Per the user's request, repository documentation is limited to setup (`README.md`), coding instructions (`AGENTS.md`), locked decisions, cluster status, and material deviations. Detailed handoff/architecture/workflow/planning notes remain local and are not included in the push.
 
+## Dataset stewardship follow-up (#35) — 2026-11-13
+
+Added an explicit demo retention policy and owner-confirmed terminal mission content removal. Parent/child source, result and free-text copies are cleared together; ownership, active-work and exact finalized-settlement checks fail closed. Financial rows remain unchanged and removed records cannot be reused or quoted for new payment. Representative-user/jurisdiction validation, account erasure and operator backup deletion/expiry remain separate requirements; no legal compliance or automatic expiry is claimed. Validation results are recorded in the issue plan/PR.
+
+
 ## Functional application workspace and wallet — 2026-11-13
 
 Owner-directed follow-up (#26–#29): rebuilt the authenticated shell with labeled responsive routes; added dedicated mission, agent-directory and payment-history pages, compact recent main-job metrics, real approval/payment queues, scoped workflow progress, separate child outcomes, and expandable original audit events. Owner-private receipt links resolve even when their jobs are outside the recent overview window. Payment-history filters, mission search/reuse, output downloads, graph controls and security probes remain wired to actual state. Mobile navigation exposes all six destinations.

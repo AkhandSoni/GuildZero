@@ -107,6 +107,13 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - Pinned Next.js 16.4.6 / React 19.3.1 / Convex 1.49.0 / Convex Auth 0.0.98 on the installed Node 26 toolchain. Patched `@auth/core` to compatible 0.41.3 after npm audit flagged the guide's 0.41.1. A scoped `minimatch` 11.0.1 override resolves the ESLint parser's development advisory; lint/typecheck validate compatibility.
 - Schema and generated Convex types cover only current auth and mission needs. No agent execution, auctions, payments, security lab, economy graph, or release scaffolding is included.
 
+## 2026-11-13 — Owner-controlled dataset retention (#35)
+
+- The owner requested implementation and separate PRs for four unclaimed issues. Implement the bounded demo policy in `docs/data-retention.md`; no production compliance, customer interview or jurisdiction validation is claimed.
+- Terminal mission-group content is removed atomically after ownership and exact confirmed settlement checks. IDs, money, work decisions and immutable payment rows survive; unresolved/failed payments, active work, signer locks, malformed or oversized histories refuse removal. No automatic expiry, receipt rewriting, recovery override or transfer is introduced.
+- A tombstone prevents reuse, reactivation and new payment quotes. Free-text evidence/column labels are removed as well as CSV/output copies. Independent downloads/backups and auth erasure remain explicitly documented operational gates.
+
+
 ## 2026-11-13 — Functional workspace and operator visibility
 
 - The owner explicitly requested a functional researched application beyond the reference image. Replace decorative dashboard cards and icon-only navigation with real routes, bounded main-job metrics, actionable review/payment queues, distinct parent/child outcomes, state-derived stages and expandable original audit evidence. Add a payment history route with owner-authorized mission links even when the job is outside the recent job window. No service-category expansion or new application runtime is included.
