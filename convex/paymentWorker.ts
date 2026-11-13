@@ -2,6 +2,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { quote, audit, bindingReason } from "./paymentHelpers";
 import { inspectReceipt } from "../lib/settlement/policy";
+import { preparationReason } from "../lib/settlement/failures";
 import { event } from "./workflowHelpers";
 export const snapshot = internalQuery({
   args: { intentId: v.id("paymentIntents") },
@@ -79,6 +80,7 @@ export const outcome = internalMutation({
     intentId: v.id("paymentIntents"),
     receiptJson: v.optional(v.string()),
     preBroadcastFailure: v.optional(v.boolean()),
+    preBroadcastReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const intent = await ctx.db.get(args.intentId);
@@ -93,7 +95,7 @@ export const outcome = internalMutation({
       blockHash?: string;
     } = { status: "UNKNOWN_RECONCILE", reason: "UNCERTAIN_NETWORK_OUTCOME" };
     if (args.preBroadcastFailure)
-      result = { status: "FAILED", reason: "PROVEN_PRE_BROADCAST_FAILURE" };
+      result = { status: "FAILED", reason: preparationReason(args.preBroadcastReason) };
     else if (
       args.receiptJson &&
       args.receiptJson.length <= 131072 &&

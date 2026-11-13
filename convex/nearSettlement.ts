@@ -11,6 +11,7 @@ import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { configuration } from "../lib/settlement/policy";
 import { assertTestnet, rpc } from "../lib/settlement/rpc";
+import type { PreparationFailure } from "../lib/settlement/failures";
 import { settlementProvider } from "../lib/settlement/provider";
 export const settle = internalAction({
   args: { intentId: v.id("paymentIntents") },
@@ -27,36 +28,38 @@ export const settle = internalAction({
     });
     if (!intent) return { ok: false, code: "NOT_CLAIMABLE" };
     let broadcasting = false;
+    let failureStage: PreparationFailure = "SENDER_CONFIGURATION_CHANGED";
     try {
       if (config.sender !== intent.sender) throw new Error("SENDER_CHANGED");
+      failureStage = "TESTNET_CHECK_FAILED";
       await assertTestnet();
+      failureStage = "OPERATOR_ACCOUNT_LOOKUP_FAILED";
       const balance = await rpc("query", {
         request_type: "view_account",
         account_id: intent.sender,
         finality: "final",
       });
+      failureStage = "PROTOCOL_CONFIGURATION_UNAVAILABLE";
       const protocol = await rpc("EXPERIMENTAL_protocol_config", {
         finality: "final",
       });
       const storagePrice = protocol.runtime_config?.storage_amount_per_byte;
-      if (
-        typeof storagePrice !== "string" ||
-        !/^\d{1,30}$/.test(storagePrice) ||
-        typeof balance.amount !== "string" ||
-        !Number.isSafeInteger(balance.storage_usage) ||
-        balance.storage_usage < 0 ||
-        BigInt(balance.amount) <
-          BigInt(intent.amountYocto) +
-            BigInt(balance.storage_usage) * BigInt(storagePrice) +
-            10n ** 22n
-      )
+      failureStage = "INVALID_BALANCE_EVIDENCE";
+      if (typeof storagePrice !== "string" || !/^\d{1,30}$/.test(storagePrice) ||
+          typeof balance.amount !== "string" || !/^\d{1,40}$/.test(balance.amount) ||
+          !Number.isSafeInteger(balance.storage_usage) || balance.storage_usage < 0)
+        throw new Error("INVALID_BALANCE_EVIDENCE");
+      failureStage = "INSUFFICIENT_OPERATOR_BALANCE";
+      if (BigInt(balance.amount) < BigInt(intent.amountYocto) + BigInt(balance.storage_usage) * BigInt(storagePrice) + 10n ** 22n)
         throw new Error("INSUFFICIENT_OPERATOR_BALANCE");
+      failureStage = "RECIPIENT_ACCOUNT_LOOKUP_FAILED";
       // Verify the recipient exists before signing; no arbitrary account creation.
       await rpc("query", {
         request_type: "view_account",
         account_id: intent.recipient,
         finality: "final",
       });
+      failureStage = "SIGNER_KEY_INVALID";
       const signer = KeyPairSigner.fromSecretKey(
         process.env.NEAR_PRIVATE_KEY! as KeyPairString,
       );
@@ -65,13 +68,16 @@ export const settle = internalAction({
         settlementProvider(),
         signer,
       );
+      failureStage = "TRANSACTION_PREPARATION_FAILED";
       const transaction = await account.createTransaction({
         receiverId: intent.recipient,
         actions: [actions.transfer(BigInt(intent.amountYocto))],
         publicKey: await signer.getPublicKey(),
       });
+      failureStage = "TRANSACTION_SIGNING_FAILED";
       const signed = await signer.signTransaction(transaction);
       const txHash = baseEncode(signed.txHash);
+      failureStage = "TRANSACTION_METADATA_NOT_STORED";
       await ctx.runMutation(internal.paymentWorker.prepared, {
         intentId,
         txHash,
@@ -93,7 +99,7 @@ export const settle = internalAction({
       // Never log an SDK exception: it may contain request/key material. Never resend.
       await ctx.runMutation(internal.paymentWorker.outcome, {
         intentId,
-        ...(!broadcasting ? { preBroadcastFailure: true } : {}),
+        ...(!broadcasting ? { preBroadcastFailure: true, preBroadcastReason: failureStage } : {}),
       });
       return {
         ok: false,

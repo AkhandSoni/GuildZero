@@ -459,3 +459,16 @@ it("mock RPC timeout leaves an uncertain intent and prevents a second broadcast"
     await s.t.run((ctx) => ctx.db.query("signerLocks").collect()),
   ).toHaveLength(1);
 });
+it("records an allowlisted pre-broadcast failure without leaking the exception or sending a transfer", async () => {
+  const s=await setup();
+  vi.stubEnv("NEAR_NETWORK","testnet");vi.stubEnv("NEAR_SETTLEMENT_ENABLED","true");vi.stubEnv("NEAR_PRIVATE_KEY","not-a-key-offline-test-only");
+  await s.t.run(ctx=>ctx.db.patch(s.intentId,{authorizedAt:Date.now()}));
+  transport.assertTestnet.mockResolvedValue(undefined);
+  transport.rpc.mockRejectedValue(new Error("private diagnostic that must not be stored"));
+  await s.t.action(internal.nearSettlement.settle,{intentId:s.intentId});
+  const failed=await s.owner.query(api.payments.forJob,{jobId:s.jobId});
+  expect(failed).toMatchObject({status:"FAILED",lastReason:"PROVEN_PRE_BROADCAST_FAILURE:OPERATOR_ACCOUNT_LOOKUP_FAILED"});
+  expect(failed?.txHash).toBeUndefined();
+  expect(JSON.stringify(failed)).not.toContain("private diagnostic");
+  expect(transport.rpc.mock.calls.filter(c=>c[0]==="send_tx")).toHaveLength(0);
+});

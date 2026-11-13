@@ -20,6 +20,8 @@ import type * as marketModel from "../marketModel.js";
 import type * as marketViews from "../marketViews.js";
 import type * as missions from "../missions.js";
 import type * as nearSettlement from "../nearSettlement.js";
+import type * as operatorWallet from "../operatorWallet.js";
+import type * as operatorWalletActions from "../operatorWalletActions.js";
 import type * as ownership from "../ownership.js";
 import type * as paymentHelpers from "../paymentHelpers.js";
 import type * as paymentModel from "../paymentModel.js";
@@ -49,6 +51,8 @@ declare const fullApi: ApiFromModules<{
   marketViews: typeof marketViews;
   missions: typeof missions;
   nearSettlement: typeof nearSettlement;
+  operatorWallet: typeof operatorWallet;
+  operatorWalletActions: typeof operatorWalletActions;
   ownership: typeof ownership;
   paymentHelpers: typeof paymentHelpers;
   paymentModel: typeof paymentModel;

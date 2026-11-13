@@ -136,9 +136,9 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
     if (!executed.ok) {
       // Input that cannot be executed must not become a fabricated deliverable.
       await ctx.db.patch(job._id, { state: "disputed", updatedAt: Date.now() });
-      await ctx.db.insert("disputes", { jobId: job._id, reason: `Service could not execute: ${executed.code}. No deliverable exists; reject and create a revised brief.` });
+      await ctx.db.insert("disputes", { jobId: job._id, reason: `Service could not execute: ${executed.code}: ${executed.message.slice(0, 600)} No deliverable exists; reject and create a revised brief.` });
       await reviewCapacity(ctx, job);
-      await event(ctx, job, "EXECUTION_REQUIRES_REVIEW", `${executed.code}. No output or automatic approval was fabricated.`); return;
+      await event(ctx, job, "EXECUTION_REQUIRES_REVIEW", `${executed.code}: ${executed.message.slice(0, 600)} No output or automatic approval was fabricated.`); return;
     }
     const output = executed.value;
     await ctx.runMutation(internal.workflow.submit, { jobId: job._id, format: output.format,

@@ -114,7 +114,7 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
     let min: number | null = null;
     let max: number | null = null;
 
-    for (const row of rawRows) {
+    for (const [rowIndex, row] of rawRows.entries()) {
       const rawCell = row[colIdx];
       const trimmed = rawCell.trim();
       if (trimmed === "") {
@@ -126,20 +126,20 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
           return {
             ok: false,
             code: "INVALID_NUMBER",
-            message: "Summary numbers must fit within [-1e12, 1e12] without nonzero values underflowing to zero.",
+            message: `Column "${colName}", CSV record ${rowIndex + 2}: number must fit within [-1e12, 1e12] without underflowing to zero.`,
           };
         }
       } else if (isUnsafeFormulaValue(rawCell)) {
         return {
           ok: false,
           code: "UNSAFE_CSV_CELL",
-          message: "Summary column contains an unsafe spreadsheet formula cell.",
+          message: `Column "${colName}", CSV record ${rowIndex + 2}: unsafe spreadsheet formula. Choose numeric columns only.`,
         };
       } else {
         return {
           ok: false,
           code: "INVALID_NUMBER",
-          message: "Summary column contains a non-numeric value.",
+          message: `Column "${colName}", CSV record ${rowIndex + 2}: non-numeric value. Select numeric columns only; cleaning trims text but does not convert it to numbers.`,
         };
       }
       const num = Number(trimmed);
@@ -154,7 +154,7 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
         return {
           ok: false,
           code: "INVALID_NUMBER",
-          message: "Summary computation produced a non-finite sum.",
+          message: `Column "${colName}": summary produced a non-finite sum.`,
         };
       }
       if (min === null || num < min) min = num;

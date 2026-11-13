@@ -181,6 +181,13 @@ export default defineSchema({
   })
     .index("by_job", ["jobId"])
     .index("by_agent", ["agentId"]),
+  operatorWalletSnapshots: defineTable({
+    account: v.string(), requestedAt: v.number(), pending: v.boolean(),
+    checkedAt: v.optional(v.number()), error: v.optional(v.string()),
+    liquidYocto: v.optional(v.string()), lockedYocto: v.optional(v.string()),
+    totalYocto: v.optional(v.string()), storageYocto: v.optional(v.string()), availableYocto: v.optional(v.string()),
+    blockHeight: v.optional(v.number()), blockHash: v.optional(v.string()),
+  }).index("by_account", ["account"]),
   economyEvents: defineTable({
     ownerId: v.id("users"),
     missionId: v.id("missions"),
