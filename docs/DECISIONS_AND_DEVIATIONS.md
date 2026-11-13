@@ -2,6 +2,14 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-13 — Business-user requirements and issue audit
+
+- The user approved research and implementation for actual user needs, selected business users with sales/operations CSVs, and explicitly requested findings as GitHub issues and closure of older completed tickets first. Prioritize import, interpretation, finding/reusing work, intelligible results and owner actions within the existing services. Track ten findings (#16–#25); implement U1–U7 in this pass. Desk research is not represented as user-interview validation.
+- Read file content locally with native browser APIs; accept one bounded UTF-8 CSV and preserve exact content, including BOM, in the existing owner-private mission save flow. No object store, public upload URL, new backend or file-processing dependency is introduced. Failed imports retain the prior draft; no original local file is modified. Existing server validation remains authoritative.
+- Add owner-filtered Convex title search and a service/state index. These are additive indexes, not a rewrite of stored ownership or financial data. Draft/started filters describe brief state, not a fabricated completion state. Reuse copies only validated brief fields into a new private draft and deliberately omits execution records, payment authority and synthetic-demo cleanup flags.
+- Result tables read stored deliverables; CSV export uses actual computed values and rejects formula-like labels. Presentation never bypasses verification, dispute decisions or payment approval. The review queue derives from existing owner-private persisted jobs and remains bounded like the overview.
+- Keep U8/U9/U10 explicit: no unsaved-navigation guard or private-CSV browser cache is claimed, no fake/unverified password reset is added, and representative-user sessions are still needed. Existing missing process-restart evidence and release/submission work remain open; completed economy/policy/visualization tickets are closed with pinned main evidence. No signing or public publication was performed.
+
 ## 2026-11-13 — Latest compatible releases and local startup
 
 - User explicitly selected keeping Convex with compatible latest releases, accepted the Auth 2 migration and a ten-character minimum, and requested plain npm run dev to start both services. Keep Next.js/Convex as the application architecture; no additional service or paid dependency is introduced.

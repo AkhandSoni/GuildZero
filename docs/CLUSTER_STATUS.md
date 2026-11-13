@@ -2,6 +2,18 @@
 
 Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
+## Business-user requirements and usability pass — 2026-11-13
+
+The user requested research-driven requirements engineering and implementation, selected business users processing sales/operations CSVs, requested GitHub issues for findings, and asked to close old implemented issues first. [USER_REQUIREMENTS.md](USER_REQUIREMENTS.md) separates owner-confirmed direction, desk-research evidence, inferred needs, acceptance criteria and follow-up validation. No user interviews, market metrics or new service categories are claimed.
+
+Implemented U1–U7 (#16–#22): bounded UTF-8 CSV file import alongside paste/sample input; editable preview and column-quality counts; explicit numeric-column selection; plain-language service/review/next-step guidance; private indexed title search and service/brief-state filters; safe brief reuse with a refreshed deadline and no copied execution/payment authority; actual result tables and safe summary CSV export; dashboard links for work awaiting a human decision. All mission brief fields remain in form state across data changes. Search and mission-title labels are distinct, and browser tests wait for the intended route.
+
+Validation: lint/types/build/client-boundary checks pass; **205 tests across 23 files**, including **96 integration tests**, pass; npm audit reports zero known vulnerabilities. Four focused live development-browser scenarios passed (25.8 seconds), including import-to-result/export/reuse/search, human-review queue, invalid-file preservation, the original economy and two-user mission privacy. The full **11-scenario production-browser suite passed in 2.0 minutes**, covering the existing economy/privacy/security/recovery/auth flows plus both new business-user journeys. Tests use a separate fresh local backend and port 3001; existing environment values, user-started services and stored financial records are preserved. No new transfer, hosting or submission occurs in this pass.
+
+Issue audit against existing main: closed #4, #5, #6, #7, #8 and #11 with source/test evidence, after re-running all 189 baseline tests and rechecking the existing child receipt read-only as CONFIRMED. #9/#10 remain open for missing process-level abrupt-interruption/restart proof; #12 for outstanding reproducibility/recovery/hosted release checks; #13 for final demo/submission. New #23 (unsaved navigation protection), #24 (safe account recovery before real business use) and #25 (representative-user validation) remain explicit follow-ups. Do not infer that these are complete from passing local tests.
+
+This bounded usability pass stops at the current gate. Paused broader services, public deployment and submission remain separate.
+
 ## Compatible toolchain and single-command startup — 2026-11-13
 
 The user approved latest compatible releases with Convex retained, Auth 2 migration and a ten-character minimum for new passwords. Upgraded Convex to 1.50.0, Convex Auth to 2.0.0, TypeScript to 6.0.3, Lucide to 1.72.0, PapaParse to 5.7.1, convex-test to 0.0.71 and the application rate limiter to 0.4.3. Node 24.22.3 is pinned for Convex actions. ESLint 9 and TypeScript 6 are explicit compatibility exceptions to incompatible newer majors.
