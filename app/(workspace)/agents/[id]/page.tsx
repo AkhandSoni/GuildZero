@@ -11,16 +11,9 @@ export default function Agent({ params }: { params: Promise<{ id: string }> }) {
   if (!data) return <h1>Agent not found.</h1>;
   return (
     <>
-      <p className="eyebrow">Algorithm-driven agent · fixed strategy</p>
-      <h1>{data.profile.name}</h1>
+      <p className="eyebrow">Agent directory / Profile</p><div className="agent-profile-hero"><span className="agent-profile-monogram" aria-hidden="true">{data.profile.name.split(" ").map(word=>word[0]).join("").slice(0,2)}</span><div><h1>{data.profile.name}</h1><p className="muted mt-2 text-sm">Algorithm-driven agent · fixed strategy</p></div></div>
       <div className="panel mt-8 grid gap-4">
-        <p>Role: {data.profile.role}</p>
-        <p>Strategy: {data.profile.strategy ?? "support role"}</p>
-        <p>
-          Capabilities:{" "}
-          {data.profile.capabilities.join(", ") || "workflow support"}
-        </p>
-        <p>Capacity: {data.profile.capacity}</p>
+        <dl className="agent-properties"><div><dt>Specialization</dt><dd>{data.profile.role}</dd></div><div><dt>Bidding strategy</dt><dd>{data.profile.strategy??"Support role"}</dd></div><div><dt>Supported services</dt><dd>{data.profile.capabilities.map(c=>c==="csv_summary"?"Statistics":"Normalization").join(", ")||"Workflow support"}</dd></div><div><dt>Concurrent capacity</dt><dd>{data.profile.capacity}</dd></div></dl>
         <p className="muted">
           Private seller pricing is withheld from buyer-facing profiles.
         </p>

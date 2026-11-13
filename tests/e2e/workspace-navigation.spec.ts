@@ -20,6 +20,9 @@ test("application navigation, real filters, wallet setup state and mobile layout
   await page.getByRole("link",{name:"Agent directory",exact:true}).click();
   await expect(page).toHaveURL(/\/agents$/);
   await expect(page.getByRole("link",{name:/Stats Core/})).toBeVisible();
+  await page.goto("/missions/new?service=csv_normalize");
+  await expect(page.getByLabel("Service template",{exact:true})).toHaveValue("csv_normalize");
+  await expect(page.getByRole("heading",{name:"Define the mission",exact:true})).toBeVisible();
   for (const width of [1440,768,390]) {
     await page.setViewportSize({width,height:900});
     await page.getByRole("link",{name:"Dashboard",exact:true}).click();

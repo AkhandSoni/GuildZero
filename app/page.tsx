@@ -1,61 +1,26 @@
 import Link from "next/link";
-import { ArrowUpRight, Database, LockKeyhole } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, FileSpreadsheet, GitBranch, ShieldCheck } from "lucide-react";
+import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { ServiceExample } from "@/components/service-example";
 export default function Home() {
-  return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <nav className="flex items-center justify-between border-b border-[#d5dccf] pb-6">
-        <Link href="/" className="text-xl font-bold tracking-tight">
-          guildzero<span className="text-emerald-800">.</span>
-        </Link>
-        <Button asChild variant="outline">
-          <Link href="/sign-in">
-            Sign in <ArrowUpRight size={16} />
-          </Link>
-        </Button>
-      </nav>
-      <section className="max-w-3xl py-24">
-        <p className="eyebrow">Algorithmic services · private workspace</p>
-        <h1 className="!text-5xl sm:!text-6xl">
-          Useful work.
-          <br />
-          <span className="text-emerald-800">Independent agents.</span>
-        </h1>
-        <p className="muted mt-6 max-w-xl text-lg">
-          Define a data-processing mission, set its requirements, and keep
-          control of its budget. Built for a transparent, deterministic agent
-          economy.
-        </p>
-        <Button asChild className="mt-8">
-          <Link href="/dashboard">
-            Open your workspace <ArrowUpRight size={16} />
-          </Link>
-        </Button>
-      </section>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="panel">
-          <Database className="mb-4 text-emerald-800" size={22} />
-          <h2>Start with real data</h2>
-          <p className="muted mt-2">
-            Prepare a bounded CSV normalization or statistics mission with
-            explicit acceptance criteria.
-          </p>
-        </div>
-        <div className="panel">
-          <LockKeyhole className="mb-4 text-emerald-800" size={22} />
-          <h2>Your missions stay private</h2>
-          <p className="muted mt-2">
-            Convex Auth accounts and backend ownership checks protect each
-            workspace.
-          </p>
-        </div>
-      </div>
-      <footer className="muted mt-10 border-t border-[#d5dccf] pt-5 text-xs">
-        Hackathon prototype. Real CSV processing and automatic verification.
-        Algorithm-driven agents; no LLMs. Centralized Convex coordination.
-        Custodial NEAR testnet settlement requires verified work and
-        configuration.
-      </footer>
+  return <div className="public-site">
+    <a href="#main-content" className="skip-link">Skip to content</a>
+    <header className="public-header"><Brand/><nav aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#services">Services</a><a href="#trust">Built-in safeguards</a></nav><Button asChild variant="outline"><Link href="/sign-in">Sign in <ArrowUpRight size={14}/></Link></Button></header>
+    <main id="main-content">
+      <section className="landing-hero"><div className="hero-copy"><p className="public-kicker"><span/> THE AGENT SERVICE MARKETPLACE</p><h1>Your data.<br/>Independent agents.<br/><em>Work you can verify.</em></h1><p className="hero-description">Give your CSV a job. Specialized agents compete on price, do the processing, and deliver results you can inspect—before you authorize a testnet payment.</p><div className="hero-actions"><Button asChild><Link href="/dashboard">Open your workspace <ArrowRight size={16}/></Link></Button><a href="#services">Explore the services <ArrowDownIcon/></a></div><p className="hero-footnote">Email account · No wallet connection · NEAR testnet only</p></div><div className="hero-example"><div className="example-note"><span>01 / FROM INPUT TO OUTPUT</span><span>Try both services ↓</span></div><ServiceExample/></div></section>
+      <div className="product-facts"><span><Check size={14}/> Real CSV processing</span><span><Check size={14}/> Explainable bids</span><span><Check size={14}/> Independent verification</span><span><Check size={14}/> Owner-approved payments</span></div>
+      <section id="how-it-works" className="landing-section"><div className="landing-section-heading"><p className="public-kicker">A WORKFLOW YOU CAN FOLLOW</p><h2>From a dataset<br/>to a checked deliverable.</h2><p>Every offer, decision and result stays attached to your private mission. You can leave the page and return while the backend keeps working.</p></div><ol className="landing-process">{[
+        ["01","Define the work","Upload a CSV, choose the columns and service, then set a budget cap and acceptance requirements."],
+        ["02","Let agents compete","Eligible agents calculate their own bids. A bounded negotiation and scored reverse auction select the contractor."],
+        ["03","Inspect the result","Review real output, verification checks and any cleaning subcontract. Work that needs a decision comes back to you."],
+        ["04","Authorize settlement","Review the exact recipient and amount. A payment is confirmed only after its matching on-chain result is checked."],
+      ].map(([n,title,description])=><li key={n}><span>{n}</span><div><h3>{title}</h3><p>{description}</p></div></li>)}</ol></section>
+      <section id="services" className="landing-services"><div className="landing-section-heading"><p className="public-kicker">TWO FOCUSED SERVICES</p><h2>Useful work.<br/>Explicit inputs and outputs.</h2><p>For small sales and operations exports. Deterministic transformations, with no LLM deciding what your data means.</p></div><div className="service-offerings"><article><div><FileSpreadsheet size={24}/><span>CSV / 01</span></div><h3>Column normalization</h3><p>Trim surrounding whitespace and optionally lowercase selected columns. Preserve other cells and every data row.</p><ul><li>Explicit column selection</li><li>Formula safety checks</li><li>Download a normalized CSV</li></ul><Link href="/missions/new?service=csv_normalize">Create a normalization mission <ArrowUpRight size={15}/></Link></article><article><div><GitBranch size={24}/><span>CSV / 02</span></div><h3>Summary statistics</h3><p>Compute counts, missing values, minima, maxima, sums and means for your selected numeric columns.</p><ul><li>Optional one-level cleaning subcontract</li><li>Independent result verification</li><li>Download JSON or summary CSV</li></ul><Link href="/missions/new?service=csv_summary">Create a statistics mission <ArrowUpRight size={15}/></Link></article></div><p className="service-limits">Current input limits: UTF-8 CSV · 64 KiB · 500 data rows · 32 columns.</p></section>
+      <section id="trust" className="landing-trust"><div><ShieldCheck size={25}/><p className="public-kicker">CLEAR RULES. VISIBLE EVIDENCE.</p><h2>You stay in control<br/>of the final decision.</h2><p>Backend policies check ownership, approved work, recipient, budget and settlement state. Controlled security probes show the attempted action and the rule that blocked it.</p><Link href="/security">Explore the security lab <ArrowUpRight size={15}/></Link></div><dl>{[["Private by default","Your missions and datasets belong to your authenticated account."],["Work and payment are separate","An accepted deliverable is not a payment receipt. Uncertain transactions must be reconciled."],["A custodial testnet demonstration","Convex coordinates the marketplace; a protected operator signs payments. This is not trustless escrow."],["Fixed strategies, no hidden model","Agents use deterministic algorithms. Reputation changes through recorded outcomes, not ML training."]].map(([title,description])=><div key={title}><dt>{title}</dt><dd>{description}</dd></div>)}</dl></section>
+      <section className="landing-cta"><div><p className="public-kicker">START WITH ONE DATASET</p><h2>Make your next CSV<br/>someone else’s job.</h2></div><div><Button asChild><Link href="/dashboard">Open your workspace <ArrowRight size={16}/></Link></Button><p>Use a synthetic sample to try the complete workflow.</p></div></section>
     </main>
-  );
+    <footer className="public-footer"><Brand/><p>Built for the NEAR hackathon.<br/>Algorithm-driven services. Test tokens only.</p><div><a href="#how-it-works">How it works</a><Link href="/sign-in">Sign in</Link><Link href="/dashboard">Workspace <ArrowUpRight size={13}/></Link></div></footer>
+  </div>;
 }
+function ArrowDownIcon(){return <span aria-hidden="true">↓</span>;}

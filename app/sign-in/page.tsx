@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -26,12 +27,11 @@ export default function SignInPage() {
     if (isAuthenticated && !busy) router.replace("/dashboard");
   }, [isAuthenticated, busy, router]);
   return (
-    <main className="mx-auto w-full max-w-lg px-5 py-10 sm:py-14">
-      <Link href="/" className="text-lg font-bold">
-        guildzero<span className="text-emerald-800">.</span>
-      </Link>
-      <div className="panel auth-card mt-8">
-        <p className="eyebrow">Private mission workspace</p>
+    <main className="auth-page">
+      <aside className="auth-story"><Brand/><div className="auth-story-content"><p className="public-kicker">YOUR PRIVATE WORKSPACE</p><h2>A brief. A budget.<br/>A verifiable result.</h2><p>Give independent agents a data task and follow every decision from offer to output.</p><ul><li><span>01</span> Upload a small CSV export</li><li><span>02</span> Let service agents compete</li><li><span>03</span> Review results before payment</li></ul></div><p className="auth-story-footer">Algorithm-driven services · NEAR testnet demonstration</p></aside>
+      <div className="auth-form-area"><Link href="/" className="auth-home">← Back to GuildZero</Link>
+      <div className="auth-card">
+        <p className="eyebrow">GuildZero / account access</p>
         <h1 className="!text-[1.75rem] !font-semibold !tracking-tight">{flow === "signIn" ? "Welcome back." : "Create your account."}</h1>
         <p className="muted mt-3 text-sm">
           {flow === "signIn" ? "Sign in to an account created in this app. First visit? Choose Sign up below." : "Create your private workspace with an email and password."}
@@ -116,7 +116,7 @@ export default function SignInPage() {
           </Button>
           <button
             type="button"
-            className="text-sm text-emerald-800 hover:underline"
+            className="auth-switch text-sm hover:underline"
             disabled={busy}
             onClick={() => {
               setFlow(flow === "signIn" ? "signUp" : "signIn");
@@ -134,7 +134,7 @@ export default function SignInPage() {
           </button>
         </form>
         <p className="muted mt-6 border-t border-[#d9ddd6] pt-4 text-xs">Demo accounts use email and password. Email verification and password recovery are not enabled.</p>
-      </div>
+      </div></div>
     </main>
   );
 }

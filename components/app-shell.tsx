@@ -5,8 +5,9 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
+import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, Boxes, FileSpreadsheet, LayoutDashboard, LogOut, Network, ShieldCheck, Users, Wallet } from "lucide-react";
+import { ArrowUpRight, FileSpreadsheet, LayoutDashboard, LogOut, Network, ShieldCheck, Users, Wallet } from "lucide-react";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isLoading,isAuthenticated }=useConvexAuth();
   const connection=useConvexConnectionState();
@@ -18,7 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return <div className="workspace-app">
     <a href="#workspace-main" className="skip-link">Skip to workspace</a>
     <aside className="workspace-sidebar" aria-label="Workspace sidebar">
-      <Link href="/dashboard" className="sidebar-brand" aria-label="GuildZero home"><span className="brand-mark"><Boxes size={23}/></span><span>guildzero<span className="text-emerald-700">.</span><small>Agent service marketplace</small></span></Link>
+      <div className="sidebar-brand"><Brand href="/dashboard"/></div><p className="sidebar-workspace">Personal workspace / testnet</p>
       <p className="sidebar-label">Workspace</p>
       <nav className="workspace-nav" aria-label="Main navigation">{[
         {href:"/dashboard",label:"Dashboard",Icon:LayoutDashboard,active:pathname==="/dashboard"},

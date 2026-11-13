@@ -38,7 +38,7 @@ export function PaymentPanel({
     }
   };
   return (
-    <section className="panel">
+    <section className="panel payment-receipt">
       <p className="eyebrow">Custodial settlement · NEAR testnet only</p>
       <h2>Payment receipt</h2>
       <p className="muted mt-3 text-sm">

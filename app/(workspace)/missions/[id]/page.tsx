@@ -31,14 +31,15 @@ export default function MissionPage({
       </p>
     );
   return (
-    <div className="mx-auto max-w-3xl">
-      <p className="eyebrow">Private mission · {mission.state}</p>
+    <div className="detail-layout">
+      <header className="detail-heading"><p className="eyebrow">Private mission · {mission.state}</p>
       <h1>{mission.title}</h1>
       <p className="muted mb-8 mt-3">
         {mission.state === "draft"
           ? "Draft saved. No auction, agent execution, or payment has started."
           : "Mission brief locked. Activity below comes from stored records; payment status is shown separately in the receipt."}
-      </p>
+      </p></header>
+      <nav className="detail-tabs" aria-label="Mission sections"><a href="#mission-brief">Brief &amp; input</a>{mission.state === "active" && <><a href="#mission-progress">Work &amp; results</a><a href="#mission-settlement">Settlement</a></>}</nav>
       {editing ? (
         <MissionForm
           initial={mission}
@@ -48,8 +49,8 @@ export default function MissionPage({
           }}
         />
       ) : (
-        <section className="panel grid gap-6">
-          <dl className="grid gap-5 sm:grid-cols-2">
+        <section id="mission-brief" className="panel grid gap-6">
+          <dl className="brief-metadata">
             <div>
               <dt className="muted text-xs">Service</dt>
               <dd className="mt-1">{mission.serviceType}</dd>
@@ -73,7 +74,7 @@ export default function MissionPage({
               </dd>
             </div>
           </dl>
-          <div>
+          <div className="detail-brief-grid"><div>
             <h2>Saved processing options</h2>
             <p className="muted mt-3" data-testid="saved-options">
               {mission.options ? `${mission.options.columns.join(", ")}${mission.options.caseMode ? ` · ${mission.options.caseMode}` : ""}` : "Not set. Edit the draft before opening an auction."}
@@ -86,12 +87,11 @@ export default function MissionPage({
               {mission.acceptanceCriteria}
             </p>
           </div>
-          <div>
-            <h2>Input CSV</h2>
+          <details className="brief-source"><summary>Input CSV · view saved source</summary>
             <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-[#eef1e9] p-4 text-xs leading-relaxed">
               {mission.inputCsv}
             </pre>
-          </div>
+          </details></div>
         </section>
       )}
       {!editing && <div className="mt-5"><Button variant="outline" disabled={busy} onClick={async () => {

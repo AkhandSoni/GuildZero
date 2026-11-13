@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { ShieldCheck, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 const probes = [
   { id: "overspend", label: "Over-budget amount" },
@@ -21,14 +22,15 @@ export default function Security() {
     [busy, setBusy] = useState(false);
   return (
     <>
-      <p className="eyebrow">Controlled adversarial scenarios</p>
+      <div className="detail-heading"><p className="eyebrow">Workspace / Controlled policy probes</p>
       <h1>Security lab</h1>
       <p className="muted mt-3">
         These probes evaluate backend rules and persist their rejection
         evidence. They never sign or submit a payment. Payment probes need an
         actual prepared intent; duplicate probes need a non-ready intent.
       </p>
-      <section className="panel mt-8">
+      </div><div className="security-summary"><ShieldCheck size={19}/><p>These are controlled backend checks. A probe can record a rejection or explain a missing prerequisite; it cannot transfer tokens.</p></div><div className="security-layout"><section className="panel">
+        <h2 className="mb-5">Run a policy check</h2>
         <label className="field">
           Your job
           <select
@@ -44,7 +46,7 @@ export default function Security() {
             ))}
           </select>
         </label>
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="probe-controls mt-5">
           {probes.map((p) => (
             <Button
               key={p.id}
@@ -74,7 +76,7 @@ export default function Security() {
                 }
               }}
             >
-              {p.label}
+              {p.label}<ArrowUpRight size={13}/>
             </Button>
           ))}
         </div>
@@ -112,7 +114,7 @@ export default function Security() {
           Latest 100 entries. Controlled probes are labeled separately from
           actual payment authorization and chain results.
         </p>
-      </section>
+      </section></div>
     </>
   );
 }

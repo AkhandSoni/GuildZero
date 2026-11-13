@@ -14,26 +14,26 @@ export default function Economy() {
     ...n,
     data: { ...n.data, label: <Link href={n.data.href}>{n.data.label}</Link> },
     style: {
-      background: "#fafcf7",
-      color: "#324b32",
-      border: "1px solid #becdb3",
-      borderRadius: 18,
+      background: "#ffffff",
+      color: "#444d5b",
+      border: "1px solid #d4dae4",
+      borderRadius: 6,
       width: 250,
       whiteSpace: "pre-wrap" as const,
     },
   }));
   return (
     <>
-      <p className="eyebrow">Your private marketplace</p>
+      <div className="detail-heading"><p className="eyebrow">Workspace / Economy</p>
       <h1>Live economy</h1>
       <p className="muted mt-3">
         Only recorded jobs, bids, awards and subcontract links appear here.
         Market offers are off-chain economic proposals; confirmed testnet
         payments are labeled separately.
-      </p>
+      </p></div>
       {nodes.length > 0 && (
         <div
-          className="mt-8 h-[480px] overflow-hidden rounded-lg border border-[#d5dccf]"
+          className="mt-8 h-[420px] overflow-hidden rounded-lg border border-[#d5dccf]"
           aria-label="Recorded economy network"
         >
           <ReactFlow

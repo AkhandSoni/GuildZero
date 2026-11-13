@@ -21,9 +21,11 @@ function localDate(value: number) {
 }
 export function MissionForm({
   initial,
+  defaultService = "csv_summary",
   onSave,
 }: {
   initial?: MissionInput;
+  defaultService?: ServiceType;
   onSave: (input: MissionInput) => Promise<unknown>;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -33,7 +35,7 @@ export function MissionForm({
   const [cleanFirst, setCleanFirst] = useState(initial?.cleanBeforeProcessing ?? false);
   const [humanReview, setHumanReview] = useState(initial ? initial.requiresHumanReview ?? true : false);
   const [csv, setCsv] = useState(initial?.inputCsv ?? "");
-  const [serviceType, setServiceType] = useState<ServiceType>(initial?.serviceType ?? "csv_summary");
+  const [serviceType, setServiceType] = useState<ServiceType>(initial?.serviceType ?? defaultService);
   const [selectedColumns, setSelectedColumns] = useState(initial?.options?.columns ?? []);
   const [readingFile, setReadingFile] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -59,7 +61,7 @@ export function MissionForm({
   const [error, setError] = useState("");
   return (
     <form
-      className="panel min-w-0 grid gap-6"
+      className="mission-form min-w-0 grid gap-5"
       autoComplete="off"
       onSubmit={async (event) => {
         event.preventDefault();
@@ -95,6 +97,7 @@ export function MissionForm({
         }
       }}
     >
+      <section className="form-section"><div className="form-section-heading"><span>01</span><div><h2>Define the mission</h2><p>Choose the work, its budget cap and deadline.</p></div></div>
       <label className="field">
         Mission title
         <Input
@@ -146,6 +149,8 @@ export function MissionForm({
         />
         <span className="muted text-xs">Within the next 30 days.</span>
       </label>
+      </section>
+      <section className="form-section"><div className="form-section-heading"><span>02</span><div><h2>Bring your dataset</h2><p>Upload a file or paste CSV. Review the preview before selecting columns.</p></div></div>
       <div className="grid gap-3 min-w-0">
         <label className="field" htmlFor="csv-file">Upload a CSV file</label>
         <Input id="csv-file" type="file" accept=".csv,text/csv" disabled={busy || readingFile}
@@ -195,7 +200,9 @@ export function MissionForm({
       </Button>
       {csv && <Button type="button" variant="outline" disabled={busy || readingFile} onClick={() => changeCsv("")}>Clear dataset</Button>}</div>
       <DatasetPreview csv={csv} data={dataset} />
-      <p className="rounded-xl bg-white/60 p-4 text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Download the result as JSON or CSV." : "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. Download the result as CSV."}</p>
+      </section>
+      <section className="form-section"><div className="form-section-heading"><span>03</span><div><h2>Configure processing</h2><p>Only your selected template and columns control the transformation.</p></div></div>
+      <p className="service-description text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Download the result as JSON or CSV." : "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. Download the result as CSV."}</p>
       <fieldset className="grid gap-2">
         <legend className="mb-2 text-sm">Columns to process</legend>
         <p className="muted mb-2 text-xs">
@@ -207,7 +214,7 @@ export function MissionForm({
           {selectedColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([])}>Clear column selection</Button>}
         </div>
         {serviceType === "csv_summary" && dataset.ok && dataset.value.columns.some((c) => selectedColumns.includes(c.name) && c.invalid > 0) && <p role="status" className="text-sm text-amber-900">Non-numeric values in: {dataset.value.columns.filter(c => selectedColumns.includes(c.name) && c.invalid > 0).map(c => `${c.name} (CSV record ${c.invalidRows.join(", ")})`).join("; ")}. Use Select numeric columns to correct the selection. Cleaning trims text; it does not turn product or region names into numbers.</p>}
-        {headers.length > 0 && headers.length <= 32 ? headers.map((header, i) => (
+        <div className="column-choices">{headers.length > 0 && headers.length <= 32 ? headers.map((header, i) => (
           <label key={`${i}:${header}`} className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="column" value={header}
               checked={selectedColumns.includes(header)}
@@ -216,7 +223,7 @@ export function MissionForm({
                 : selectedColumns.filter((column) => column !== header))} />
             {header}
           </label>
-        )) : <p className="muted text-sm">Enter a CSV dataset to choose its columns.</p>}
+        )) : <p className="muted text-sm">Enter a CSV dataset to choose its columns.</p>}</div>
       </fieldset>
       {serviceType === "csv_normalize" && <label className="field">
         Case handling
@@ -226,6 +233,8 @@ export function MissionForm({
           <option value="lowercase">Lowercase</option>
         </select>
       </label>}
+      </section>
+      <section className="form-section"><div className="form-section-heading"><span>04</span><div><h2>Set the acceptance rules</h2><p>Choose automatic template checks or a final human review.</p></div></div>
       <label className="field">
         Acceptance criteria
         <textarea
@@ -245,13 +254,14 @@ export function MissionForm({
           {error}
         </p>
       )}
-      <div className="grid gap-4 rounded-2xl bg-white/50 p-4 text-sm">
+      <div className="review-options grid gap-5 text-sm">
         {serviceType === "csv_summary" && <label className="flex items-start gap-3"><input type="checkbox" name="cleanBeforeProcessing" checked={cleanFirst} onChange={(event) => setCleanFirst(event.target.checked)} className="mt-1 shrink-0" /><span>Clean before analysis<span className="muted block text-xs mt-1">Hire one cleaning subcontractor within the awarded budget. Its verified CSV becomes the summary input.</span></span></label>}
         <label className="flex items-start gap-3"><input type="checkbox" name="requiresHumanReview" checked={humanReview} onChange={(event) => setHumanReview(event.target.checked)} className="mt-1 shrink-0" /><span>Require human review of acceptance notes<span className="muted block text-xs mt-1">Automatic verification covers the selected template and columns. Extra subjective requirements need your recorded decision before payment.</span></span></label>
       </div>
-      <Button type="submit" className="w-fit" disabled={busy || readingFile}>
+      </section>
+      <div className="form-submit"><p>Saving creates a private brief. It does not open an auction or send funds.</p><Button type="submit" className="w-fit" disabled={busy || readingFile}>
         {busy ? "Saving…" : initial ? "Save changes" : "Create private mission"}
-      </Button>
+      </Button></div>
     </form>
   );
 }
