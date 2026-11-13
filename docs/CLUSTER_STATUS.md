@@ -339,7 +339,7 @@ At the user's explicit request to test everything and push the completed foundat
 
 ### Current-main integration corrections — 2026-11-13
 
-Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 274 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+Merged current main `69d9c5e`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 277 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
 
 Added an explicit demo retention policy and owner-confirmed terminal mission content removal. Parent/child source, result and free-text copies are cleared together; ownership, active-work and exact finalized-settlement checks fail closed. Financial rows remain unchanged and removed records cannot be reused or quoted for new payment. Representative-user/jurisdiction validation, account erasure and operator backup deletion/expiry remain separate requirements; no legal compliance or automatic expiry is claimed. Validation results are recorded in the issue plan/PR.
 
