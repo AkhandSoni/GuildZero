@@ -93,6 +93,11 @@ Current validation results and remaining release gates are recorded in [cluster 
 
 For a production-build smoke check, run `npm run build`, then `npm start` while the configured Convex backend is running. Do not run the production build and development server concurrently in the same checkout.
 
+## Dataset retention
+
+Saved content has no automatic expiry. Owners can remove eligible terminal mission inputs/outputs from **Dataset retention** on the mission page after all work and exact payment obligations are settled. Removal includes parent/child data and free-text evidence, prevents brief reuse, and retains financial identities/receipts. Active, failed or uncertain settlement blocks removal. Drafts retain their separate Delete draft control. Public NEAR records, independent downloads, copies, backups and auth records have separate boundaries. See [demo retention policy](docs/data-retention.md); use synthetic data, not sensitive customer datasets.
+
+
 ## Business-user workflow
 
 The mission form imports one UTF-8 CSV within the existing 64 KiB/500-row/32-column limits, with specific encoding/format errors and an editable preview. Failed imports retain the prior data and selected columns. File contents are read locally and sent through the existing owner-private save API only when the mission is saved; the original local file is never changed.

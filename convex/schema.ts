@@ -55,6 +55,7 @@ export default defineSchema({
     .index("by_owner", ["ownerId"])
     .index("by_job", ["jobId"]),
   missions: defineTable({
+    contentRemovedAt: v.optional(v.number()),
     demo: v.optional(v.boolean()),
     ...missionFields,
     ownerId: v.id("users"),
@@ -68,6 +69,7 @@ export default defineSchema({
     .index("by_owner_service_state", ["ownerId", "serviceType", "state"])
     .searchIndex("search_title", { searchField: "title", filterFields: ["ownerId", "state", "serviceType"] }),
   jobs: defineTable({
+    contentRemovedAt: v.optional(v.number()),
     unfundedPreviewAcknowledged: v.optional(v.boolean()),
     engineManaged: v.optional(v.boolean()),
     workerVersion: v.optional(v.number()),

@@ -8,6 +8,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { MissionForm } from "@/components/mission-form";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
+import { RetentionPanel } from "@/components/retention-panel";
 import { JobWorkspace } from "@/components/job-workspace";
 export default function MissionPage({
   params,
@@ -90,12 +91,12 @@ export default function MissionPage({
           </div>
           <details className="brief-source"><summary>Input CSV · view saved source</summary>
             <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-[#eef1e9] p-4 text-xs leading-relaxed">
-              {mission.inputCsv}
+              {mission.contentRemovedAt !== undefined ? "Input removed by owner." : mission.inputCsv}
             </pre>
           </details></div>
         </section>
       )}
-      {!editing && <div className="mt-5"><Button variant="outline" disabled={busy} onClick={async () => {
+      {!editing && mission.contentRemovedAt === undefined && <div className="mt-5"><Button variant="outline" disabled={busy} onClick={async () => {
         setBusy(true); setError("");
         try { const copy = await duplicate({ id: mission._id }); router.push(`/missions/${copy}`); }
         catch { setError("Could not reuse this brief. Check its input or try again."); }
@@ -114,7 +115,8 @@ export default function MissionPage({
           </Button>
         </div>
       )}
-      {!editing && <JobWorkspace key={mission._id} mission={mission} />}
+      {!editing && <JobWorkspace key={`workspace:${mission._id}`} mission={mission} />}
+      {mission.state === "active" && <RetentionPanel key={`retention:${mission._id}`} missionId={mission._id} />}
       {confirming && (
         <div className="panel mt-5">
           <p>Delete this draft and its input? This cannot be undone.</p>

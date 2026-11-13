@@ -29,6 +29,7 @@ import type * as paymentModel from "../paymentModel.js";
 import type * as paymentWorker from "../paymentWorker.js";
 import type * as payments from "../payments.js";
 import type * as publicMarket from "../publicMarket.js";
+import type * as retention from "../retention.js";
 import type * as security from "../security.js";
 import type * as settlementReadiness from "../settlementReadiness.js";
 import type * as workflow from "../workflow.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   paymentWorker: typeof paymentWorker;
   payments: typeof payments;
   publicMarket: typeof publicMarket;
+  retention: typeof retention;
   security: typeof security;
   settlementReadiness: typeof settlementReadiness;
   workflow: typeof workflow;

@@ -23,6 +23,7 @@ export const start = mutation({
     const mission = await ctx.db.get(args.missionId);
     if (!mission || mission.ownerId !== ownerId)
       throw new ConvexError("MISSION_NOT_FOUND");
+    if (mission.contentRemovedAt !== undefined) throw new ConvexError("DATASET_REMOVED");
     const existing = await ctx.db
       .query("jobs")
       .withIndex("by_mission", (q) => q.eq("missionId", args.missionId))
