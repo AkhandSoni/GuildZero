@@ -166,6 +166,12 @@ A new fixture exposed an existing valid one-column CSV rejection due to delimite
 
 Actual checks: lint/typecheck passed; **79 tests across 8 files passed**; production build passed; all **3 production-browser scenarios passed**, including absence of reserve prices from the actual agent page; `npm run check:client` passed on 25 generated assets with no private pricing fields or server-secret identifiers; dependency audit reported zero vulnerabilities. A live public HTTP query to the internal worker pricing context was rejected. The tests verify that raw private minima and diagnostic markers survive internally but do not appear in buyer detail/economy/profile responses. No payment, public deployment or merge into main is performed by this follow-up.
 
+## Pre-broadcast recovery design (#33) — 2026-11-13
+
+The owner requested two additional backlog items. Issue #33 now has a concrete v2 attempt/fencing proposal and executable protocol model in `docs/payment-recovery.md`, `docs/issue-33-plan.md` and `tests/models/`. This is design evidence only: production retry, schema migration, delivery release and existing financial records are unchanged. Legacy failure labels/missing hashes are not replay authority. Proposed recoverability ends before signing permission; uncertain/signed attempts remain blocked.
+
+Validation: 219 tests in 26 files (including five new model regressions), lint and typecheck passed. These model tests do not prove current production enforcement, SDK behavior, abrupt process recovery or live chain execution. Independent design review and the production implementation/security/process-crash gates remain required; #33 stays open. No key/configuration/backend was changed and no payment was sent.
+
 ## Cluster 3 branch — 2026-11-12
 
 The user's explicit request to proceed with 3 and 4 supersedes waiting for the engine before implementing these branches. Branches are stacked on `feat/cluster-2-orchestration`, to combine later without replacing the teammate's package.

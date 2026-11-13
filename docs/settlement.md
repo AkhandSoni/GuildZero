@@ -38,6 +38,10 @@ Owner-triggered reconciliation queries the existing hash using `tx`; it does not
 
 Parent holdback plus actual child price equals the original award. Child payments are part of that same obligation, not added again to the buyer's total. Successful work/reputation is separate from chain settlement; an approved job does not imply a confirmed transfer.
 
+## Recovery design follow-up (#33)
+
+[The v2 attempt/fencing proposal](payment-recovery.md) defines the separate implementation and security gates for owner-controlled pre-sign recovery. It is not an enabled recovery feature. Existing `FAILED` records remain blocked; diagnostic reasons or missing transaction hashes are not proof that permits retry. No recovery endpoint, automatic retry or data migration is introduced by the proposal.
+
 ## Validation and controlled security probes
 
 Unit/backend tests cover policy binding, private access, idempotency, duplicate claims, unknown outcomes and conservative lock retention. Offline mocked-RPC adapter tests check that the hash is stored before broadcast, success handling, and timeout with no second broadcast. These mocks are not testnet execution evidence.
