@@ -6,6 +6,8 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
+import { ResultPreview } from "@/components/result-preview";
+import { inspectDataset } from "@/lib/dataset-preview";
 import { PaymentPanel } from "@/components/payment-panel";
 import Papa from "papaparse";
 import { isUnsafeFormulaValue } from "@/lib/economy/csv-input";
@@ -30,9 +32,11 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
     <h2>Processing options needed</h2>
     <p className="muted mt-3">Edit this draft and save explicit processing columns before opening an auction. Existing input and budget are preserved.</p>
   </section>;
+  const dataset = inspectDataset(mission.inputCsv);
   return (
     <section className="panel mt-8">
       <h2>Open an auction</h2>
+      <p className="mt-3 text-sm">Review before starting: {mission.serviceType === "csv_summary" ? "Summary statistics" : "Column normalization"}{dataset.ok ? ` · ${dataset.value.rowCount} data rows` : ""} · maximum {formatNear(mission.maxBudgetYocto)} testnet NEAR. {mission.requiresHumanReview === false ? "Template checks can approve work automatically." : "You must review the work after template checks."}</p>
       <p className="muted mt-2 text-sm">
         Opening uses the saved processing options, locks the brief and records an
         auction. Agents calculate offers, negotiate and process your dataset.
@@ -102,6 +106,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
       <div className="panel">
         <p className="eyebrow">Persisted job · {data.job.state}</p>
         <h2>Marketplace activity</h2>
+        <p className="mt-3 text-sm" role="status">Next step: {data.job.state === "approved" ? "Review your verified result below. Payment is separate and still requires your confirmation." : data.job.state === "disputed" ? "Review the verification and record your decision below. No payment can proceed until work is approved." : data.job.state === "unawarded" || data.job.state === "rejected" || data.job.state === "cancelled" ? "Reuse this brief as a new draft, adjust it, then open a new auction." : "The backend is progressing this job. You can leave this page and return; the backend must remain running."}</p>
         <p className="muted mt-3 text-sm">
           Reserved within mission: {formatNear(data.job.reservedYocto)} testnet
           NEAR. These are contractual amounts; the payment receipt separately
@@ -190,8 +195,9 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         </form>
       )}
       {data.deliverables.map((d) => (
-        <div className="panel" key={d._id}>
+        <div className="panel min-w-0" key={d._id}>
           <h2>Deliverable · attempt {d.attempt + 1}</h2>
+          <ResultPreview content={d.content} format={d.format} />
           <pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap text-xs">
             {d.content}
           </pre>

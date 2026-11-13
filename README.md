@@ -42,15 +42,15 @@ Dependencies are pinned with their lockfile. The application uses Next.js 16.4.6
 ## Foundation walkthrough
 
 1. Open `/sign-in`, choose **Sign up**, and create account A.
-2. On `/dashboard`, select **New mission**. Enter a title, choose `csv_normalize` or `csv_summary`, and select **Use synthetic sample CSV** or paste CSV.
-3. Select processing columns (numeric columns for statistics; case handling for normalization). Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**. Options persist with the draft and are visible after reload/edit.
+2. On `/dashboard`, select **New mission**. Enter a title, choose `csv_normalize` or `csv_summary`, and upload a UTF-8 `.csv` file, select **Use synthetic sample CSV**, or paste CSV.
+3. Review the real dataset preview and column-quality counts. Use **Select numeric columns** for summary-ready columns or select them individually. Select processing columns (numeric columns for statistics; case handling for normalization). Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**. Options persist with the draft and are visible after reload/edit.
 4. The saved `/missions/[id]` page shows the exact input and budget. Reload to confirm persistence; edit and save changes. Drafts move no funds.
 5. In a private browser window, create account B. Its dashboard does not list A's mission. Paste A's mission URL: access is denied without revealing the mission contents. Backend tests also exercise unauthorized edit/delete attempts.
 6. Sign back in as A and delete the draft using the confirmation step.
 
 **Open auction** uses the saved processing options and locks the mission brief. Scheduled backend stages inspect the job, calculate independent offers, counter at 98% of each initial offer, accept or reject within three rounds, rank eligible accepted offers, execute the actual service and independently verify its stored output. No browser tab is needed to keep execution running; the Convex backend must stay running. Cancellation is possible only before award. All decisions and outputs persist across reloads.
 
-For a summary, enable **Clean before analysis** to hire one normalization subcontractor. Its verified CSV becomes the parent's actual input. The child allocation comes from the parent award; parent payable plus child price equals that award. Subcontracting stops at depth one. Download the real JSON summary or safe normalized CSV from the workspace.
+For a summary, enable **Clean before analysis** to hire one normalization subcontractor. Its verified CSV becomes the parent's actual input. The child allocation comes from the parent award; parent payable plus child price equals that award. Subcontracting stops at depth one. Download the real JSON summary, spreadsheet-compatible summary CSV, or safe normalized CSV from the workspace. Results include readable tables alongside the raw deliverable and verification.
 
 Template checks can approve work automatically. Select **Require human review of acceptance notes** when extra subjective requirements matter: objective checks still run, then the owner must approve or reject the dispute. Legacy briefs default to human review until explicitly edited. Failed objective verification permits one revision; repeated failure requires a human decision. Unexecutable input creates a dispute without inventing output and cannot be approved. An unaffordable/unavailable auction ends as **unawarded** with guidance to create a revised mission. A failed worker stage pauses safely and allows at most three owner-triggered retries of that stage. Older already-active auctions are preserved and are not silently executed by the new driver.
 
@@ -83,13 +83,21 @@ npm run test:e2e
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e
 ```
 
-Playwright starts Next.js automatically if port 3000 is free. Run against a disposable development backend: tests create disposable auth accounts and may retain active/cancelled sample jobs for audit. Draft-only test work is deleted on success. Auth accounts are retained. Traces, video, and screenshots are disabled to avoid storing credential-bearing form state. Browser tests use real Convex Auth, persisted records and subscriptions; payment adapter tests are explicitly offline fixtures.
+Playwright starts Next.js automatically if port 3000 is free. Set `PLAYWRIGHT_BASE_URL=http://localhost:3001` to test an isolated checkout on another port with its own configured backend. Run against a disposable development backend: tests create disposable auth accounts and may retain active/cancelled sample jobs for audit. Draft-only test work is deleted on success. Auth accounts are retained. Traces, video, and screenshots are disabled to avoid storing credential-bearing form state. Browser tests use real Convex Auth, persisted records and subscriptions; payment adapter tests are explicitly offline fixtures.
 
 Current validation results and remaining release gates are recorded in [cluster status](docs/CLUSTER_STATUS.md). Backend tests include the actual scheduled driver, real services, subcontract consumption, independent verification, revision, owner review, cancellation, unavailable budgets, retries and payment guards. Browser scenarios exercise the production app with real local Convex Auth and persisted subscriptions. A manual-only GitHub validation workflow does not deploy or submit anything.
 
 `npm run test:near` independently verifies an existing real receipt using public transaction fields and never submits a transfer. It reports not-run when those fields are absent; it is not part of the default offline suite. Two separately owner-authorized parent/child transfers have been confirmed and independently checked on public testnet; see [receipt evidence](docs/settlement.md). The saved public receipt fields in this checkout allow the read-only check to be repeated.
 
 For a production-build smoke check, run `npm run build`, then `npm start` while the configured Convex backend is running. Do not run the production build and development server concurrently in the same checkout.
+
+## Business-user workflow
+
+The mission form imports one UTF-8 CSV within the existing 64 KiB/500-row/32-column limits, with specific encoding/format errors and an editable preview. Failed imports retain the prior data and selected columns. File contents are read locally and sent through the existing owner-private save API only when the mission is saved; the original local file is never changed.
+
+Use **Search saved missions**, service filters and draft/started filters to retrieve your work beyond the currently loaded page. **Use as new mission** copies an owned brief into a new private draft with a refreshed deadline; it carries no jobs, contracts, payment authorizations or receipts. The dashboard surfaces work waiting for a human decision separately from prepared payment approvals.
+
+Research, priorities, acceptance criteria and GitHub issues are recorded in [user requirements](docs/USER_REQUIREMENTS.md). The owner selected business users processing sales or operations CSVs; detailed needs are desk-research hypotheses, not claims of completed user interviews. Unsaved-navigation protection, account recovery and representative-user validation remain tracked follow-ups.
 
 ## Architecture and boundaries
 

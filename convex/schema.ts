@@ -64,7 +64,9 @@ export default defineSchema({
   })
     .index("by_owner", ["ownerId"])
     .index("by_owner_demo", ["ownerId", "demo"])
-    .index("by_owner_state", ["ownerId", "state"]),
+    .index("by_owner_state", ["ownerId", "state"])
+    .index("by_owner_service_state", ["ownerId", "serviceType", "state"])
+    .searchIndex("search_title", { searchField: "title", filterFields: ["ownerId", "state", "serviceType"] }),
   jobs: defineTable({
     engineManaged: v.optional(v.boolean()),
     workerVersion: v.optional(v.number()),

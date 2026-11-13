@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const port = new URL(baseURL).port || "3000";
 export default defineConfig({
   testDir: "./tests/e2e",
   workers: 1,
@@ -7,7 +9,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     actionTimeout: 10000,
     navigationTimeout: 15000,
     trace: "off",
@@ -18,8 +20,8 @@ export default defineConfig({
       : {},
   },
   webServer: {
-    command: "npm run dev:frontend",
-    url: "http://localhost:3000",
+    command: `npm run dev:frontend -- --port ${port}`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

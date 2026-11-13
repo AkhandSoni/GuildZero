@@ -9,8 +9,11 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "+ New mission" }).click();
+  await expect(page).toHaveURL(/\/missions\/new$/);
   await page.getByLabel("Mission title").fill("Automatic sales analysis");
   await page.getByRole("button", { name: "Use synthetic sample CSV" }).click();
+  await expect(page.getByRole("region", { name: "Dataset preview", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Mission title")).toHaveValue("Automatic sales analysis");
   await page.getByRole("button", { name: "Create private mission" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Select 1–32 unique column names" })).toBeVisible();
   await page.getByRole("checkbox", { name: "units", exact: true }).check();
@@ -43,10 +46,10 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await expect(page.getByText("Status: CONFIRMED", { exact: false })).toHaveCount(0);
   const html = await (await page.request.get(page.url())).text();
   expect(html).not.toContain("Automatic sales analysis");
-  const outsider = await browser.newContext();
+  const outsider = await browser.newContext({ baseURL: test.info().project.use.baseURL });
   try {
     const other = await outsider.newPage();
-    await other.goto("http://localhost:3000/sign-in");
+    await other.goto("/sign-in");
     await other.getByRole("button", { name: "Need an account? Sign up" }).click();
     await other.getByLabel("Email", { exact: true }).fill(`result-outsider-${randomBytes(8).toString("hex")}@example.com`);
     await other.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
@@ -56,7 +59,7 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
     await other.goto(page.url());
     await expect(other.getByRole("heading", { name: "Workspace unavailable." })).toBeVisible();
     await expect(other.getByRole("link", { name: "Download JSON" })).toHaveCount(0);
-    await other.goto("http://localhost:3000/economy");
+    await other.goto("/economy");
     await expect(other.getByRole("heading", { name: "No jobs recorded yet." })).toBeVisible();
     await expect(other.getByText("Automatic sales analysis")).toHaveCount(0);
     await expect(other.locator(".react-flow__node")).toHaveCount(0);

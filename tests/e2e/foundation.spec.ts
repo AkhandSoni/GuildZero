@@ -7,8 +7,8 @@ test("real password auth, mission CRUD, session persistence, and two-user privac
   // Disposable local accounts, not stored as test artifacts. No seeded auth bypass.
   const suffix = randomBytes(8).toString("hex");
   const password = randomBytes(24).toString("base64url");
-  const aliceContext = await browser.newContext({ baseURL: "http://localhost:3000" });
-  const bobContext = await browser.newContext({ baseURL: "http://localhost:3000" });
+  const aliceContext = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+  const bobContext = await browser.newContext({ baseURL: test.info().project.use.baseURL });
   const alice = await aliceContext.newPage();
   const bob = await bobContext.newPage();
   async function authenticate(page: Page, email: string, signup: boolean) {
@@ -33,6 +33,7 @@ test("real password auth, mission CRUD, session persistence, and two-user privac
     await expect(alice).toHaveURL(/\/sign-in$/);
     await authenticate(alice, `alice-${suffix}@example.com`, true);
     await alice.getByRole("link", { name: "+ New mission" }).click();
+    await expect(alice).toHaveURL(/\/missions\/new$/);
     await alice.getByLabel("Mission title").fill(`Private sales ${suffix}`);
     await alice
       .getByRole("button", { name: "Use synthetic sample CSV" })

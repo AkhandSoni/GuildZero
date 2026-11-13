@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { DatasetPreview } from "@/components/dataset-preview";
+import { inspectDataset, readCsvFile } from "@/lib/dataset-preview";
 import Papa from "papaparse";
 import { ConvexError } from "convex/values";
 import { Button } from "@/components/ui/button";
@@ -24,10 +26,23 @@ export function MissionForm({
   initial?: MissionInput;
   onSave: (input: MissionInput) => Promise<unknown>;
 }) {
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [budget, setBudget] = useState(initial ? formatNear(initial.maxBudgetYocto) : "10");
+  const [criteria, setCriteria] = useState(initial?.acceptanceCriteria ?? "Preserve row count. Report missing numeric values explicitly. Produce output matching the selected template.");
+  const [caseMode, setCaseMode] = useState<"preserve" | "lowercase">(initial?.options && "caseMode" in initial.options ? initial.options.caseMode : "preserve");
+  const [cleanFirst, setCleanFirst] = useState(initial?.cleanBeforeProcessing ?? false);
+  const [humanReview, setHumanReview] = useState(initial ? initial.requiresHumanReview ?? true : false);
   const [csv, setCsv] = useState(initial?.inputCsv ?? "");
   const [serviceType, setServiceType] = useState<ServiceType>(initial?.serviceType ?? "csv_summary");
   const [selectedColumns, setSelectedColumns] = useState(initial?.options?.columns ?? []);
+  const [readingFile, setReadingFile] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [importError, setImportError] = useState("");
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const dataset = useMemo(() => inspectDataset(csv), [csv]);
   function changeCsv(next: string) {
+    setFileName("");
+    setImportError("");
     const nextHeaders = Papa.parse<string[]>(next.slice(0, 65536), {
       delimiter: ",", skipEmptyLines: "greedy", preview: 1,
     }).data[0] ?? [];
@@ -37,32 +52,33 @@ export function MissionForm({
   const headers = Papa.parse<string[]>(csv.slice(0, 65536), {
     delimiter: ",", skipEmptyLines: "greedy", preview: 1,
   }).data[0] ?? [];
-  const [deadline] = useState(() =>
+  const [deadline, setDeadline] = useState(() =>
     localDate(initial?.deadlineAt ?? Date.now() + 86400000),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
     <form
-      className="panel grid gap-6"
+      className="panel min-w-0 grid gap-6"
+      autoComplete="off"
       onSubmit={async (event) => {
         event.preventDefault();
+        if (readingFile) return;
         setError("");
         setBusy(true);
-        const data = new FormData(event.currentTarget);
         try {
           const input = validateMission({
-            title: String(data.get("title")),
-            serviceType: String(data.get("serviceType")) as ServiceType,
+            title,
+            serviceType,
             options: serviceType === "csv_normalize"
-              ? { columns: selectedColumns, caseMode: data.get("caseMode") === "lowercase" ? "lowercase" : "preserve" }
+              ? { columns: selectedColumns, caseMode }
               : { columns: selectedColumns },
             inputCsv: csv,
-            maxBudgetYocto: nearToYocto(String(data.get("budget"))),
-            acceptanceCriteria: String(data.get("acceptanceCriteria")),
-            deadlineAt: new Date(String(data.get("deadline"))).getTime(),
-            requiresHumanReview: data.get("requiresHumanReview") === "on",
-            cleanBeforeProcessing: serviceType === "csv_summary" && data.get("cleanBeforeProcessing") === "on",
+            maxBudgetYocto: nearToYocto(budget),
+            acceptanceCriteria: criteria,
+            deadlineAt: new Date(deadline).getTime(),
+            requiresHumanReview: humanReview,
+            cleanBeforeProcessing: serviceType === "csv_summary" && cleanFirst,
           });
           await onSave(input);
         } catch (err) {
@@ -73,6 +89,7 @@ export function MissionForm({
                 ? err.message
                 : "Unable to save mission.",
           );
+          requestAnimationFrame(() => errorRef.current?.focus());
         } finally {
           setBusy(false);
         }
@@ -82,9 +99,11 @@ export function MissionForm({
         Mission title
         <Input
           name="title"
+          type="text"
           maxLength={100}
           required
-          defaultValue={initial?.title}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
           placeholder="Summarize weekly sales"
         />
       </label>
@@ -108,7 +127,8 @@ export function MissionForm({
             type="text"
             inputMode="decimal"
             required
-            defaultValue={initial ? formatNear(initial.maxBudgetYocto) : "10"}
+            value={budget}
+            onChange={(event) => setBudget(event.target.value)}
           />
           <span className="muted text-xs">
             Planning limit only. No deposit or payment.
@@ -121,39 +141,72 @@ export function MissionForm({
           name="deadline"
           type="datetime-local"
           required
-          defaultValue={deadline}
+          value={deadline}
+          onChange={(event) => setDeadline(event.target.value)}
         />
         <span className="muted text-xs">Within the next 30 days.</span>
       </label>
+      <div className="grid gap-3 min-w-0">
+        <label className="field" htmlFor="csv-file">Upload a CSV file</label>
+        <Input id="csv-file" type="file" accept=".csv,text/csv" disabled={busy || readingFile}
+          aria-describedby={importError ? "csv-file-help csv-file-error" : "csv-file-help"}
+          aria-invalid={!!importError || undefined}
+          onChange={async (event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (!file) return;
+            setReadingFile(true); setImportError("");
+            try { const content = await readCsvFile(file); changeCsv(content); setFileName(file.name); }
+            catch (err) { setImportError(err instanceof Error ? err.message : "Could not read this file. Choose it again or paste the CSV below."); }
+            finally { setReadingFile(false); }
+          }} />
+        <p id="csv-file-help" className="muted text-xs">One UTF-8 .csv file, up to 64 KiB. Or paste your data below. Your file is read locally; data is stored only when you save the private mission.</p>
+        {readingFile && <p role="status" className="muted text-sm">Reading CSV…</p>}
+        {fileName && <p role="status" className="text-sm break-all">Loaded {fileName} into the editor. Save the mission to keep it.</p>}
+        {importError && <p id="csv-file-error" role="alert" className="text-sm text-red-800">{importError} Your existing dataset has been kept.</p>}
+      </div>
       <label className="field">
         CSV dataset
         <textarea
+          id="mission-dataset"
+          aria-label="CSV dataset"
+          aria-describedby="csv-dataset-help"
           className="control min-h-48 font-mono"
+          disabled={busy || readingFile}
           value={csv}
           onChange={(event) => changeCsv(event.target.value)}
           required
           maxLength={65536}
           placeholder="product,units,price"
         />
-        <span className="muted text-xs">
+        <span id="csv-dataset-help" className="muted text-xs">
           Header required. Maximum 64 KiB, 500 data rows, 32 columns. Do not
           upload sensitive personal data.
         </span>
       </label>
-      <Button
+      <div className="flex flex-wrap gap-3"><Button
         type="button"
         variant="outline"
         className="w-fit"
+        disabled={readingFile || busy}
         onClick={() => changeCsv(SAMPLE_CSV)}
       >
         Use synthetic sample CSV
       </Button>
+      {csv && <Button type="button" variant="outline" disabled={busy || readingFile} onClick={() => changeCsv("")}>Clear dataset</Button>}</div>
+      <DatasetPreview csv={csv} data={dataset} />
+      <p className="rounded-xl bg-white/60 p-4 text-sm">{serviceType === "csv_summary" ? "Summary statistics keeps every data row and calculates count, missing values, minimum, maximum, sum and mean for your chosen numeric columns. Download the result as JSON or CSV." : "Column normalization trims surrounding spaces in selected columns and optionally lowercases them. Other cells and the row count are preserved. Download the result as CSV."}</p>
       <fieldset className="grid gap-2">
         <legend className="mb-2 text-sm">Columns to process</legend>
         <p className="muted mb-2 text-xs">
           {serviceType === "csv_summary" ? "Select numeric columns for summary statistics." : "Selected columns are trimmed; choose how to handle letter case."}
           {" "}These options are saved with the mission. Column names match the CSV header exactly.
         </p>
+        <div className="flex flex-wrap gap-3 mb-2">
+          {serviceType === "csv_summary" && dataset.ok && dataset.value.numericColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([...dataset.value.numericColumns])}>Select numeric columns</Button>}
+          {selectedColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([])}>Clear column selection</Button>}
+        </div>
+        {serviceType === "csv_summary" && dataset.ok && dataset.value.columns.some((c) => selectedColumns.includes(c.name) && c.invalid > 0) && <p role="status" className="text-sm text-amber-900">A selected column contains non-numeric or unsupported values. Check the column quality table before opening an auction.</p>}
         {headers.length > 0 && headers.length <= 32 ? headers.map((header, i) => (
           <label key={`${i}:${header}`} className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="column" value={header}
@@ -168,7 +221,7 @@ export function MissionForm({
       {serviceType === "csv_normalize" && <label className="field">
         Case handling
         <select name="caseMode" className="control"
-          defaultValue={initial?.options && "caseMode" in initial.options ? initial.options.caseMode : "preserve"}>
+          value={caseMode} onChange={(event) => setCaseMode(event.target.value as typeof caseMode)}>
           <option value="preserve">Preserve case</option>
           <option value="lowercase">Lowercase</option>
         </select>
@@ -180,25 +233,23 @@ export function MissionForm({
           name="acceptanceCriteria"
           maxLength={1000}
           required
-          defaultValue={
-            initial?.acceptanceCriteria ??
-            "Preserve row count. Report missing numeric values explicitly. Produce output matching the selected template."
-          }
+          value={criteria}
+          onChange={(event) => setCriteria(event.target.value)}
         />
         <span className="muted text-xs">
           Human review notes. Processing uses the saved template options; these notes cannot change execution or payment rules.
         </span>
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-800">
+        <p ref={errorRef} tabIndex={-1} role="alert" className="text-sm text-red-800">
           {error}
         </p>
       )}
       <div className="grid gap-4 rounded-2xl bg-white/50 p-4 text-sm">
-        {serviceType === "csv_summary" && <label className="flex items-start gap-3"><input type="checkbox" name="cleanBeforeProcessing" defaultChecked={initial?.cleanBeforeProcessing ?? false} className="mt-1 shrink-0" /><span>Clean before analysis<span className="muted block text-xs mt-1">Hire one cleaning subcontractor within the awarded budget. Its verified CSV becomes the summary input.</span></span></label>}
-        <label className="flex items-start gap-3"><input type="checkbox" name="requiresHumanReview" defaultChecked={initial ? initial.requiresHumanReview ?? true : false} className="mt-1 shrink-0" /><span>Require human review of acceptance notes<span className="muted block text-xs mt-1">Automatic verification covers the selected template and columns. Extra subjective requirements need your recorded decision before payment.</span></span></label>
+        {serviceType === "csv_summary" && <label className="flex items-start gap-3"><input type="checkbox" name="cleanBeforeProcessing" checked={cleanFirst} onChange={(event) => setCleanFirst(event.target.checked)} className="mt-1 shrink-0" /><span>Clean before analysis<span className="muted block text-xs mt-1">Hire one cleaning subcontractor within the awarded budget. Its verified CSV becomes the summary input.</span></span></label>}
+        <label className="flex items-start gap-3"><input type="checkbox" name="requiresHumanReview" checked={humanReview} onChange={(event) => setHumanReview(event.target.checked)} className="mt-1 shrink-0" /><span>Require human review of acceptance notes<span className="muted block text-xs mt-1">Automatic verification covers the selected template and columns. Extra subjective requirements need your recorded decision before payment.</span></span></label>
       </div>
-      <Button type="submit" className="w-fit" disabled={busy}>
+      <Button type="submit" className="w-fit" disabled={busy || readingFile}>
         {busy ? "Saving…" : initial ? "Save changes" : "Create private mission"}
       </Button>
     </form>

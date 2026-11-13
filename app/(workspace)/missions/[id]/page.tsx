@@ -18,6 +18,7 @@ export default function MissionPage({
   const mission = useQuery(api.missions.get, { id: id as Id<"missions"> });
   const update = useMutation(api.missions.update);
   const remove = useMutation(api.missions.remove);
+  const duplicate = useMutation(api.missions.duplicate);
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -93,6 +94,12 @@ export default function MissionPage({
           </div>
         </section>
       )}
+      {!editing && <div className="mt-5"><Button variant="outline" disabled={busy} onClick={async () => {
+        setBusy(true); setError("");
+        try { const copy = await duplicate({ id: mission._id }); router.push(`/missions/${copy}`); }
+        catch { setError("Could not reuse this brief. Check its input or try again."); }
+        finally { setBusy(false); }
+      }}>Use as new mission</Button><p className="muted mt-2 text-xs">Creates a private draft with the same input and options, a new deadline and no copied contracts or payments.</p></div>}
       {mission.state === "draft" && (
         <div className="mt-6 flex flex-wrap gap-3">
           <Button variant="outline" onClick={() => setEditing(!editing)}>
