@@ -3,7 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { user, ownedJob } from "./ownership";
 import { audit, quote, bindingReason } from "./paymentHelpers";
-import { enforceAllowance, allowanceSnapshot } from "./allowanceHelpers";
+import { authorizeAllowance, allowanceSnapshot } from "./allowanceHelpers";
 import { configuration, candidateReason } from "../lib/settlement/policy";
 export const prepare = mutation({
   args: { jobId: v.id("jobs") },
@@ -79,7 +79,7 @@ export const authorize = mutation({
       await audit(ctx, job, "AUTHORIZE_PAYMENT", "ALREADY_AUTHORIZED");
       return { ok: false as const, code: "ALREADY_AUTHORIZED" };
     }
-    try { await enforceAllowance(ctx, ownerId); }
+    try { await authorizeAllowance(ctx, intent); }
     catch (error) {
       const code = error instanceof ConvexError ? String(error.data) : "DEMO_ALLOWANCE_CONFIGURATION_REQUIRED";
       await audit(ctx, job, "AUTHORIZE_PAYMENT", code);

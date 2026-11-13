@@ -1,7 +1,8 @@
+import { acknowledgePreview } from "./helpers";
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
-test("upload, inspect, process, export, reuse and find a private mission", async ({ page }) => {
+test("upload, inspect, process, verify locked delivery, reuse and find a private mission", async ({ page }) => {
   test.setTimeout(90000);
   const suffix=randomBytes(6).toString("hex");
   await page.setViewportSize({width:390,height:844});
@@ -37,15 +38,12 @@ test("upload, inspect, process, export, reuse and find a private mission", async
   await page.reload();
   await expect(page.getByTestId("saved-options")).toHaveText("units, price");
   await expect(page.getByText("Review before starting:",{exact:false})).toBeVisible();
-  await page.getByRole("button",{name:"Open auction",exact:true}).click();
+  await acknowledgePreview(page); await page.getByRole("button", { name: "Open auction",exact:true}).click();
   await expect(page.getByText("Main analysis · Work accepted",{exact:true})).toBeVisible({timeout:30000});
-  const summary=page.getByRole("region",{name:"Summary result",exact:true});
-  await expect(summary.getByRole("row",{name:"units 2 1 3 5 8 4",exact:true})).toBeVisible();
-  const download=page.waitForEvent("download");
-  await page.getByRole("link",{name:"Download summary CSV",exact:true}).click();
-  const stream=await(await download).createReadStream();const chunks=[];
-  for await (const chunk of stream!) chunks.push(chunk);
-  expect(Buffer.concat(chunks).toString()).toContain("units,2,1,3,5,8,4");
+  await expect(page.getByRole("region",{name:"Locked deliverable preview",exact:true})).toBeVisible();
+  await expect(page.getByRole("region",{name:"Summary result",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("link",{name:/Download/})).toHaveCount(0);
+  await expect(page.locator('a[href^="data:"]')).toHaveCount(0);
   await page.getByRole("button",{name:"Use as new mission",exact:true}).click();
   await expect(page).not.toHaveURL(original);
   const copyUrl = page.url();
@@ -70,7 +68,7 @@ test("upload, inspect, process, export, reuse and find a private mission", async
   await page.getByRole("button",{name:"Edit mission",exact:true}).click();
   await page.getByRole("checkbox",{name:"Require human review of acceptance notes",exact:false}).check();
   await page.getByRole("button",{name:"Save changes",exact:true}).click();
-  await page.getByRole("button",{name:"Open auction",exact:true}).click();
+  await acknowledgePreview(page); await page.getByRole("button", { name: "Open auction",exact:true}).click();
   await expect(page.getByText("Main analysis · Needs your review",{exact:true})).toBeVisible({timeout:30000});
   await page.getByRole("link",{name:"Dashboard",exact:true}).click();
   await expect(page.getByRole("link").filter({hasText:"Review work"})).toContainText("Copy of " + title);

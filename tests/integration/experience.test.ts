@@ -58,7 +58,7 @@ it("seeds samples idempotently and scopes reset to the caller's unused samples",
 it("keeps graph data, agent contract history and events private between owners", async () => {
   const s = await setup();
   const sample = await s.alice.mutation(api.demo.seed, {});
-  const jobId = await s.alice.mutation(api.jobs.start, {
+  const jobId = await s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,
     missionId: sample.missionIds[1],
     options: { columns: ["units", "price"] },
   });
@@ -94,7 +94,7 @@ it("keeps graph data, agent contract history and events private between owners",
 it("reset preserves active sample missions, job history and uncertain payment records", async () => {
   const s = await setup();
   const samples = await s.alice.mutation(api.demo.seed, {});
-  const jobId = await s.alice.mutation(api.jobs.start, {
+  const jobId = await s.alice.mutation(api.jobs.start, { allowUnfundedPreview: true,
     missionId: samples.missionIds[1],
     options: { columns: ["units", "price"] },
   });

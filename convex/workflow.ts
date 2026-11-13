@@ -1,5 +1,6 @@
 import { enforceAllowance } from "./allowanceHelpers";
 import { allowancePolicyConfigured } from "../lib/settlement/allowance";
+import { awardPaymentBlock } from "./settlementReadiness";
 // Trusted worker boundary. These functions are INTERNAL: a browser/agent cannot
 // submit its own scores, verification verdict, payout, or reputation delta.
 import { ConvexError, v } from "convex/values";
@@ -253,6 +254,8 @@ export const award = internalMutation({
       amount(price) > amount(job.budgetYocto)
     )
       throw new ConvexError("AWARD_OUT_OF_BOUNDS");
+    const paymentBlock = awardPaymentBlock(job,bid.agentId,price);
+    if (paymentBlock) throw new ConvexError(paymentBlock);
     const agent = privateProfiles().find((a) => a.id === bid.agentId)!;
     if (amount(price) < amount(agent.reservePriceYocto))
       throw new ConvexError("PRIVATE_PRICING_CHANGED_REASSESS");
@@ -270,7 +273,7 @@ export const award = internalMutation({
         .unique()
     )
       throw new ConvexError("ALREADY_AWARDED");
-    if (allowancePolicyConfigured())
+    if (!job.unfundedPreviewAcknowledged && (job.engineManaged || allowancePolicyConfigured()))
       await enforceAllowance(ctx, job.ownerId, job.parentId ? 0n : amount(price));
     const id = await ctx.db.insert("contracts", {
       jobId: job._id,
@@ -365,7 +368,7 @@ export const subcontract = internalMutation({
       missionId: parent.missionId,
       parentId: parent._id,
       depth: 1,
-      ...(parent.engineManaged ? { engineManaged: true, workerVersion: 0, requiresHumanReview: false, retryCount: 0 } : {}),
+      ...(parent.engineManaged ? { engineManaged: true, unfundedPreviewAcknowledged: parent.unfundedPreviewAcknowledged ?? false, workerVersion: 0, requiresHumanReview: false, retryCount: 0 } : {}),
       serviceType: "csv_normalize",
       inputCsv: parent.inputCsv,
       options: childOptions,

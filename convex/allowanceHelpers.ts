@@ -41,7 +41,7 @@ export async function allowanceSnapshot(ctx: QueryCtx | MutationCtx, ownerId: Id
   const rootContracts = new Map(contracts.map(c => [c.jobId, c]));
   for (const contract of contracts) {
     const { entry, job, root } = group(contract.jobId);
-    if (contract.state === "failed") continue;
+    if (root.unfundedPreviewAcknowledged || contract.state === "failed") continue;
     if (!job.parentId) entry.contract += amount(contract.amountYocto);
     else if (!rootContracts.has(root._id) || rootContracts.get(root._id)?.state === "failed")
       entry.contract += amount(contract.amountYocto);
@@ -52,7 +52,7 @@ export async function allowanceSnapshot(ctx: QueryCtx | MutationCtx, ownerId: Id
   for (const contract of contracts) {
     const { job, root } = group(contract.jobId);
     const rootActive = rootContracts.get(root._id)?.state !== "failed" && rootContracts.has(root._id);
-    coveredByJob.set(job._id, rootActive
+    coveredByJob.set(job._id, root.unfundedPreviewAcknowledged ? 0n : rootActive
       ? amount(job.parentId ? contract.amountYocto : contract.holdbackYocto)
       : contract.state !== "failed" ? amount(contract.amountYocto) : 0n);
   }
@@ -88,3 +88,18 @@ export async function enforceAllowance(ctx: MutationCtx, ownerId: Id<"users">, e
   if (snapshot.ownerUsed + extra > snapshot.personalLimit) throw new ConvexError("DEMO_OWNER_ALLOWANCE_EXCEEDED");
   if (snapshot.globalUsed + extra > snapshot.globalLimit) throw new ConvexError("DEMO_OPERATOR_ALLOWANCE_EXCEEDED");
 }
+
+/** A preview has no reserved allowance; admit its exact new transfer atomically. */
+export async function authorizeAllowance(ctx: MutationCtx, intent: import("./_generated/dataModel").Doc<"paymentIntents">) {
+  const job = await ctx.db.get(intent.jobId);
+  const root = job?.parentId ? await ctx.db.get(job.parentId) : job;
+  await enforceAllowance(ctx, intent.ownerId, root?.unfundedPreviewAcknowledged ? amount(intent.amountYocto) : 0n);
+}
+export const allowanceDenials: Readonly<Record<string, string>> = {
+  DEMO_ALLOWANCE_CONFIGURATION_REQUIRED: "Operator-managed spending permissions are not configured. Ask the operator to configure them.",
+  DEMO_OWNER_NOT_ALLOWLISTED: "This account has no operator-approved spending permission. Ask the operator to approve the account.",
+  DEMO_OWNER_ALLOWANCE_EXCEEDED: "This account has no sufficient unallocated spending permission for this award.",
+  DEMO_OPERATOR_ALLOWANCE_EXCEEDED: "The shared operator spending ceiling cannot admit this award.",
+  DEMO_ACCOUNTING_CAPACITY_REACHED: "Spending history exceeds the bounded demo accounting limit. Operator review is required.",
+  DEMO_ACCOUNTING_INVALID: "Spending history needs operator review before any new commitment.",
+};

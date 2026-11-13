@@ -1,3 +1,5 @@
+import { allowanceDenials } from "./allowanceHelpers";
+import { awardPaymentBlock } from "./settlementReadiness";
 // Bounded deterministic workflow. Every stage is an atomic, versioned mutation.
 // There are no network calls, browser worker endpoints or automatic payments.
 import { ConvexError, v } from "convex/values";
@@ -100,10 +102,10 @@ async function run(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
       const contracts = await ctx.db.query("contracts").withIndex("by_agent_state", (q) => q.eq("agentId", profile.id).eq("state", "active")).take(profile.capacity);
       if (contracts.length >= profile.capacity) active.add(profile.id);
     }
-    const eligible = candidates.filter((b) => !active.has(b.agentId));
+    const eligible = candidates.filter((b) => !active.has(b.agentId) && !awardPaymentBlock(job,b.agentId,b.priceYocto));
     const ranked = value(rankBids({ budgetYocto: job.budgetYocto, availableDurationMs: Math.max(1, mission.deadlineAt - Date.now()),
       offers: eligible, reputationBps: eligible.map((b) => bids.find((stored) => stored._id === b.bidId)?.reputationBps ?? 5000), capabilityMatchBps: eligible.map(() => 10000) }));
-    if (!ranked.length) { await unavailable(ctx, job, "No offer was accepted within the bounded negotiation and eligibility rules. Create a revised mission to try again."); return; }
+    if (!ranked.length) { await unavailable(ctx, job, "No accepted offer meets current settlement configuration, the 1 NEAR award cap, capacity and negotiation rules. Create a revised mission to try again."); return; }
     const best = ranked[0];
     await ctx.runMutation(internal.workflow.award, { bidId: best.offer.bidId as Id<"bids">,
       selectionReason: `Normalized utility ${best.totalScore} bps. Deterministic tiebreak: ${best.tieBreakExplanation}.`,
@@ -173,10 +175,17 @@ export const advance = internalMutation({ args, handler: async (ctx, { jobId, ve
 } });
 export const step = internalMutation({ args, handler: async (ctx, input): Promise<null> => {
   try { await ctx.runMutation(internal.economyWorker.advance, input); }
-  catch {
+  catch (error) {
     // Subtransaction rolled back; preserve a bounded, sanitized failure audit.
     const job = await ctx.db.get(input.jobId);
     if (job && job.workerVersion === input.version && ["bidding", "working", "revision", "verifying"].includes(job.state)) {
+      const denial = error instanceof ConvexError && typeof error.data === "string" ? error.data : "";
+      if (job.state === "bidding" && allowanceDenials[denial]) {
+        await unavailable(ctx, job, `${denial}: ${allowanceDenials[denial]} No contract or payment was created for this offer.`);
+        await ctx.db.patch(job._id, { workerError: denial });
+        await event(ctx, job, "AUCTION_ALLOWANCE_BLOCKED", `${denial}: ${allowanceDenials[denial]} Create a new brief after operator review, or explicitly acknowledge metadata-only processing before launching.`);
+        return null;
+      }
       if ((job.retryCount ?? 0) >= 3) {
         await ctx.db.patch(job._id, { workerError: undefined });
         if (job.state === "bidding") await unavailable(ctx, job, "The workflow exhausted its three owner retries before an award. No payment was requested.");

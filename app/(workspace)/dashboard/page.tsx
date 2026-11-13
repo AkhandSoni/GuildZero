@@ -22,7 +22,7 @@ export default function Dashboard(){
     <section className="dashboard-metrics" aria-label="Recent workspace metrics">{[
       {label:"In progress",value:metrics?.active,detail:"Main jobs still underway",Icon:Clock3,tone:"blue"},
       {label:"Needs review",value:metrics?.review,detail:"Missions waiting for you",Icon:CircleAlert,tone:"amber"},
-      {label:"Work accepted",value:metrics?.approved,detail:"Results ready to inspect",Icon:CheckCircle2,tone:"green"},
+      {label:"Work accepted",value:metrics?.approved,detail:"Work approved · payment separate",Icon:CheckCircle2,tone:"green"},
       {label:"Confirmed transfers",value:metrics?formatNear(metrics.confirmedYocto):undefined,detail:"Testnet NEAR · verified receipts",Icon:Wallet,tone:"purple"},
     ].map(({label,value,detail,Icon,tone})=><article className={`dashboard-metric ${tone}`} key={label}><div><p>{label}</p><span className="metric-icon"><Icon size={18}/></span></div><strong>{value??"—"}</strong><span>{detail}</span></article>)}</section>
     <p className="dashboard-data-note">Recent recorded activity: up to 50 jobs and 50 payment intents. Subcontracts are excluded from main-job counts. Work acceptance and payment are separate.</p>
