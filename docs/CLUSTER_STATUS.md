@@ -127,6 +127,10 @@ Validation: lint, typecheck, production build and client-boundary check (25 asse
 
 ## Strict summary input before commitment (#36) — 2026-11-13
 
+### Current-main integration corrections — 2026-11-13
+
+Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 252 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+
 Added strict numeric preflight in the editor, saved-brief launch panel and authenticated launch mutation. Unsupported selected currency/locale/percentage/formula-like inputs remain in editable drafts but cannot create a job or contract. Diagnostics identify selected columns and CSV record numbers; original bytes and valid columns are preserved. Results explicitly distinguish column sums from derived revenue. No locale conversion or new calculation is implemented. Representative CSV-owning user validation remains pending.
 
 Validation: all 221 unit/backend tests pass (including 7 new preflight cases), lint, typecheck, production build and client-boundary scan (27 assets) pass. The focused production browser scenario passed against isolated real local Auth 2: an invalid saved draft stayed unchanged/blocked across reload; deselecting its invalid price column allowed real scheduled summary execution for the remaining valid units column. Full browser suite was not rerun on this individual branch. No payment, public deployment or migration of existing work is included.
@@ -351,7 +355,3 @@ Preserved root environment files, user-started local services, existing financia
 Implemented in an isolated issue branch: full-brief dirty comparison, explicit same-tab link/Sign out/Cancel discard, native reload/close warning and guarded browser Back. Reverting every change returns to clean state. Mutation success releases protection before navigation; validation/persistence failures retain the brief. Private inputs remain in React memory only.
 
 Validation: lint, typecheck, production build and all 214 existing unit/backend tests passed. The focused live browser regression passed against a fresh isolated local Convex Auth 2 backend (ports 3323/3324) and Next frontend (3123), using the installed Chromium 1248 executable override. It exercises link/Back/reload cancellation, invalid-save retention, successful creation, clean reversion, edit cancellation and accepted Back. The first test run used an ambiguous alert locator, corrected before the passing run; the default browser revision was absent, so the installed compatible executable was used. No payment, public hosting or submission was performed. Broader release gates remain unchanged.
-
-## PR integration corrections for issue #36 — 2026-11-13
-
-Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 252 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
