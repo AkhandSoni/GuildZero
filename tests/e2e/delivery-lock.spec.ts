@@ -16,4 +16,8 @@ test("unpaid full content never arrives in the browser subscription and unfunded
  expect(delivered.length).toBeGreaterThan(0);
  for(const response of delivered){for(const result of response.deliverables as Record<string,unknown>[]){expect(result.content).toBeNull();expect(result).not.toHaveProperty("verificationPayload");expect(result.preview).toBeDefined();}}
  await page.reload();await expect(page.getByRole("region",{name:"Locked deliverable preview",exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ const original=page.url();await page.getByRole("button",{name:"Use as new mission",exact:true}).click();await expect(page).not.toHaveURL(original);
+ const newPreflight=page.getByRole("region",{name:"Payment readiness",exact:true});await expect(newPreflight).toBeVisible();await expect(newPreflight).not.toContainText("Checking settlement configuration…");
+ const newAcknowledgment=page.getByRole("checkbox",{name:/I understand only a metadata preview/});
+ if(await newAcknowledgment.count()){await expect(newAcknowledgment).not.toBeChecked();await expect(page.getByRole("button",{name:"Open auction",exact:true})).toBeDisabled();}
 });

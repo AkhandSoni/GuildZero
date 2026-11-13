@@ -113,7 +113,7 @@ export default function MissionPage({
           </Button>
         </div>
       )}
-      {!editing && <JobWorkspace mission={mission} />}
+      {!editing && <JobWorkspace key={mission._id} mission={mission} />}
       {confirming && (
         <div className="panel mt-5">
           <p>Delete this draft and its input? This cannot be undone.</p>
