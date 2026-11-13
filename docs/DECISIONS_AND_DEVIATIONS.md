@@ -10,6 +10,12 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - Result tables read stored deliverables; CSV export uses actual computed values and rejects formula-like labels. Presentation never bypasses verification, dispute decisions or payment approval. The review queue derives from existing owner-private persisted jobs and remains bounded like the overview.
 - Keep U8/U9/U10 explicit: no unsaved-navigation guard or private-CSV browser cache is claimed, no fake/unverified password reset is added, and representative-user sessions are still needed. Existing missing process-restart evidence and release/submission work remain open; completed economy/policy/visualization tickets are closed with pinned main evidence. No signing or public publication was performed.
 
+## 2026-11-13 — Account-recovery design (#24)
+
+- The user requested two further issues and separate PRs. Define a recovery path without enabling an unverified-email reset, creating a provider account, sending messages or changing ownership IDs.
+- Recommend optional verified-address enrollment only after fresh current-password proof; design masks recovery lookup, binds expiring one-shot proofs to account/revision/purpose and requires atomic password replacement plus prior-session/refresh revocation. Existing unverified login addresses never become eligible automatically.
+- `account-recovery-design.md` records pinned Auth 2 API evidence, a zero-recurring-provider-cost candidate with domain/account/quota constraints, an offline-code alternative, security/browser acceptance cases and implementation gates. Current runtime disclosures remain accurate. Provider approval, delivery and production-code review are still pending; no recovery feature is claimed working.
+
 ## 2026-11-13 — Latest compatible releases and local startup
 
 - User explicitly selected keeping Convex with compatible latest releases, accepted the Auth 2 migration and a ten-character minimum, and requested plain npm run dev to start both services. Keep Next.js/Convex as the application architecture; no additional service or paid dependency is introduced.
