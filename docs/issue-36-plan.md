@@ -13,3 +13,7 @@
 - Regression coverage: four unit cases, three backend cases and one real local-Auth2 production-browser scenario. The historical unexecutable-worker test now explicitly seeds an already-started legacy job, retaining its no-invented-output/approval-denial coverage.
 - Actual checks: 221 tests pass; lint, typecheck, production build and client-boundary scan (27 assets) pass. Focused real-browser scenario passes; full browser suite not rerun for this branch.
 - Representative CSV-owning user validation remains outstanding. Strict input supports no locale, currency, percentage conversion or new derived calculations. Related to #36; do not close the remaining user-validation requirement automatically.
+
+## Combined browser-suite follow-up
+
+The combined run exposed two existing scenarios that still expected invalid selected numbers (`1e-324` and `not-a-number`) to start jobs and enter review. Their assertions now require an unchanged editable draft, precommit diagnostics, disabled auction, and no job/output/payment UI; the text case also exercises explicit correction. The cancellation-safe arithmetic download, real human review, unsafe cleaning-dependency review and insufficient-budget outcomes remain covered. These are test expectation updates for the intended launch boundary, not validator exceptions. The parent integration run verifies these two scenarios on the combined branches.

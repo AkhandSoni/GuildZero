@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
-test("cancellation-safe output is downloaded and underflow enters review without invented output", async ({ page }) => {
+test("cancellation-safe output is downloaded, underflow is blocked before commitment and unsafe dependencies enter review", async ({ page }) => {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   await page.getByLabel("Email", { exact: true }).fill(`audit-${randomBytes(8).toString("hex")}@example.com`);
@@ -11,7 +11,7 @@ test("cancellation-safe output is downloaded and underflow enters review without
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  async function launch(title: string, csv: string, clean = false) {
+  async function launch(title: string, csv: string, clean = false, open = true) {
     await page.goto("/missions/new");
     await page.getByLabel("Mission title").fill(title);
     await page.getByLabel("CSV dataset").fill(csv);
@@ -19,7 +19,7 @@ test("cancellation-safe output is downloaded and underflow enters review without
     if (clean) await page.getByRole("checkbox", { name: "Clean before analysis" }).check();
     await page.getByRole("button", { name: "Create private mission" }).click();
     await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
-    await page.getByRole("button", { name: "Open auction", exact: true }).click();
+    if (open) await page.getByRole("button", { name: "Open auction", exact: true }).click();
   }
 
   await launch("Cancellation regression", "units\n1000000000000\n0.00001\n-1000000000000");
@@ -34,11 +34,16 @@ test("cancellation-safe output is downloaded and underflow enters review without
   expect(result.columns[0].sum).toBeCloseTo(0.00001, 12);
   expect(result.columns[0].mean).toBeCloseTo(0.00001 / 3, 12);
 
-  await launch("Underflow regression", "units\n1e-324");
-  await expect(page.getByText("Main analysis · Needs your review", { exact: true })).toBeVisible({ timeout: 25000 });
-  await expect(page.getByText(/Service could not execute: INVALID_NUMBER/)).toBeVisible();
+  await launch("Underflow regression", "units\n1e-324", false, false);
+  await expect(page.getByRole("button", { name: "Open auction", exact: true })).toBeDisabled();
+  await expect(page.getByRole("alert").filter({ hasText: "Correct summary input before opening" })).toContainText('Column "units": unsupported numeric input in CSV record 2.');
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Open auction", exact: true })).toBeDisabled();
+  await expect(page.getByText("Draft saved. No auction, agent execution, or payment has started.", { exact: true })).toBeVisible();
+  await expect(page.locator("details.brief-source pre")).toHaveText("units\n1e-324");
+  await expect(page.getByRole("heading", { name: "Mission progress", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Download JSON", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toHaveCount(0);
 
   await launch("Unexecutable dependency regression", "product,units\n=unsafe,3", true);
   await expect(page.getByText("Main analysis · Needs your review", { exact: true }).first()).toBeVisible({ timeout: 25000 });

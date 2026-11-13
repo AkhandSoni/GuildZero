@@ -7,13 +7,13 @@ async function signup(page: Page) {
   await page.getByLabel("Confirm password", { exact: true }).fill(await page.getByLabel("Password", { exact: true }).inputValue());
   await page.getByRole("button", { name: "Create account", exact: true }).click(); await expect(page).toHaveURL(/\/dashboard$/);
 }
-async function create(page: Page, title: string, csv = "units\n3\n5", budget = "1", human = false) {
+async function create(page: Page, title: string, csv = "units\n3\n5", budget = "1", human = false, open = true) {
   await page.goto("/missions/new"); await page.getByLabel("Mission title").fill(title);
   await page.getByLabel("CSV dataset").fill(csv); await page.getByRole("checkbox", { name: "units", exact: true }).check();
   await page.getByLabel("Maximum budget (testnet NEAR)").fill(budget);
   if (human) await page.getByRole("checkbox", { name: "Require human review of acceptance notes" }).check();
   await page.getByRole("button", { name: "Create private mission" }).click(); await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
-  await page.getByRole("button", { name: "Open auction", exact: true }).click();
+  if (open) await page.getByRole("button", { name: "Open auction", exact: true }).click();
 }
 test("human review, invalid input and insufficient budget have actionable outcomes without fake payments", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await signup(page);
@@ -25,14 +25,18 @@ test("human review, invalid input and insufficient budget have actionable outcom
   await page.getByRole("button", { name: "Record final decision" }).click();
   await expect(page.getByText("Main analysis · Work accepted", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await create(page, "Invalid numeric input", "units\nnot-a-number");
-  await expect(page.getByText("Main analysis · Needs your review", { exact: true })).toBeVisible({ timeout: 20000 });
+  await create(page, "Invalid numeric input", "units\nnot-a-number", "1", false, false);
+  await expect(page.getByRole("button", { name: "Open auction", exact: true })).toBeDisabled();
+  await expect(page.getByRole("alert").filter({ hasText: "Correct summary input before opening" })).toContainText('Column "units": unsupported numeric input in CSV record 2.');
+  await expect(page.getByText("Draft saved. No auction, agent execution, or payment has started.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mission progress", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Deliverable/ })).toHaveCount(0);
-  await page.getByLabel("Reason", { exact: true }).fill("No computed output exists; source needs correcting.");
-  await expect(page.getByRole("option", { name: "Approve after human review" })).toBeDisabled();
-  await expect(page.getByText("Summary columns need correction", { exact: true })).toBeVisible();
-  await page.getByRole("combobox", { name: /^Decision/ }).selectOption("reject"); await page.getByRole("button", { name: "Record final decision" }).click();
-  await expect(page.getByText("Main analysis · Work rejected", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit mission", exact: true }).click();
+  await expect(page.getByLabel("CSV dataset", { exact: true })).toHaveValue("units\nnot-a-number");
+  await page.getByLabel("CSV dataset", { exact: true }).fill("units\n3\n5");
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Open auction", exact: true })).toBeEnabled();
   await create(page, "No eligible price", "units\n3\n5", "0.000000000000000000000001");
   await expect(page.getByText("Main analysis · No eligible offer", { exact: true })).toBeVisible({ timeout: 20000 });
   await expect(page.getByText("No offer could be awarded", { exact: false })).toBeVisible();
