@@ -15,7 +15,7 @@ it("still resumes a parent after human approval of a child with real output", as
     options: { columns: ["units"] }, maxBudgetYocto: "1000000000000000000000000", cleanBeforeProcessing: true,
     requiresHumanReview: false, acceptanceCriteria: "Review cleaned data", deadlineAt: Date.now() + 86400000,
   });
-  const id = await owner.mutation(api.jobs.start, { missionId });
+  const id = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   for (let version = 0; version < 3; version++) await t.mutation(internal.economyWorker.step, { jobId: id, version });
   const childId = (await owner.query(api.jobs.detail, { id })).children[0]._id;
   // Trusted fixture forces an otherwise automatic child into the existing review path.
@@ -41,7 +41,7 @@ it("releases parent execution capacity when a required child has no approvable o
     maxBudgetYocto: "1000000000000000000000000", cleanBeforeProcessing: true,
     requiresHumanReview: false, acceptanceCriteria: "Use approved cleaning output", deadlineAt: Date.now() + 86400000,
   });
-  const id = await owner.mutation(api.jobs.start, { missionId });
+  const id = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   await t.finishAllScheduledFunctions(() => vi.runAllTimers());
   const parent = await owner.query(api.jobs.detail, { id });
   const child = await owner.query(api.jobs.detail, { id: parent.children[0]._id });
@@ -73,13 +73,13 @@ it("persists BOM input and cancellation-safe statistics through the actual sched
     deadlineAt: Date.now() + 86400000,
   });
   expect((await owner.query(api.missions.get, { id: missionId })).inputCsv).toBe(inputCsv);
-  const id = await owner.mutation(api.jobs.start, { missionId });
+  const id = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   await t.finishAllScheduledFunctions(() => vi.runAllTimers());
   const detail = await owner.query(api.jobs.detail, { id });
   expect(detail.job.state).toBe("approved");
   expect(detail.verifications).toHaveLength(1);
   expect(detail.verifications[0].verdict).toBe("pass");
-  expect(JSON.parse(detail.deliverables[0].content).columns[0].sum).toBeCloseTo(0.00001, 12);
+  expect(JSON.parse((await t.run(ctx => ctx.db.get(detail.deliverables[0]._id)))!.content).columns[0].sum).toBeCloseTo(0.00001, 12);
   expect(await owner.query(api.payments.forJob, { jobId: id })).toBeNull();
 });
 
@@ -94,7 +94,7 @@ it("denies anonymous callers at every public marketplace entry point", async () 
     acceptanceCriteria: "Template", deadlineAt: Date.now() + 86400000,
   };
   const missionId = await owner.mutation(api.missions.create, input);
-  const jobId = await owner.mutation(api.jobs.start, { missionId });
+  const jobId = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId });
   // Only obtain a valid ID. No settlement action is scheduled or executed.
   const intentId = await t.run(async (ctx) => {
     const bidId = await ctx.db.insert("bids", { jobId, agentId: "stats-core",
@@ -113,7 +113,7 @@ it("denies anonymous callers at every public marketplace entry point", async () 
     () => t.mutation(api.missions.create, input),
     () => t.mutation(api.missions.update, { id: missionId, ...input }),
     () => t.mutation(api.missions.remove, { id: missionId }),
-    () => t.mutation(api.jobs.start, { missionId }),
+    () => t.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId }),
     () => t.mutation(api.jobs.resume, { id: jobId }),
     () => t.query(api.jobs.detail, { id: jobId }),
     () => t.query(api.jobs.forMission, { missionId }),

@@ -1,6 +1,7 @@
+import { acknowledgePreview } from "./helpers";
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-test("real automatic bidding, negotiation, subcontracted processing and verified downloads persist after reload", async ({ page, browser }) => {
+test("real bidding, negotiation and subcontracted processing persist while unpaid downloads remain locked", async ({ page, browser }) => {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   await page.getByLabel("Email", { exact: true }).fill(`auction-${randomBytes(8).toString("hex")}@example.com`);
@@ -23,7 +24,7 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
   await expect(page.getByTestId("saved-options")).toHaveText("units, price");
   await page.reload();
-  await page.getByRole("button", { name: "Open auction", exact: true }).focus();
+  await acknowledgePreview(page); await page.getByRole("button", { name: "Open auction", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Main analysis · Receiving offers", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit mission", exact: true })).toHaveCount(0);
@@ -31,15 +32,11 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await expect(page.getByRole("heading", { name: "Verification: pass", exact: true }).first()).toBeVisible();
   await expect(page.getByText(/Utility \d+\/10000/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Negotiation transcript" }).first()).toBeVisible();
-  const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download JSON", exact: true }).focus();
-  await page.keyboard.press("Enter");
-  const artifact = await download;
-  const stream = await artifact.createReadStream();
-  const chunks = []; for await (const chunk of stream!) chunks.push(chunk);
-  expect(JSON.parse(Buffer.concat(chunks).toString())).toMatchObject({ serviceType: "csv_summary", rowCount: 4, columns: [{ name: "units", count: 3, missing: 1, sum: 10 }, { name: "price", sum: 33 }] });
+  await expect(page.getByRole("region",{name:"Locked deliverable preview",exact:true})).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /Download/ })).toHaveCount(0);
   await page.getByText("Cleaning subcontract · approved", { exact: true }).click();
-  await expect(page.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
+  await expect(page.getByRole("region",{name:"Locked deliverable preview",exact:true})).toHaveCount(2);
+  await expect(page.getByRole("link", { name: /Download/ })).toHaveCount(0);
   await page.reload();
   await expect(page.getByText("Main analysis · Work accepted", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Work is approved; payment still requires your exact authorization.", { exact: true }).first()).toBeVisible();

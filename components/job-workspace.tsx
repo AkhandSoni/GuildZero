@@ -6,21 +6,17 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
-import { ResultPreview } from "@/components/result-preview";
+import { DeliverablePanel } from "@/components/deliverable-panel";
 import { inspectDataset } from "@/lib/dataset-preview";
 import { PaymentPanel } from "@/components/payment-panel";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import { eventLabel, statusLabels, workLabel } from "@/lib/workflow-view";
 import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "@/lib/summary-preflight";
-import Papa from "papaparse";
-import { isUnsafeFormulaValue } from "@/lib/economy/csv-input";
-function safeCsv(content: string) {
-  const parsed = Papa.parse<string[]>(content, { delimiter: ",", skipEmptyLines: false });
-  return !parsed.errors.length && parsed.data.every((row) => row.every((cell) => !isUnsafeFormulaValue(cell)));
-}
 export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const jobs = useQuery(api.jobs.forMission, { missionId: mission._id });
   const start = useMutation(api.jobs.start);
+  const readiness = useQuery(api.jobs.preflight, { missionId: mission._id });
+  const [allowPreview,setAllowPreview] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const root = jobs?.find((j) => j.depth === 0);
@@ -45,8 +41,9 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
       <p className="muted mt-2 text-sm">
         Opening uses the saved processing options, locks the brief and records an
         auction. Agents calculate offers, negotiate and process your dataset.
-        Payment always requires a separate confirmation.
+        Payment always requires a separate confirmation. Full results remain locked until confirmed settlement.
       </p>
+      <div className="payment-preflight" role="region" aria-label="Payment readiness"><h3>Before you commit</h3><p>Maximum award: 1 testnet NEAR, including any cleaning allocation. A larger mission budget does not fund the wallet or raise this cap.</p>{readiness ? <><p>{readiness.blocked ? "Settlement is not ready." : "Operator and recipient configuration checks passed."} Funds and configuration can change before payment; this is not a funding guarantee.</p>{readiness.reasons.map(reason=><p key={reason}>{reason}</p>)}{readiness.balance ? <p>Last shared-wallet estimate: {formatNear(readiness.balance.availableYocto)} testnet NEAR · {new Date(readiness.balance.checkedAt).toLocaleString()}{readiness.balance.stale ? " · stale; refresh in Payments" : ""}. Pending obligations are not deducted.</p> : <p>No confirmed wallet reading is available. Check the Payments page for a read-only refresh.</p>}</> : <p role="status">Checking settlement configuration…</p>}</div>
       <form
         className="mt-5 grid gap-4"
         onSubmit={async (e) => {
@@ -56,11 +53,12 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
           try {
             await start({
               missionId: mission._id,
+              allowUnfundedPreview: allowPreview,
             });
           } catch (err) {
             setError(
               err instanceof ConvexError
-                ? typeof err.data === "object" && err.data !== null && "message" in err.data ? String(err.data.message) : String(err.data)
+                ? err.data === "SETTLEMENT_NOT_READY_ACKNOWLEDGE_PREVIEW" ? "Settlement configuration changed. Review the payment-readiness notice and acknowledge metadata-only delivery to continue." : typeof err.data === "object" && err.data !== null && "message" in err.data ? String(err.data.message) : String(err.data)
                 : "Could not open auction.",
             );
           } finally {
@@ -68,6 +66,7 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
           }
         }}
       >
+        {readiness?.blocked && <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={allowPreview} onChange={event=>setAllowPreview(event.target.checked)} required/><span>I understand only a metadata preview will be available until settlement is configured and confirmed.</span></label>}
         <p className="muted text-sm">Columns: {mission.options.columns.join(", ")}. Edit the draft to change processing options.</p>
         {inputBlocked && <div role="alert" className="input-problem"><h3>Correct summary input before opening</h3>{summaryInput?.ok ? <ul>{summaryInput.value.map(issue => <li key={issue.column}>{summaryIssueMessage(issue)}</li>)}</ul> : <p>{summaryInput?.message}</p>}<p>{STRICT_SUMMARY_INPUT}</p><p>Edit this draft to correct the source or deselect the affected columns. The original dataset is unchanged.</p></div>}
         {error && (
@@ -75,7 +74,7 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
             {error}
           </p>
         )}
-        <Button disabled={busy || inputBlocked} className="w-fit" type="submit">
+        <Button disabled={busy || inputBlocked || !readiness || readiness.blocked && !allowPreview} className="w-fit" type="submit">
           {busy ? "Opening…" : "Open auction"}
         </Button>
       </form>
@@ -117,7 +116,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         <h2>Mission progress</h2>
         <WorkflowProgress state={data.job.state} eventTypes={data.events.map(event => event.type)} paymentStatus={payment === undefined ? "LOADING" : payment?.status ?? "NONE"}/>
         {badColumns.length > 0 && <div className="input-problem"><h3>Summary columns need correction</h3><p>These selected columns contain text or unsupported numbers: {badColumns.map(column => `${column.name} (CSV record ${column.invalidRows.join(", ")})`).join("; ")}. Cleaning trims text; it does not convert product or region names into numbers.</p><p>Reuse this brief as a new mission and choose numeric columns. The recorded job and its input stay unchanged.</p></div>}
-        <p className="mt-3 text-sm" role="status">Next step: {data.job.state === "approved" ? "Review your verified result below. Payment is separate and still requires your confirmation." : data.job.state === "disputed" ? "Review the verification and record your decision below. No payment can proceed until work is approved." : data.job.state === "unawarded" || data.job.state === "rejected" || data.job.state === "cancelled" ? "Reuse this brief as a new draft, adjust it, then open a new auction." : "The backend is progressing this job. You can leave this page and return; the backend must remain running."}</p>
+        <p className="mt-3 text-sm" role="status">Next step: {data.job.state === "approved" ? "Review the output metadata and verification below. Full results and downloads unlock only after every required payment is confirmed." : data.job.state === "disputed" ? "Review the verification and record your decision below. No payment can proceed until work is approved." : data.job.state === "unawarded" || data.job.state === "rejected" || data.job.state === "cancelled" ? "Reuse this brief as a new draft, adjust it, then open a new auction." : "The backend is progressing this job. You can leave this page and return; the backend must remain running."}</p>
         <p className="muted mt-3 text-sm">
           Reserved within mission: {formatNear(data.job.reservedYocto)} testnet
           NEAR. These are contractual amounts; the payment receipt separately
@@ -169,6 +168,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         >
           <h2>Buyer dispute decision</h2>
           {data.disputes.map((dispute) => <p className="muted text-sm" key={dispute._id}>{dispute.reason}</p>)}
+          {data.deliverables.some(deliverable => deliverable.isLatest && deliverable.content === null) && <p className="text-sm">Full output is withheld until settlement. Your decision here reviews metadata, verification checks and acceptance requirements; it does not mean you have inspected the full deliverable.</p>}
           {!data.deliverables.length && <p className="text-sm">There is no output to approve. Reject this attempt, record why, then reuse the brief with corrected input.</p>}
           <label className="field">
             Reason
@@ -194,27 +194,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           </Button>
         </form>
       )}
-      {data.deliverables.map((d) => (
-        <div className="panel min-w-0" key={d._id}>
-          <h2>Deliverable · attempt {d.attempt + 1}</h2>
-          <ResultPreview content={d.content} format={d.format} />
-          <details className="audit-details"><summary>View raw deliverable</summary><pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap text-xs">
-            {d.content}
-          </pre></details>
-          {d.format === "json" && (
-            <Button asChild className="mt-3" variant="outline">
-              <a
-                download="guildzero-summary.json"
-                href={`data:application/json;charset=utf-8,${encodeURIComponent(d.content)}`}
-              >
-                Download JSON
-              </a>
-            </Button>
-          )}
-          {d.format === "csv" && safeCsv(d.content) && <Button asChild className="mt-3" variant="outline"><a download="guildzero-normalized.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(d.content)}`}>Download CSV</a></Button>}
-          {d.format === "csv" && !safeCsv(d.content) && <p className="muted text-xs mt-3">CSV download blocked: unsafe spreadsheet values or invalid CSV.</p>}
-        </div>
-      ))}
+      {data.deliverables.map(d => <DeliverablePanel key={d._id} deliverable={d} delivery={data.delivery} approved={data.job.state === "approved"}/>)}
       {data.verifications.map((v) => (
         <div className="panel" key={v._id}>
           <h2>Verification: {v.verdict}</h2>

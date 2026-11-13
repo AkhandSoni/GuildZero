@@ -1,3 +1,4 @@
+import { acknowledgePreview } from "./helpers";
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
@@ -32,10 +33,17 @@ test("strict summary preflight preserves draft CSV and blocks commitment until s
   await page.getByRole("checkbox", { name: "price", exact: true }).uncheck();
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByTestId("saved-options")).toHaveText("units");
+  await acknowledgePreview(page);
   await expect(page.getByRole("button", { name: "Open auction", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Open auction", exact: true }).click();
   await expect(page.getByText("Main analysis · Work accepted", { exact: true })).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole("region", { name: "Summary result", exact: true }).getByRole("row", { name: "units 2 0 -2 3 1 0.5", exact: true })).toBeVisible();
-  await expect(page.getByText("Sum is the sum of the selected column", { exact: false })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Verification: pass", exact: true })).toBeVisible();
+  const locked = page.getByRole("region", { name: "Locked deliverable preview", exact: true });
+  await expect(locked).toBeVisible();
+  await expect(locked).toContainText("Columns: units.");
+  await expect(locked).toContainText("0 of 1 required payments confirmed");
+  await expect(page.getByRole("region", { name: "Summary result", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Download/ })).toHaveCount(0);
+  await expect(page.locator('a[href^="data:"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toBeVisible();
 });

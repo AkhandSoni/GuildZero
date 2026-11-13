@@ -17,7 +17,7 @@ export function ResultPreview({ content, format }: { content: string; format: "j
     <div className="max-w-full overflow-x-auto" role="region" aria-label="Summary result" tabIndex={0}>
       <table className="w-full text-left text-xs"><caption className="text-left pb-3 font-medium">Summary of {summary.rowCount} data rows</caption><thead><tr>{["Column","Count","Missing","Minimum","Maximum","Sum","Mean"].map((h) => <th key={h} scope="col" className="p-2">{h}</th>)}</tr></thead><tbody>{summary.columns.map((c) => <tr key={c.name}><th scope="row" className="p-2 font-normal break-all">{c.name}</th>{[c.count,c.missing,c.min,c.max,c.sum,c.mean].map((n,i) => <td key={i} className="p-2 tabular-nums">{n === null ? "—" : String(n)}</td>)}</tr>)}</tbody></table>
     </div>
-    <p className="muted mt-3 text-xs">Computed values from this stored attempt. Review the verification below before approving work. A dash means no numerical value is available. Sum is the sum of the selected column, including a price column; it is not derived sales revenue. Currency and financial precision are not inferred.</p>
+    <p className="muted mt-3 text-xs">Computed values from this stored attempt. The matching approved result was released after confirmed settlement. A dash means no numerical value is available. Sum is the sum of the selected column, including a price column; it is not derived sales revenue. Currency and financial precision are not inferred.</p>
     {csv !== null && <Button asChild variant="outline" className="mt-3"><a download="guildzero-summary.csv" href={`data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`}>Download summary CSV</a></Button>}
   </div>;
 }

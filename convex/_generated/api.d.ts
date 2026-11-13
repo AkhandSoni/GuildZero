@@ -10,6 +10,7 @@
 
 import type * as agentPolicies from "../agentPolicies.js";
 import type * as auth from "../auth.js";
+import type * as deliveryAccess from "../deliveryAccess.js";
 import type * as demo from "../demo.js";
 import type * as economyWorker from "../economyWorker.js";
 import type * as http from "../http.js";
@@ -29,6 +30,7 @@ import type * as paymentWorker from "../paymentWorker.js";
 import type * as payments from "../payments.js";
 import type * as publicMarket from "../publicMarket.js";
 import type * as security from "../security.js";
+import type * as settlementReadiness from "../settlementReadiness.js";
 import type * as workflow from "../workflow.js";
 import type * as workflowHelpers from "../workflowHelpers.js";
 
@@ -41,6 +43,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   agentPolicies: typeof agentPolicies;
   auth: typeof auth;
+  deliveryAccess: typeof deliveryAccess;
   demo: typeof demo;
   economyWorker: typeof economyWorker;
   http: typeof http;
@@ -60,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   publicMarket: typeof publicMarket;
   security: typeof security;
+  settlementReadiness: typeof settlementReadiness;
   workflow: typeof workflow;
   workflowHelpers: typeof workflowHelpers;
 }>;

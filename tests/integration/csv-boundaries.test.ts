@@ -18,7 +18,7 @@ it("accepts a quoted empty one-column record through create, edit, launch and ex
   const { owner, input } = await setup();
   const id = await owner.mutation(api.missions.create, { ...input, inputCsv: 'a\n""' });
   await owner.mutation(api.missions.update, { id, ...input, inputCsv: 'a\n""\n' });
-  const jobId = await owner.mutation(api.jobs.start, { missionId: id });
+  const jobId = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId: id });
   const { job } = await owner.query(api.jobs.detail, { id: jobId });
   expect(runService({ serviceType: "csv_summary", inputCsv: job.inputCsv, options: { columns: job.options.columns } }))
     .toMatchObject({ ok: true, value: { rowCount: 1, columns: [{ count: 0, missing: 1 }] } });
@@ -41,11 +41,11 @@ it.each([
   const legacyId = await t.run((ctx) => ctx.db.insert("missions", {
     ...bad, ownerId, state: "draft", createdAt: Date.now(), updatedAt: Date.now(),
   }));
-  await expect(owner.mutation(api.jobs.start, { missionId: legacyId })).rejects.toThrow("INVALID_OR_EXPIRED_MISSION");
+  await expect(owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId: legacyId })).rejects.toThrow("INVALID_OR_EXPIRED_MISSION");
   expect(await owner.query(api.jobs.forMission, { missionId: legacyId })).toEqual([]);
   expect(runService({ serviceType: "csv_summary", inputCsv, options: { columns: ["a"] } })).toMatchObject({ ok: false, code: "INVALID_CSV" });
   // Simulate retained pre-validation parent data, not an executed auction.
-  const jobId = await owner.mutation(api.jobs.start, { missionId: id });
+  const jobId = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId: id });
   const bidId = await t.mutation(internal.workflow.recordBid, {
     jobId, agentId: "stats-core", priceYocto: "1000000000000000000000000",
     minimumYocto: "500000000000000000000000", etaMs: 1000, rationale: "Trusted boundary fixture",
@@ -65,7 +65,7 @@ it("accepts exactly 500 records including the final empty record", async () => {
   const inputCsv = `a,b\r\n${[...Array(499).fill("1,2"), ","].join("\r\n")}\r\n`;
   const id = await owner.mutation(api.missions.create, { ...input, inputCsv });
   await owner.mutation(api.missions.update, { id, ...input, inputCsv });
-  const jobId = await owner.mutation(api.jobs.start, { missionId: id });
+  const jobId = await owner.mutation(api.jobs.start, { allowUnfundedPreview: true,  missionId: id });
   const { job } = await owner.query(api.jobs.detail, { id: jobId });
   expect(runService({ serviceType: "csv_summary", inputCsv: job.inputCsv, options: { columns: ["a"] } }))
     .toMatchObject({ ok: true, value: { rowCount: 500, columns: [{ count: 499, missing: 1, sum: 499 }] } });
