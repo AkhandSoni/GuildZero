@@ -124,6 +124,13 @@ export function PaymentPanel({
               yet.
             </p>
           )}
+          {intent.status === "SUBMITTING" && !intent.txHash && (
+            <p className="muted">
+              Worker claimed this payment before recording a transaction hash.
+              Signer lock is retained; automatic retry is disabled pending
+              operator review.
+            </p>
+          )}
           {intent.txHash &&
             ["CONFIRMING", "UNKNOWN_RECONCILE"].includes(intent.status) && (
               <>
