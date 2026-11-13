@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-The single command deploys the configured Convex backend, starts its watcher, and starts Next.js. Open http://localhost:3000 after the services report readiness. Ctrl+C stops the processes it started. On a fresh clone, choose **Start without an account (run Convex locally)** in the first Convex prompt; the CLI creates ignored `.env.local` and downloads its local backend. Your existing configuration and data are reused. An already-running compatible local backend is reused; stop it separately when needed. Optional separate commands are `npm run dev:backend` and `npm run dev:frontend`.
+The single command deploys the configured Convex backend, starts its watcher, and starts Next.js. Open http://localhost:3000 after the services report readiness. Ctrl+C stops the processes it started. On a fresh clone, choose **Start without an account (run Convex locally)** in the first Convex prompt; the CLI creates ignored `.env.local` and downloads its local backend. Your existing configuration and data are reused. If a local backend is already running, stop it before using the combined command; startup refuses to silently reuse potentially stale functions. Alternatively, keep `npm run dev:backend` watching this checkout and run `npm run dev:frontend` separately.
 
 Sign up using email and a **10–100 character password**, with confirmation and visibility controls. Common passwords and surrounding whitespace are rejected. **Email verification and password recovery are not enabled**; use disposable demo accounts and retain your password. No email service is required.
 

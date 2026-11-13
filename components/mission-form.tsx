@@ -109,6 +109,7 @@ export function MissionForm({
         }
       }}
     >
+      <fieldset disabled={busy || readingFile} className="grid min-w-0 gap-5" aria-busy={busy || readingFile}>
       <p role="status" className="muted text-sm">{dirty ? "Unsaved changes. Save this private brief to keep your edits." : "No unsaved changes."} Nothing is autosaved in this browser.</p>
       <section className="form-section"><div className="form-section-heading"><span>01</span><div><h2>Define the mission</h2><p>Choose the work, its budget cap and deadline.</p></div></div>
       <label className="field">
@@ -279,6 +280,7 @@ export function MissionForm({
       <div className="form-submit"><p>Saving creates a private brief. It does not open an auction or send funds.</p><Button type="submit" className="w-fit" disabled={busy || readingFile}>
         {busy ? "Saving…" : initial ? "Save changes" : "Create private mission"}
       </Button>{onCancel && <Button type="button" variant="outline" disabled={busy || readingFile} onClick={async () => { if (await guard.discard()) onCancel(); }}>Cancel editing</Button>}</div>
+      </fieldset>
     </form>
   );
 }

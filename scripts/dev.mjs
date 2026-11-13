@@ -38,19 +38,17 @@ try {
   else {
     if (existsSync(path.join(root, ".env.local"))) process.loadEnvFile(path.join(root, ".env.local"));
     const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-    let reuse = false;
+    let running = false;
     if (url && /^(?:http:\/\/(?:127\.0\.0\.1|localhost):\d+)/.test(url)) {
       try {
-        const response = await fetch(`${url}/api/mutation`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: "auth:refreshSession", args: { refreshToken: "guildzero-startup-check" }, format: "json" }), signal: AbortSignal.timeout(1500) });
-        const result = await response.json();
-        reuse = result.status === "success" && result.value?.kind === "noSession";
+        await fetch(new URL("/instance_name", url), { signal: AbortSignal.timeout(1500) });
+        running = true;
       } catch { /* Not running: bootstrap the actual configured deployment. */ }
     }
-    if (!reuse) {
-      await complete(launch(convex, ["dev", "--once"], false));
-      if (stopping) throw new Error("Startup cancelled.");
-      launch(convex, ["dev"]);
-    } else console.log("Using the existing local Convex backend.");
+    if (running) throw new Error("A local backend is already running. Stop that process and rerun npm run dev to deploy and watch both services. If npm run dev:backend is already watching this checkout, use npm run dev:frontend instead. Startup will not silently reuse potentially stale backend functions.");
+    await complete(launch(convex, ["dev", "--once"], false));
+    if (stopping) throw new Error("Startup cancelled.");
+    launch(convex, ["dev"]);
     launch(next, ["dev", ...extra]);
     console.log("Starting Next.js and Convex together. Ctrl+C stops processes started by this command.");
   }

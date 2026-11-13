@@ -1,6 +1,16 @@
 # Cluster execution status
 
-Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the full public/account/workspace interface has been redesigned and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
+Current work: **Integrated local prototype validated. The owner authorized a full tester audit followed by resuming bounded business-data expansion. Audit repairs are recorded below; expansion is authorized but is not yet delivered. Public hosting, recording and submission remain pending.**
+
+## Full-system tester audit (#45) — 2026-11-13
+
+Audited main 47698a0 in an isolated checkout with fresh local Convex/Auth2 state. Reproduced stale-backend reuse: combined startup opened Next without deploying or watching current functions. Startup now refuses a running local listener and explains combined versus separate watcher commands. Fresh npm run dev deployed/watched both services; a live CRUD/privacy browser smoke passed on that combined startup. No credentials or user environment files changed.
+
+A real-auth regression delayed the actual mission-create WebSocket frame and reproduced editable fields during persistence. All editor controls now freeze during save/import, preventing later edits from being lost on navigation. The test failed before this fix and passes afterward.
+
+Validation: **310 unit/backend tests**, lint, typecheck, production build, **28-asset client-boundary scan**, npm audit (**zero vulnerabilities**) and all **18 production browser scenarios** pass. Coverage includes auth/errors/session renewal, private CRUD/cross-owner denial, CSV import/options/preflight, scheduled auctions/cleaning, disputes, security probes, retention, unpaid-result withholding, mobile navigation and unsaved changes. A separate real crash check killed the isolated local backend while a synthetic auction was queued, restarted against its persisted SQLite state, and observed scheduled approval and locked unpaid output after reconnect/reload. This establishes that limited economy restart path, **not live settlement crash recovery**; #9/#10 remain open. No user payment, intent reset, public deployment or submission occurred.
+
+The ordinary official documentation faucet request separately received **5 free testnet NEAR**. Read-only RPC verified final successful transfer EoTqjeyxwDVmpXSNfUqenzwJNVPQz9SpmDRPhuijad3r into guildzero-mwe004n2.testnet; final balance at block 277542718 was 13.5376505282625 testnet NEAR. This is faucet funding, not a mission receipt, and does not increase spending allowances. No application wallet mapping or signing key changed.
 
 ## Settlement test audit repair and recent-merge review — 2026-11-13
 
