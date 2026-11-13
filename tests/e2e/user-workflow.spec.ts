@@ -38,7 +38,7 @@ test("upload, inspect, process, export, reuse and find a private mission", async
   await expect(page.getByTestId("saved-options")).toHaveText("units, price");
   await expect(page.getByText("Review before starting:",{exact:false})).toBeVisible();
   await page.getByRole("button",{name:"Open auction",exact:true}).click();
-  await expect(page.getByText("Persisted job · approved",{exact:true})).toBeVisible({timeout:30000});
+  await expect(page.getByText("Main analysis · Work accepted",{exact:true})).toBeVisible({timeout:30000});
   const summary=page.getByRole("region",{name:"Summary result",exact:true});
   await expect(summary.getByRole("row",{name:"units 2 1 3 5 8 4",exact:true})).toBeVisible();
   const download=page.waitForEvent("download");
@@ -71,9 +71,9 @@ test("upload, inspect, process, export, reuse and find a private mission", async
   await page.getByRole("checkbox",{name:"Require human review of acceptance notes",exact:false}).check();
   await page.getByRole("button",{name:"Save changes",exact:true}).click();
   await page.getByRole("button",{name:"Open auction",exact:true}).click();
-  await expect(page.getByText("Persisted job · disputed",{exact:true})).toBeVisible({timeout:30000});
-  await page.getByRole("link",{name:"Missions",exact:true}).click();
-  await expect(page.getByRole("link").filter({hasText:"Review completed work"})).toContainText("Copy of " + title);
+  await expect(page.getByText("Main analysis · Needs your review",{exact:true})).toBeVisible({timeout:30000});
+  await page.getByRole("link",{name:"Dashboard",exact:true}).click();
+  await expect(page.getByRole("link").filter({hasText:"Review work"})).toContainText("Copy of " + title);
 });
 
 test("import errors preserve valid data and selections, and clearing allows reimport", async ({ page }) => {

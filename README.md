@@ -2,7 +2,7 @@
 
 GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
-**Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The dashboard uses the requested light card layout. Next.js and Convex are the only application runtimes.
+**Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The application has labeled navigation, outcome metrics, scoped workflow stories and a read-only operator wallet. Next.js and Convex are the only application runtimes.
 
 Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. No LLM, model training, mainnet payments or fabricated activity is involved. Broader service expansion is paused. Public hosting, final demo recording and hackathon submission remain pending.
 
@@ -98,6 +98,12 @@ The mission form imports one UTF-8 CSV within the existing 64 KiB/500-row/32-col
 Use **Search saved missions**, service filters and draft/started filters to retrieve your work beyond the currently loaded page. **Use as new mission** copies an owned brief into a new private draft with a refreshed deadline; it carries no jobs, contracts, payment authorizations or receipts. The dashboard surfaces work waiting for a human decision separately from prepared payment approvals.
 
 Research, priorities, acceptance criteria and GitHub issues are recorded in [user requirements](docs/USER_REQUIREMENTS.md). The owner selected business users processing sales or operations CSVs; detailed needs are desk-research hypotheses, not claims of completed user interviews. Unsaved-navigation protection, account recovery and representative-user validation remain tracked follow-ups.
+
+## Application workspace
+
+The dashboard summarizes recent main-job outcomes and links to actual human reviews and prepared payments. `/missions` provides private search and filters; `/agents` lists the built-in roles; `/payments` filters the latest 50 owner-private payment intents and links to their mission receipts. `/economy` combines the recorded graph with per-mission workflow stories; original event codes remain available in the technical audit trail. Main work, cleaning outcomes and payment confirmation are shown separately. Counts and history windows are explicitly bounded, not all-time totals.
+
+The operator wallet shows the configured public testnet account and finalized RPC evidence. Refresh is authenticated, read-only and limited to once per 30 seconds across the shared operator. Available balance excludes storage collateral and a 0.01 NEAR reserve, but does not subtract pending contract obligations. It is shared custodial demo funds, not a personal balance or mission deposit. Network errors retain the last successful reading and timestamp. New payment preparation failures retain safe stage explanations; older generic failures cannot recover details never recorded. No automatic retry is introduced.
 
 ## Architecture and boundaries
 

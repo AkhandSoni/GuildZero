@@ -206,7 +206,7 @@ export function MissionForm({
           {serviceType === "csv_summary" && dataset.ok && dataset.value.numericColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([...dataset.value.numericColumns])}>Select numeric columns</Button>}
           {selectedColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([])}>Clear column selection</Button>}
         </div>
-        {serviceType === "csv_summary" && dataset.ok && dataset.value.columns.some((c) => selectedColumns.includes(c.name) && c.invalid > 0) && <p role="status" className="text-sm text-amber-900">A selected column contains non-numeric or unsupported values. Check the column quality table before opening an auction.</p>}
+        {serviceType === "csv_summary" && dataset.ok && dataset.value.columns.some((c) => selectedColumns.includes(c.name) && c.invalid > 0) && <p role="status" className="text-sm text-amber-900">Non-numeric values in: {dataset.value.columns.filter(c => selectedColumns.includes(c.name) && c.invalid > 0).map(c => `${c.name} (CSV record ${c.invalidRows.join(", ")})`).join("; ")}. Use Select numeric columns to correct the selection. Cleaning trims text; it does not turn product or region names into numbers.</p>}
         {headers.length > 0 && headers.length <= 32 ? headers.map((header, i) => (
           <label key={`${i}:${header}`} className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="column" value={header}

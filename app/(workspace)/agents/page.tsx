@@ -1,0 +1,4 @@
+import Link from "next/link";
+import { ArrowUpRight, FileSpreadsheet } from "lucide-react";
+import { PUBLIC_AGENTS } from "@/lib/agent-directory";
+export default function AgentsPage(){return <><p className="eyebrow">Built-in service providers</p><h1>Agent directory</h1><p className="muted mt-3 text-sm">Five independent service sellers and two support roles. Strategies are fixed; reputation changes with verified work.</p><section className="workspace-agent-grid mt-7">{PUBLIC_AGENTS.map(agent=><Link key={agent.id} href={`/agents/${agent.id}`}><span className="agent-avatar"><FileSpreadsheet size={18}/></span><div><h3>{agent.name}</h3><p>{agent.role} · {agent.strategy??"support"}</p><p>{agent.capabilities.length?agent.capabilities.join(", "):"Marketplace support"}</p></div><ArrowUpRight size={15}/></Link>)}</section></>;}

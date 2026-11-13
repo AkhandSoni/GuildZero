@@ -4,6 +4,7 @@ import { ReactFlow, Background, Controls } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
+import { ActivityStory } from "@/components/activity-story";
 import { graphData } from "@/lib/economy-view";
 export default function Economy() {
   const data = useQuery(api.marketViews.overview, {});
@@ -30,14 +31,7 @@ export default function Economy() {
         Market offers are off-chain economic proposals; confirmed testnet
         payments are labeled separately.
       </p>
-      {!nodes.length ? (
-        <div className="panel mt-8">
-          <h2>No jobs recorded yet.</h2>
-          <p className="muted mt-2">
-            Create a mission and open its auction to see its real job node.
-          </p>
-        </div>
-      ) : (
+      {nodes.length > 0 && (
         <div
           className="mt-8 h-[480px] overflow-hidden rounded-lg border border-[#d5dccf]"
           aria-label="Recorded economy network"
@@ -64,26 +58,7 @@ export default function Economy() {
           edges. Older records are omitted.
         </p>
       )}
-      <section className="panel mt-6">
-        <h2>Persisted activity</h2>
-        <ol className="mt-4 grid gap-4">
-          {data.events.map((e) => (
-            <li className="border-l border-[#d5dccf] pl-4" key={e._id}>
-              <Link
-                className="text-sm text-emerald-800"
-                href={`/missions/${e.missionId}`}
-              >
-                {e.type}
-              </Link>
-              <p className="muted text-sm">{e.detail}</p>
-              <time className="muted text-xs">
-                {new Date(e.createdAt).toLocaleString()}
-              </time>
-            </li>
-          ))}
-          {!data.events.length && <li className="muted">No events yet.</li>}
-        </ol>
-      </section>
+      <div className="mt-7"><ActivityStory jobs={data.jobs} events={data.events} payments={data.payments} paymentsIncomplete={data.truncated.payments}/></div>
       <section className="panel mt-6">
         <h2>Testnet payment intents</h2>
         {!data.payments.length && (

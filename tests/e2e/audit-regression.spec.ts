@@ -23,7 +23,7 @@ test("cancellation-safe output is downloaded and underflow enters review without
   }
 
   await launch("Cancellation regression", "units\n1000000000000\n0.00001\n-1000000000000");
-  await expect(page.getByText("Persisted job · approved", { exact: true })).toBeVisible({ timeout: 25000 });
+  await expect(page.getByText("Main analysis · Work accepted", { exact: true })).toBeVisible({ timeout: 25000 });
   await page.reload();
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download JSON", exact: true }).click();
@@ -35,15 +35,15 @@ test("cancellation-safe output is downloaded and underflow enters review without
   expect(result.columns[0].mean).toBeCloseTo(0.00001 / 3, 12);
 
   await launch("Underflow regression", "units\n1e-324");
-  await expect(page.getByText("Persisted job · disputed", { exact: true })).toBeVisible({ timeout: 25000 });
+  await expect(page.getByText("Main analysis · Needs your review", { exact: true })).toBeVisible({ timeout: 25000 });
   await expect(page.getByText(/Service could not execute: INVALID_NUMBER/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Download JSON", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toBeDisabled();
 
   await launch("Unexecutable dependency regression", "product,units\n=unsafe,3", true);
-  await expect(page.getByText("Persisted job · disputed", { exact: true }).first()).toBeVisible({ timeout: 25000 });
+  await expect(page.getByText("Main analysis · Needs your review", { exact: true }).first()).toBeVisible({ timeout: 25000 });
   await expect(page.getByText("Required subcontract needs review and has no approvable output", { exact: true })).toBeVisible();
   await page.getByText("Cleaning subcontract · disputed", { exact: true }).click();
-  await expect(page.getByText("Persisted job · disputed", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("Cleaning subcontract · Needs your review", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Download JSON", exact: true })).toHaveCount(0);
 });

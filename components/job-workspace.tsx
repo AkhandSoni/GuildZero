@@ -9,6 +9,8 @@ import { formatNear } from "@/lib/money";
 import { ResultPreview } from "@/components/result-preview";
 import { inspectDataset } from "@/lib/dataset-preview";
 import { PaymentPanel } from "@/components/payment-panel";
+import { WorkflowProgress } from "@/components/workflow-progress";
+import { eventLabel, statusLabels, workLabel } from "@/lib/workflow-view";
 import Papa from "papaparse";
 import { isUnsafeFormulaValue } from "@/lib/economy/csv-input";
 function safeCsv(content: string) {
@@ -78,12 +80,15 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
 }
 function JobDetail({ id }: { id: Id<"jobs"> }) {
   const data = useQuery(api.jobs.detail, { id });
+  const payment = useQuery(api.payments.forJob, { jobId: id });
   const cancel = useMutation(api.jobs.cancel);
   const resolve = useMutation(api.jobs.resolveDispute);
   const resume = useMutation(api.jobs.resume);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   if (!data) return <p role="status">Loading activity…</p>;
+  const input = inspectDataset(data.job.inputCsv);
+  const badColumns = data.job.serviceType === "csv_summary" && input.ok ? input.value.columns.filter(column => data.job.options?.columns.includes(column.name) && column.invalid > 0) : [];
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);
     setError("");
@@ -104,8 +109,10 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
   return (
     <section className="mt-8 grid gap-5">
       <div className="panel">
-        <p className="eyebrow">Persisted job · {data.job.state}</p>
-        <h2>Marketplace activity</h2>
+        <p className="eyebrow">{workLabel(data.job)} · {statusLabels[data.job.state] ?? data.job.state}</p>
+        <h2>Mission progress</h2>
+        <WorkflowProgress state={data.job.state} eventTypes={data.events.map(event => event.type)} paymentStatus={payment === undefined ? "LOADING" : payment?.status ?? "NONE"}/>
+        {badColumns.length > 0 && <div className="input-problem"><h3>Summary columns need correction</h3><p>These selected columns contain text or unsupported numbers: {badColumns.map(column => `${column.name} (CSV record ${column.invalidRows.join(", ")})`).join("; ")}. Cleaning trims text; it does not convert product or region names into numbers.</p><p>Reuse this brief as a new mission and choose numeric columns. The recorded job and its input stay unchanged.</p></div>}
         <p className="mt-3 text-sm" role="status">Next step: {data.job.state === "approved" ? "Review your verified result below. Payment is separate and still requires your confirmation." : data.job.state === "disputed" ? "Review the verification and record your decision below. No payment can proceed until work is approved." : data.job.state === "unawarded" || data.job.state === "rejected" || data.job.state === "cancelled" ? "Reuse this brief as a new draft, adjust it, then open a new auction." : "The backend is progressing this job. You can leave this page and return; the backend must remain running."}</p>
         <p className="muted mt-3 text-sm">
           Reserved within mission: {formatNear(data.job.reservedYocto)} testnet
@@ -135,19 +142,8 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         {data.job.workerError && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm">The workflow paused safely. Review configuration, then retry the existing stage.</p><Button className="mt-3" variant="outline" disabled={busy || (data.job.retryCount ?? 0) >= 3} onClick={() => act(() => resume({ id }))}>Retry workflow stage</Button></div>}
         {data.job.state === "unawarded" && <p className="muted mt-4 text-sm">No offer could be awarded within the budget, deadline and negotiation limits. Create a revised mission to try again. No payment was submitted.</p>}
         {data.contracts.map((c) => <div key={c._id} className="mt-5 border-t border-[#d5dccf] pt-4"><h3 className="text-sm font-medium">Contract · {c.agentId}</h3><p className="muted text-xs mt-2">Award: {formatNear(c.amountYocto)} · Parent payable allocation: {formatNear(c.holdbackYocto)} testnet NEAR</p>{c.score && <p className="muted text-xs mt-2">Utility {c.score.total}/10000 · Price {c.score.price} · Time {c.score.time} · Reputation {c.score.reputation} · Capability {c.score.capability}</p>}</div>)}
-        {data.contracts.map((c) => (
-          <div className="mt-3 text-sm" key={c._id}>
-            <p>
-              Award: {c.agentId} · {formatNear(c.amountYocto)} testnet NEAR
-            </p>
-            <p className="muted">{c.selectionReason}</p>
-          </div>
-        ))}
         {data.children.map((c) => (
-          <p className="muted mt-3 text-sm" key={c._id}>
-            Normalization subcontract: {c.state}. Allocation is contained within
-            the parent award.
-          </p>
+          <div className="subcontract-outcome mt-4" key={c._id}><div><h3>Cleaning subcontract</h3><p>{statusLabels[c.state] ?? c.state}. Its allocation is included in the parent award.</p>{c.state === "approved" && data.job.state !== "approved" && <p>Cleaning finished; the main analysis has a separate outcome.</p>}</div></div>
         ))}
         {error && (
           <p role="alert" className="mt-3 text-red-800">
@@ -173,6 +169,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         >
           <h2>Buyer dispute decision</h2>
           {data.disputes.map((dispute) => <p className="muted text-sm" key={dispute._id}>{dispute.reason}</p>)}
+          {!data.deliverables.length && <p className="text-sm">There is no output to approve. Reject this attempt, record why, then reuse the brief with corrected input.</p>}
           <label className="field">
             Reason
             <textarea
@@ -180,13 +177,16 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
               className="control"
               required
               maxLength={1000}
+              placeholder="Explain your decision, for example: product and region are text; retry with units and price."
+              aria-describedby={`decision-help-${id}`}
             />
           </label>
+          <p id={`decision-help-${id}`} className="muted text-xs">A reason is required for the audit history. This records a decision on the current work; it does not send payment or rerun the job.</p>
           <label className="field">
             Decision
             <select name="decision" aria-label="Decision" className="control">
               <option value="reject">Reject work</option>
-              <option value="approve">Approve after human review</option>
+              <option value="approve" disabled={!data.deliverables.length}>Approve after human review</option>
             </select>
           </label>
           <Button disabled={busy} type="submit" className="w-fit">
@@ -253,14 +253,14 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
       <PaymentPanel jobId={id} approved={data.job.state === "approved"} />
       {data.children.map((child) => <details className="panel" key={child._id}><summary className="cursor-pointer text-sm font-medium">Cleaning subcontract · {child.state}</summary><JobDetail id={child._id} /></details>)}
       <div className="panel">
-        <h2>Recorded activity</h2>
+        <h2>{workLabel(data.job)} activity</h2>
         <ol className="mt-4 grid gap-3">
-          {data.events.map((e) => (
+          {data.events.slice(0, 6).map((e) => (
             <li
               key={e._id}
               className="border-l border-[#d5dccf] pl-4 text-sm"
             >
-              <p>{e.type}</p>
+              <p>{eventLabel(e.type)}</p>
               <p className="muted">{e.detail}</p>
               <time className="muted text-xs">
                 {new Date(e.createdAt).toLocaleString()}
@@ -268,6 +268,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
             </li>
           ))}
         </ol>
+        <details className="audit-details"><summary>Technical audit trail · {data.events.length} events</summary><ol className="grid gap-3 mt-3">{data.events.map(event => <li key={event._id} className="audit-event"><p>{event.type}</p><p>{event.detail}</p><time>{new Date(event.createdAt).toLocaleString()}</time></li>)}</ol></details>
       </div>
     </section>
   );

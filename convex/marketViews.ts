@@ -64,7 +64,11 @@ export const overview = query({
       bids: bids.map(publicBid),
       contracts: contracts.map(publicContract),
       events: eventRows.slice(0, 100).map(publicEvent),
-      payments: paymentRows.slice(0, 50),
+      payments: await Promise.all(paymentRows.slice(0, 50).map(async payment => {
+        const job = await ctx.db.get(payment.jobId);
+        const mission = job && job.ownerId === ownerId ? await ctx.db.get(job.missionId) : null;
+        return { ...payment, missionId: mission?.ownerId === ownerId ? mission._id : null, missionTitle: mission?.ownerId === ownerId ? mission.title : null };
+      })),
       truncated: {
         jobs: rows.length > 50,
         events: eventRows.length > 100,

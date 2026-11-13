@@ -5,6 +5,7 @@ import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { isPreBroadcastFailure, paymentFailureMessage } from "@/lib/settlement/failures";
 import { formatNear } from "@/lib/money";
 export function PaymentPanel({
   jobId,
@@ -72,7 +73,8 @@ export function PaymentPanel({
           </p>
           <p className="break-all">Recipient: {intent.recipient}</p>
           <p>Amount: {formatNear(intent.amountYocto)} testnet NEAR</p>
-          {intent.lastReason && <p className="muted">{intent.lastReason}</p>}
+          {paymentFailureMessage(intent.lastReason) && <p className="muted">{paymentFailureMessage(intent.lastReason)}</p>}
+          {intent.lastReason && <details className="text-xs muted"><summary>Technical payment details</summary><code className="break-all">{intent.lastReason}</code></details>}
           {intent.txHash && (
             <a
               className="break-all text-emerald-800 underline"
@@ -135,8 +137,7 @@ export function PaymentPanel({
             )}
           {intent.status === "FAILED" && (
             <p className="muted">
-              No automatic retry is allowed. Gas may have been charged if a
-              transaction was submitted.
+              {isPreBroadcastFailure(intent.lastReason) ? "Nothing was broadcast for this attempt, so it used no transaction gas. No automatic retry will occur." : "No automatic retry is allowed. Gas may have been charged if a transaction was submitted."}
             </p>
           )}
         </div>

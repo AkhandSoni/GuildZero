@@ -25,9 +25,9 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await page.reload();
   await page.getByRole("button", { name: "Open auction", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Persisted job · bidding", { exact: true })).toBeVisible();
+  await expect(page.getByText("Main analysis · Receiving offers", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit mission", exact: true })).toHaveCount(0);
-  await expect(page.getByText("Persisted job · approved", { exact: true }).first()).toBeVisible({ timeout: 25000 });
+  await expect(page.getByText("Main analysis · Work accepted", { exact: true }).first()).toBeVisible({ timeout: 25000 });
   await expect(page.getByRole("heading", { name: "Verification: pass", exact: true }).first()).toBeVisible();
   await expect(page.getByText(/Utility \d+\/10000/).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Negotiation transcript" }).first()).toBeVisible();
@@ -41,7 +41,7 @@ test("real automatic bidding, negotiation, subcontracted processing and verified
   await page.getByText("Cleaning subcontract · approved", { exact: true }).click();
   await expect(page.getByRole("link", { name: "Download CSV", exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Persisted job · approved", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Main analysis · Work accepted", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Work is approved; payment still requires your exact authorization.", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Status: CONFIRMED", { exact: false })).toHaveCount(0);
   const html = await (await page.request.get(page.url())).text();

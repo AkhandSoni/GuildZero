@@ -55,3 +55,16 @@ U8 records accidental loss of unsaved edits; no browser or in-app dirty-form war
 - U6: components/result-preview.tsx presents stored outputs; tests compare downloaded CSV against the actual numerical summary and reject unsafe export labels.
 
 The browser regression also verifies that mission title, precise budget, dataset and selection survive import. Search/form field labels are distinct, and navigation tests wait for the intended route to avoid filling a previous page's field.
+
+## Workspace and settlement usability follow-up
+
+The owner supplied observed failures: choosing text columns for statistics, confusing accepted cleaning with failed parent work, a flat activity ledger, unclear navigation, and an invisible operator balance. This follow-up covers the current data-processing marketplace; the paused service-category expansion stays paused.
+
+Additional desk research: [n8n's execution list](https://docs.n8n.io/workflows/executions/all-executions/) supports status filters, scoped history and inspecting failures; [Upwork's job proposals](https://support.upwork.com/hc/en-us/articles/211063268-Where-can-I-see-the-proposals-submitted-for-my-job) keeps offers and negotiation in a job context. Engineering inference: users need a persistent labeled application shell, separate mission and payment retrieval, stage-based progress, recovery instructions and evidence available on demand. These are design inputs, not claims that all competitor capabilities are present or that interviews occurred.
+
+- #26: Name invalid numeric columns/CSV records, explain what cleaning does, retain original job input, and disable approval where no deliverable exists. Human rejection still requires an audit reason.
+- #27: Show main-job progress and subcontract outcome separately; work acceptance is distinct from transaction confirmation. Keep original scoped event codes in an expandable audit view. Missing data in bounded views is not proof of no payment.
+- #28: Provide labeled Dashboard, Missions, Economy, Payments, Agent directory and Security routes; useful main-job metrics, actual review/payment queues, working filters, outputs and links. No decorative buttons or invented live activity.
+- #29: Show the shared testnet operator account, final block/time evidence, total and an exact available estimate excluding storage collateral and 0.01 NEAR gas reserve. Explain pending contracts are not deducted and mission budgets are not deposits. Authenticated, throttled refresh uses fixed testnet RPC only and never signs. Preserve successful stale readings on network errors; whitelist future pre-broadcast diagnostics, with no historical root-cause guesses or payment retries.
+
+Account recovery, representative-user research and public release remain separate tracked gates. No data retention policy or recovery channel is invented to make the dashboard appear complete.

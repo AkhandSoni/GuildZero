@@ -6,8 +6,9 @@ import { ArrowUpRight, FileSpreadsheet } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { statusLabels, type WorkJob } from "@/lib/workflow-view";
 import { formatNear } from "@/lib/money";
-export function MissionBrowser() {
+export function MissionBrowser({ jobs = [] }: { jobs?: WorkJob[] }) {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [state, setState] = useState<"" | "draft" | "active">("");
@@ -34,7 +35,7 @@ export function MissionBrowser() {
       {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
       <p className="muted text-xs">Search your saved titles by keyword. Searches cover your missions beyond the current page; newest first without a search, best title matches first with one.</p>
     </form>
-    {status === "LoadingFirstPage" ? <p role="status" className="muted mt-6">Loading missions…</p> : !results.length ? filtered ? <div className="py-8"><h3>No missions match these filters.</h3><Button className="mt-3" variant="outline" onClick={clear}>Show all missions</Button></div> : <div className="py-8"><h2 className="!text-base">Your first mission starts here.</h2><p className="muted mt-2 text-sm">Upload or paste a CSV dataset and choose a processing template.</p><Button asChild variant="outline" className="mt-4"><Link href="/missions/new">Create a mission</Link></Button></div> : <ul className="mission-list">{results.map((mission) => <li className="mission-item" key={mission._id}><Link href={`/missions/${mission._id}`}><FileSpreadsheet size={16} /><div className="mission-copy"><h2>{mission.title}</h2><p>{mission.serviceType === "csv_normalize" ? "Column normalization" : "Summary statistics"} · {formatNear(mission.maxBudgetYocto)} testnet NEAR</p><p>Due {new Date(mission.deadlineAt).toLocaleString()}</p></div><span className={`state-pill ${mission.state}`}>{mission.state === "active" ? "Locked" : "Draft"}</span><ArrowUpRight size={13} /></Link></li>)}</ul>}
+    {status === "LoadingFirstPage" ? <p role="status" className="muted mt-6">Loading missions…</p> : !results.length ? filtered ? <div className="py-8"><h3>No missions match these filters.</h3><Button className="mt-3" variant="outline" onClick={clear}>Show all missions</Button></div> : <div className="py-8"><h2 className="!text-base">Your first mission starts here.</h2><p className="muted mt-2 text-sm">Upload or paste a CSV dataset and choose a processing template.</p><Button asChild variant="outline" className="mt-4"><Link href="/missions/new">Create a mission</Link></Button></div> : <ul className="mission-list">{results.map((mission) => <li className="mission-item" key={mission._id}><Link href={`/missions/${mission._id}`}><FileSpreadsheet size={16} /><div className="mission-copy"><h2>{mission.title}</h2><p>{mission.serviceType === "csv_normalize" ? "Column normalization" : "Summary statistics"} · {formatNear(mission.maxBudgetYocto)} testnet NEAR</p><p>Due {new Date(mission.deadlineAt).toLocaleString()}</p></div><span className={`outcome-pill ${jobs.find((j) => j.missionId === mission._id && !j.parentId)?.state ?? mission.state}`}>{mission.state === "draft" ? "Draft" : statusLabels[jobs.find((j) => j.missionId === mission._id && !j.parentId)?.state ?? ""] ?? "Started brief"}</span><ArrowUpRight size={13} /></Link></li>)}</ul>}
     {status === "CanLoadMore" && <Button variant="outline" className="mt-5" onClick={() => loadMore(20)}>Load more</Button>}
     {status === "LoadingMore" && <p role="status">Loading…</p>}
   </section>;

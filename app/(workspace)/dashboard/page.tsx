@@ -1,56 +1,44 @@
 "use client";
 import Link from "next/link";
-import { useId } from "react";
-import { usePaginatedQuery, useQuery } from "convex/react";
-import { ArrowUpRight, Check, CircleDashed, FileSpreadsheet, Network, ShieldCheck, Sparkles } from "lucide-react";
+import { usePaginatedQuery,useQuery } from "convex/react";
+import { ArrowUpRight, CheckCircle2, CircleAlert, Clock3, FileSpreadsheet, Wallet } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { formatNear } from "@/lib/money";
 import { PUBLIC_AGENTS } from "@/lib/agent-directory";
+import { recentMetrics } from "@/lib/workflow-view";
+import { ActivityStory } from "@/components/activity-story";
 import { MissionBrowser } from "@/components/mission-browser";
+import { OperatorWalletPanel } from "@/components/operator-wallet-panel";
 import { DemoControls } from "@/components/demo-controls";
-
-function DotNumber({ value, label }: { value: number | undefined; label: string }) {
-  const id = useId().replaceAll(":", "");
-  return <svg className="metric-number" viewBox="0 0 240 95" role="img" aria-label={`${label}: ${value ?? "Loading"}`}>
-    <defs><pattern id={id} width="7" height="7" patternUnits="userSpaceOnUse"><rect width="4.5" height="4.5" fill="#fff" /></pattern></defs>
-    <text x="0" y="80" fontSize="95" fill={`url(#${id})`}>{value ?? "—"}</text>
-  </svg>;
-}
-export default function Dashboard() {
-  const { results, status } = usePaginatedQuery(api.missions.list, {}, { initialNumItems: 20 });
-  const overview = useQuery(api.marketViews.overview, {});
-  const loading = status === "LoadingFirstPage";
-  const drafts = results.filter((m) => m.state === "draft").length;
-  const active = results.filter((m) => m.state === "active").length;
-  const ready = overview?.payments.filter((p) => p.status === "READY" && !p.authorizedAt) ?? [];
-  const latest = overview?.events.slice(0, 3) ?? [];
-  const reviews = [...new Map((overview?.jobs.filter((job) => job.state === "disputed") ?? []).map((job) => [job.missionId, job])).values()];
+export default function Dashboard(){
+  const {results,status}=usePaginatedQuery(api.missions.list,{}, {initialNumItems:20});
+  const data=useQuery(api.marketViews.overview,{});
+  const metrics=data?recentMetrics(data.jobs,data.payments):null;
+  const ready=data?.payments.filter(p=>p.status==="READY"&&!p.authorizedAt)??[];
+  const reviews=[...new Map((data?.jobs.filter(j=>j.state==="disputed")??[]).map(j=>[j.missionId,j])).values()];
+  const retry=data?.jobs.find(j=>!j.parentId&&["rejected","unawarded"].includes(j.state));
   return <>
-    <div className="dashboard-heading">
-      <div><p className="eyebrow">Your private workspace</p><h1>A little order. More possibility.</h1><p className="muted mt-2 text-sm">Your missions, independent agents and every step in between.</p></div>
-      <Button asChild><Link href="/missions/new">+ New mission</Link></Button>
-    </div>
-    <div className="workspace-grid">
-      <section className="panel brief-card">
-        <div className="card-kicker"><div className="flex items-center gap-3"><span className="round-icon"><Sparkles size={17} /></span><div><p className="font-medium">Workspace brief</p><p className="muted text-[10px]">Built from your recorded activity</p></div></div><span className="state-pill">Overview</span></div>
-        <p className="brief-text">{loading ? "Getting your workspace ready…" : results.length ? <>{drafts} {drafts === 1 ? "mission is" : "missions are"} in draft. {active} {active === 1 ? "brief is" : "briefs are"} locked for work. <span className="text-[#6e7867]">Your next step is right here.</span></> : <>A clear brief is where good work begins. <span className="text-[#6e7867]">Give your data a mission.</span></>}</p>
-        <div className="brief-actions"><Link className="soft-link" href="/economy"><Network size={12} /> Recorded activity</Link><Link className="soft-link" href="/security"><ShieldCheck size={12} /> Security lab</Link><Link href="/missions/new" className="ml-auto inline-flex items-center gap-1 text-xs">Create a brief <ArrowUpRight size={13} /></Link></div>
+    <div className="dashboard-heading"><div><p className="eyebrow">Mission control</p><h1>Dashboard</h1><p className="muted mt-2 text-sm">Your datasets, agent work and results in one workspace.</p></div><Button asChild><Link href="/missions/new">+ New mission</Link></Button></div>
+    <section className="dashboard-metrics" aria-label="Recent workspace metrics">{[
+      {label:"In progress",value:metrics?.active,detail:"Main jobs still underway",Icon:Clock3,tone:"blue"},
+      {label:"Needs review",value:metrics?.review,detail:"Missions waiting for you",Icon:CircleAlert,tone:"amber"},
+      {label:"Work accepted",value:metrics?.approved,detail:"Results ready to inspect",Icon:CheckCircle2,tone:"green"},
+      {label:"Confirmed transfers",value:metrics?formatNear(metrics.confirmedYocto):undefined,detail:"Testnet NEAR · verified receipts",Icon:Wallet,tone:"purple"},
+    ].map(({label,value,detail,Icon,tone})=><article className={`dashboard-metric ${tone}`} key={label}><div><p>{label}</p><span className="metric-icon"><Icon size={18}/></span></div><strong>{value??"—"}</strong><span>{detail}</span></article>)}</section>
+    <p className="dashboard-data-note">Recent recorded activity: up to 50 jobs and 50 payment intents. Subcontracts are excluded from main-job counts. Work acceptance and payment are separate.</p>
+    <OperatorWalletPanel/>
+    <p className="text-sm -mt-2 mb-5"><Link href="/payments">View payment history and receipts ↗</Link></p>
+    <div className="dashboard-action-row">
+      <section className="panel attention-panel"><div className="section-heading"><h2>Needs your approval <span className="count-pill">{data?reviews.length+ready.length:"—"}</span></h2><Link href="/economy">View activity <ArrowUpRight size={13}/></Link></div>
+        {reviews.length+ready.length?<div className="attention-list">{reviews.slice(0,3).map(job=><Link key={job.missionId} href={`/missions/${job.missionId}`}><span className="attention-icon"><CircleAlert size={18}/></span><div><strong>Review work</strong><p>{job.title}</p></div><ArrowUpRight size={15}/></Link>)}{ready.slice(0,3).map(payment=><Link key={payment._id} href={payment.missionId?`/missions/${payment.missionId}`:"/payments"}><span className="attention-icon"><Wallet size={18}/></span><div><strong>Review exact payment</strong><p>{formatNear(payment.amountYocto)} testnet NEAR · {payment.recipient}</p></div><ArrowUpRight size={15}/></Link>)}</div>:<div className="attention-empty"><CheckCircle2 size={22}/><div><h3>{data?"No approvals waiting":"Checking your workspace…"}</h3><p>Work reviews and prepared payments appear here when they need your decision.</p></div></div>}
       </section>
-      <section className="panel approval-card">
-        <div className="card-title"><h2>Needs your approval <span className="count-pill">{overview ? ready.length + reviews.length : "—"}</span></h2><Link href="/economy">View all</Link></div>
-        {ready.length + reviews.length ? <div className="mt-5 grid gap-3">{reviews.slice(0,2).map((job) => <Link key={job.missionId} href={`/missions/${job.missionId}`} className="flex items-center gap-3 rounded-2xl bg-white/60 p-3"><span className="round-icon purple"><Check size={16} /></span><div className="min-w-0 flex-1"><p className="text-xs font-medium">Review completed work</p><p className="muted text-[10px] break-words">{job.title} · Your decision is needed</p></div><ArrowUpRight size={14} /></Link>)}{ready.slice(0,2).map((p) => <Link key={p._id} href={overview!.jobs.some((j) => j._id === p.jobId) ? `/missions/${overview!.jobs.find((j) => j._id === p.jobId)!.missionId}` : "/economy"} className="flex items-center gap-3 rounded-2xl bg-white/60 p-3"><span className="round-icon purple"><Check size={16} /></span><div className="min-w-0 flex-1"><p className="text-xs font-medium">Review exact payment</p><p className="muted text-[10px] break-all">{formatNear(p.amountYocto)} testnet NEAR · {p.recipient}</p></div><ArrowUpRight size={14} /></Link>)}</div> : <div className="quiet-empty"><span className="round-icon purple"><Check size={17} /></span><div><p>{overview ? "All clear for now." : "Checking approvals…"}</p><p className="muted text-[11px]">Work awaiting your decision and prepared payments appear here.</p></div></div>}
-        <p className="muted mt-4 text-[10px]">Every payment needs approved work and your confirmation.</p>
-      </section>
-      <div className="metrics-grid">
-        <section className="metric-card metric-green"><div className="flex justify-between items-center"><h2 className="metric-label">Locked mission briefs</h2><ArrowUpRight size={14} /></div><DotNumber value={loading ? undefined : active} label="Locked mission briefs" /><div className="metric-caption"><span className="rounded-full bg-white/60 px-2 py-1 w-fit">{loading ? "Loading" : active ? "Published briefs" : "Ready when you are"}</span><span>In 20 most recent missions</span></div><div className="metric-bars" aria-hidden="true" /></section>
-        <section className="metric-card metric-orange"><div className="flex justify-between items-center"><h2 className="metric-label">Drafts to shape</h2><FileSpreadsheet size={14} /></div><DotNumber value={loading ? undefined : drafts} label="Draft missions" /><div className="metric-caption"><span className="rounded-full bg-white/60 px-2 py-1 w-fit">Planning only</span><span>No funds moved</span></div><div className="metric-bars" aria-hidden="true" /></section>
-        <section className="panel activity-card"><div className="card-title"><h2>Latest activity</h2><Link href="/economy">Open economy ↗</Link></div><p className="muted mt-1 text-[11px]">Actual events, as they happen.</p>{latest.length ? latest.map((e) => <div key={e._id} className="activity-row"><span className="activity-dot" /><div className="min-w-0"><Link href={`/missions/${e.missionId}`}>{e.type.replaceAll("_", " ").toLowerCase()}</Link><p className="muted text-[11px] line-clamp-1">{e.detail}</p><time>{new Date(e.createdAt).toLocaleString()}</time></div></div>) : <div className="quiet-empty"><CircleDashed size={25} className="text-[#9eac93] shrink-0" /><div><p>{overview ? "A quiet start." : "Loading activity…"}</p><p className="muted text-[11px]">Launch a mission to start its recorded timeline.</p></div></div>}</section>
-      </div>
-      <MissionBrowser />
-      <section className="panel team-section"><div className="card-title"><h2>Your agent directory</h2><span className="muted text-[11px]">{PUBLIC_AGENTS.length} built-in profiles</span></div><p className="muted mt-1 text-[11px]">Five service sellers. Two support roles.</p><div className="agent-grid">{PUBLIC_AGENTS.map((agent, i) => <Link className="agent-card" href={`/agents/${agent.id}`} key={agent.id}><div className="flex items-center justify-between"><span className={`round-icon ${i % 3 === 0 ? "green" : i % 3 === 1 ? "purple" : ""}`}><span className="text-xs font-medium">{agent.name[0]}</span></span><ArrowUpRight size={12} className="text-[#8a9680]" /></div><div><h3>{agent.name}</h3><p>{agent.role} · {agent.strategy ?? "support"}</p></div></Link>)}</div><p className="muted mt-4 text-[10px]">Fixed strategies. Service agents compete on price, capability, reputation and completion time.</p></section>
+      <section className="panel next-action-panel"><p className="eyebrow">Your next step</p><h2>{retry?"Give this mission a fresh start":results.some(m=>m.state==="draft")?"Your draft is ready to shape":"Start with a dataset"}</h2><p>{retry?`${retry.title} did not complete. Open its workspace to reuse the brief and correct the input or budget.`:"Upload a CSV, check its columns, and let independent agents compete for the work."}</p><Button asChild variant="outline"><Link href={retry?`/missions/${retry.missionId}`:results.find(m=>m.state==="draft")?`/missions/${results.find(m=>m.state==="draft")!._id}`:"/missions/new"}>{retry?"Review and reuse brief":"Create or edit a mission"}<ArrowUpRight size={14}/></Link></Button></section>
     </div>
-    <div className="dashboard-tools"><p>Need a starting point?</p><DemoControls /></div>
-    {overview && Object.values(overview.truncated).some(Boolean) && <p className="muted mt-3 text-xs">Recent overview only: up to 50 jobs, 100 events and 50 payment intents. Overview counts use the 20 most recent missions; the mission list has separate search and pagination.</p>}
+    {data&&data.jobs.length>0&&<ActivityStory compact jobs={data.jobs} events={data.events} payments={data.payments} paymentsIncomplete={data.truncated.payments}/>}
+    {status!=="LoadingFirstPage"&&!results.length&&<section className="workspace-onboarding"><h2>From CSV to verified result</h2><div>{[["01","Add your dataset","Upload a file, paste CSV or use a labeled sample."],["02","Choose the work","Pick normalization or statistics and set your budget."],["03","Review the result","Inspect the output; authorize payment separately."]].map(([n,title,description])=><div key={n}><span>{n}</span><h3>{title}</h3><p>{description}</p></div>)}</div></section>}
+    <div id="missions" className="section-anchor"><MissionBrowser jobs={data?.jobs}/></div>
+    <section id="agents" className="panel agent-directory-section section-anchor"><div className="section-heading"><div><h2>Your agent directory</h2><p className="muted text-sm">Five service sellers and two support roles. Each has a fixed specialization.</p></div><span className="count-pill">{PUBLIC_AGENTS.length} profiles</span></div><div className="workspace-agent-grid">{PUBLIC_AGENTS.map(agent=><Link href={`/agents/${agent.id}`} key={agent.id}><span className="agent-avatar"><FileSpreadsheet size={18}/></span><div><h3>{agent.name}</h3><p>{agent.role} · {agent.strategy??"support"}</p></div><ArrowUpRight size={14}/></Link>)}</div></section>
+    <section className="dashboard-samples"><div><h2>Try a sample first</h2><p>Owner-private synthetic drafts. Existing jobs and payment records are preserved.</p></div><DemoControls/></section>
   </>;
 }
