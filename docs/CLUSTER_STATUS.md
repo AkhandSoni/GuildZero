@@ -130,7 +130,7 @@ Current-scope implementation stops here. No paused expansion branch is merged an
 
 ### Current-main integration corrections — 2026-11-13
 
-Merged current main `62b3f38`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 264 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+Merged current main `69d9c5e`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 267 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
 
 Implemented an explicit server-only owner-ID allowlist and cumulative shared operator ceiling. Allowance accounting is transactional and bounded: root awards include their child allocation once, unpaid completed contracts remain obligated even after failed payment preparation, and pending/unknown/confirmed transfers remain counted. Authorization and signer claim fail closed on absent/malformed policy, unlisted owners, exceeded limits or excess history. New awards enforce allowance admission whenever policy is configured; without it the unpaid local economy remains available but cannot settle. The payment panel displays only personal allowance/allocation figures, separately from the shared wallet balance. Signup grants no funded credit or wallet.
 
