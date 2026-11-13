@@ -1,7 +1,6 @@
 "use node";
 import {
   Account,
-  JsonRpcProvider,
   KeyPairSigner,
   actions,
   baseEncode,
@@ -11,7 +10,8 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { configuration } from "../lib/settlement/policy";
-import { assertTestnet, rpc, TESTNET_RPC } from "../lib/settlement/rpc";
+import { assertTestnet, rpc } from "../lib/settlement/rpc";
+import { settlementProvider } from "../lib/settlement/provider";
 export const settle = internalAction({
   args: { intentId: v.id("paymentIntents") },
   handler: async (ctx, { intentId }) => {
@@ -62,7 +62,7 @@ export const settle = internalAction({
       );
       const account = new Account(
         intent.sender,
-        new JsonRpcProvider({ url: TESTNET_RPC }),
+        settlementProvider(),
         signer,
       );
       const transaction = await account.createTransaction({

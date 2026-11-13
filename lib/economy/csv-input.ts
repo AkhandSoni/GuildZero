@@ -7,13 +7,14 @@ export const MAX_ABS_NUMERIC_VALUE = 1e12;
 export const MAX_INPUT_CSV_BYTES = 65536; // 64 KiB
 export const MAX_OUTPUT_BYTES = 131072; // 128 KiB
 
-/** Check if a trimmed string is a valid finite numeric literal within [-1e12, 1e12] */
+/** Check finite bounded numbers without silently converting nonzero input to zero. */
 export function isSafeNumericLiteral(trimmed: string): boolean {
   if (!SAFE_NUMERIC_LITERAL_REGEX.test(trimmed)) {
     return false;
   }
   const num = Number(trimmed);
-  return Number.isFinite(num) && Math.abs(num) <= MAX_ABS_NUMERIC_VALUE;
+  const underflow = num === 0 && /[1-9]/.test(trimmed.split(/[eE]/, 1)[0]);
+  return Number.isFinite(num) && !underflow && Math.abs(num) <= MAX_ABS_NUMERIC_VALUE;
 }
 
 /**
@@ -50,16 +51,20 @@ export function parseBoundedCsv(inputCsv: unknown): Result<{
     return { ok: false, code: "INPUT_TOO_LARGE", message: "CSV exceeds the 64 KiB input limit." };
   }
 
+  // Match PapaParse's treatment of one leading UTF-8 BOM before scanning
+  // quotes. The original bytes still count against the input limit.
+  const csv = inputCsv.startsWith("\ufeff") ? inputCsv.slice(1) : inputCsv;
+
   // Only record separators outside quoted fields must agree. Embedded CR/LF
   // belongs to a field and may differ from the file's record separator.
   let newline: "\n" | "\r" | "\r\n" | undefined;
   let quoted = false;
   let fieldStart = true;
-  for (let i = 0; i < inputCsv.length; i++) {
-    const ch = inputCsv[i];
+  for (let i = 0; i < csv.length; i++) {
+    const ch = csv[i];
     if (quoted) {
       if (ch === '"') {
-        if (inputCsv[i + 1] === '"') i++;
+        if (csv[i + 1] === '"') i++;
         else quoted = false;
       }
       continue;
@@ -68,7 +73,7 @@ export function parseBoundedCsv(inputCsv: unknown): Result<{
       quoted = true;
       fieldStart = false;
     } else if (ch === "\r" || ch === "\n") {
-      const separator = ch === "\r" && inputCsv[i + 1] === "\n" ? "\r\n" : ch;
+      const separator = ch === "\r" && csv[i + 1] === "\n" ? "\r\n" : ch;
       if (newline !== undefined && separator !== newline)
         return { ok: false, code: "INVALID_CSV", message: "Use consistent CSV record separators outside quoted fields." };
       newline = separator;
@@ -78,7 +83,7 @@ export function parseBoundedCsv(inputCsv: unknown): Result<{
       fieldStart = ch === ",";
     }
   }
-  const parsed = Papa.parse<string[]>(inputCsv, {
+  const parsed = Papa.parse<string[]>(csv, {
     delimiter: ",",
     newline: newline ?? "\n",
     skipEmptyLines: false,
@@ -87,7 +92,7 @@ export function parseBoundedCsv(inputCsv: unknown): Result<{
   // Papa adds an empty record for a terminal separator. Remove that artifact
   // once; explicit empty records (including one-column records) remain data.
   const last = parsed.data.at(-1);
-  if (newline && inputCsv.endsWith(newline) && last?.length === 1 && last[0] === "")
+  if (newline && csv.endsWith(newline) && last?.length === 1 && last[0] === "")
     parsed.data.pop();
 
   if (parsed.errors.length > 0) {

@@ -110,6 +110,7 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
     let count = 0;
     let missing = 0;
     let sum = 0;
+    let correction = 0;
     let min: number | null = null;
     let max: number | null = null;
 
@@ -125,7 +126,7 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
           return {
             ok: false,
             code: "INVALID_NUMBER",
-            message: "Summary column contains a numeric value outside the supported [-1e12, 1e12] bound.",
+            message: "Summary numbers must fit within [-1e12, 1e12] without nonzero values underflowing to zero.",
           };
         }
       } else if (isUnsafeFormulaValue(rawCell)) {
@@ -143,7 +144,12 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
       }
       const num = Number(trimmed);
       count++;
-      sum += num;
+      // Neumaier compensation preserves small terms when larger values cancel.
+      const next = sum + num;
+      correction += Math.abs(sum) >= Math.abs(num)
+        ? (sum - next) + num
+        : (num - next) + sum;
+      sum = next;
       if (!Number.isFinite(sum)) {
         return {
           ok: false,
@@ -155,6 +161,7 @@ function executeSummarize(req: SummaryRequest): Result<ServiceOutput> {
       if (max === null || num > max) max = num;
     }
 
+    sum += correction;
     const mean = count > 0 ? sum / count : null;
     stats.push({ name: colName, count, missing, min, max, sum, mean });
   }

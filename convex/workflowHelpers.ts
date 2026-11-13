@@ -43,11 +43,24 @@ export async function childrenComplete(ctx: MutationCtx, job: Doc<"jobs">) {
 }
 // Waiting for a human retains the full financial obligation, but consumes no
 // execution slot. This changes neither approval nor payment eligibility.
-export async function reviewCapacity(ctx: MutationCtx, job: Doc<"jobs">) {
+export async function reviewCapacity(ctx: MutationCtx, job: Doc<"jobs">): Promise<void> {
   const contract = await ctx.db.query("contracts").withIndex("by_job", (q) => q.eq("jobId", job._id)).unique();
   if (contract?.state === "active") {
     await ctx.db.patch(contract._id, { state: "awaiting_review" });
     await event(ctx, job, "AWAITING_OWNER_REVIEW", "Processing capacity released. The contract allocation remains reserved and payment remains blocked until approval.");
+  }
+  // A disputed child without any output cannot be approved. Its parent has
+  // no runnable continuation either, so expose owner review and free both
+  // execution slots. Children with output may still be approved and resume.
+  if (job.parentId && (await ctx.db.get(job._id))?.state === "disputed" &&
+      !(await ctx.db.query("deliverables").withIndex("by_job", (q) => q.eq("jobId", job._id)).first())) {
+    const parent = await ctx.db.get(job.parentId);
+    if (parent?.state === "working") {
+      await ctx.db.patch(parent._id, { state: "disputed", updatedAt: Date.now() });
+      await ctx.db.insert("disputes", { jobId: parent._id, reason: "Required subcontract needs review and has no approvable output" });
+      await reviewCapacity(ctx, parent);
+      await event(ctx, parent, "DEPENDENCY_FAILED", "Required child work has no deliverable. Parent approval remains blocked; owner may reject both contracts. Financial allocations are preserved.");
+    }
   }
 }
 export async function finish(

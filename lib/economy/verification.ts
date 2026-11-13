@@ -30,6 +30,25 @@ export function withinStatTolerance(actual: number, expected: number): boolean {
   return Math.abs(actual - expected) <= STAT_COMPARISON_TOLERANCE * Math.max(1, Math.abs(expected));
 }
 
+// Independent reference: keep non-overlapping floating-point partials using
+// error-free two-sum transforms, rather than the executor's scalar correction.
+function referenceSum(values: readonly number[]): number {
+  const partials: number[] = [];
+  for (let value of values) {
+    let retained = 0;
+    for (let partial of partials) {
+      if (Math.abs(value) < Math.abs(partial)) [value, partial] = [partial, value];
+      const high = value + partial;
+      const low = partial - (high - value);
+      if (low !== 0) partials[retained++] = low;
+      value = high;
+    }
+    partials.length = retained;
+    partials.push(value);
+  }
+  return partials.reduce((total, partial) => total + partial, 0);
+}
+
 function hasExactKeys(obj: Record<string, unknown>, expectedKeys: readonly string[]): boolean {
   const keys = Object.keys(obj);
   return keys.length === expectedKeys.length && expectedKeys.every((k) => Object.prototype.hasOwnProperty.call(obj, k));
@@ -304,7 +323,7 @@ export function verifyDeliverable(input: VerificationRequest): Result<Verificati
             return {
               ok: false,
               code: "INVALID_NUMBER",
-              message: "Source CSV contains an out-of-range number in a summarized column.",
+              message: "Source CSV contains an out-of-range or underflowing number in a summarized column.",
             };
           }
         } else if (isUnsafeFormulaValue(rawCell)) {
@@ -338,7 +357,7 @@ export function verifyDeliverable(input: VerificationRequest): Result<Verificati
         const sorted = [...values].sort((a, b) => a - b);
         const min = sorted[0];
         const max = sorted[sorted.length - 1];
-        const sum = values.reduce((acc, v) => acc + v, 0);
+        const sum = referenceSum(values);
         if (!Number.isFinite(sum)) {
           return {
             ok: false,
