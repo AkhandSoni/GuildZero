@@ -1,6 +1,6 @@
 # Cluster execution status
 
-Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
+Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the full public/account/workspace interface has been redesigned and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
 ## Entire-application product design — 2026-11-13
 
@@ -10,7 +10,7 @@ The public site explains the actual workflow, services and trust boundaries. An 
 
 Validation: lint, typecheck, production build, client-boundary scan (27 assets) and npm audit pass; **214 tests in 25 files**, including **99 integration tests**, pass. The full **13-scenario production browser suite passed in 2.2 minutes** on the isolated backend. This includes the new public example and service-entry checks plus all existing auth/private economy/result/security/recovery flows. A first run found an ambiguous service-selector label; an explicit accessible label corrected it before the passing run. Sampled rendered text contrast checks passed on public/account/dashboard/editor/agent/security/payment/economy pages; these checks are not a complete accessibility certification.
 
-Desktop and mobile screenshots were inspected across the existing routes. A separate production browser smoke processed an actual synthetic mission, checked its work/settlement anchors and 404 recovery, with no page errors or mobile horizontal overflow. No key was read/copied, payment submitted, public hosting performed or existing user financial record rewritten. Main integration/running-copy verification and push follow this evidence. Existing unsaved-edit, account-recovery, representative-user and release/payment-crash validation issues remain open; broader services stay paused.
+Desktop and mobile screenshots were inspected across the existing routes. A separate production browser smoke processed an actual synthetic mission, checked its work/settlement anchors and 404 recovery, with no page errors or mobile horizontal overflow. No key was read/copied, payment submitted, public hosting performed or existing user financial record rewritten. The changes are integrated into local main. A browser smoke on the user’s existing port 3000 verified the redesigned public page, both computed examples, signup/sign-out, dashboard, agent catalog and direct normalization editor entry with no page errors or mobile overflow. That running-copy smoke created no mission or payment. Remote push verification is reported separately. Existing unsaved-edit, account-recovery, representative-user and release/payment-crash validation issues remain open; broader services stay paused.
 
 ## Business-user requirements and usability pass — 2026-11-13
 
