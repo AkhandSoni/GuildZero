@@ -1,3 +1,6 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { WorkflowError } from "../../components/workflow-error";
 import { afterEach, expect, it, vi } from "vitest";
 import { testBackend, asUser } from "../helpers/backend";
 import { api, internal } from "../../convex/_generated/api";
@@ -89,6 +92,9 @@ it.each([
  await s.drain();const detail=await s.owner.query(api.jobs.detail,{id});
  expect(detail.job.state).toBe("unawarded");expect(detail.job.workerError).toBe(code);expect(detail.contracts).toEqual([]);expect(detail.deliverables).toEqual([]);
  expect(detail.events.some(e=>e.type==="AUCTION_ALLOWANCE_BLOCKED"&&e.detail.includes(code))).toBe(true);
+ const markup=renderToStaticMarkup(createElement(WorkflowError,{engineManaged:detail.job.engineManaged===true,state:detail.job.state,code:detail.job.workerError,retryCount:detail.job.retryCount??0,busy:false,onRetry:()=>{throw new Error("Terminal state cannot retry");}}));
+ expect(markup).toContain(code);expect(markup).toContain('href="/missions/new"');expect(markup).not.toContain("Retry workflow stage");expect(markup).not.toContain("workflow paused safely");
+
  await expect(s.owner.mutation(api.jobs.resume,{id})).rejects.toThrow("WORKFLOW_NOT_RETRYABLE");
  expect(await s.t.run(ctx=>ctx.db.query("paymentIntents").collect())).toEqual([]);expect(await s.t.run(ctx=>ctx.db.query("signerLocks").collect())).toEqual([]);
 });
