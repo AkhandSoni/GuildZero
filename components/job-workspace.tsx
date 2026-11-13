@@ -1,4 +1,5 @@
 "use client";
+import { WorkflowError } from "@/components/workflow-error";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { ConvexError } from "convex/values";
@@ -143,7 +144,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           </>
         )}
         {data.bids.length > 0 && <div className="job-bid-list" aria-label="Agent offers">{data.bids.map(b => <div className="job-bid" key={b._id}><strong>{b.agentId}</strong><div><span>{formatNear(b.priceYocto)} testnet NEAR</span><p>{b.rationale}</p></div></div>)}</div>}
-        {data.job.workerError && <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm">The workflow paused safely. Review configuration, then retry the existing stage.</p><Button className="mt-3" variant="outline" disabled={busy || (data.job.retryCount ?? 0) >= 3} onClick={() => act(() => resume({ id }))}>Retry workflow stage</Button></div>}
+        <WorkflowError engineManaged={data.job.engineManaged === true} state={data.job.state} code={data.job.workerError} retryCount={data.job.retryCount ?? 0} busy={busy} onRetry={() => { void act(() => resume({ id })); }} />
         {data.job.state === "unawarded" && <p className="muted mt-4 text-sm">No offer could be awarded within the budget, deadline and negotiation limits. Create a revised mission to try again. No payment was submitted.</p>}
         {data.contracts.map((c) => <div key={c._id} className="mt-5 border-t border-[#d5dccf] pt-4"><h3 className="text-sm font-medium">Contract · {c.agentId}</h3><p className="muted text-xs mt-2">Award: {formatNear(c.amountYocto)} · Parent payable allocation: {formatNear(c.holdbackYocto)} testnet NEAR</p>{c.score && <p className="muted text-xs mt-2">Utility {c.score.total}/10000 · Price {c.score.price} · Time {c.score.time} · Reputation {c.score.reputation} · Capability {c.score.capability}</p>}</div>)}
         {data.children.map((c) => (

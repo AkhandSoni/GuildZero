@@ -15,7 +15,8 @@ export function PaymentPanel({
   approved: boolean;
 }) {
   const intent = useQuery(api.payments.forJob, { jobId }),
-    config = useQuery(api.payments.status, {});
+    config = useQuery(api.payments.status, {}),
+    allowance = useQuery(api.payments.allowance, {});
   const prepare = useMutation(api.payments.prepare),
     authorize = useMutation(api.payments.authorize),
     reconcile = useMutation(api.payments.reconcile);
@@ -46,6 +47,10 @@ export function PaymentPanel({
           ? "Settlement is enabled. Review the exact recipient and amount before authorizing."
           : "Settlement is disabled until dedicated testnet credentials are configured. No real funds are used."}
       </p>
+      <div className="muted mt-3 text-sm">
+        <p>Operator-managed demo allowance: permission to use shared testnet funds, not a wallet or deposit.</p>
+        {allowance?.configured ? <p>Your lifetime limit: {formatNear(allowance.limitYocto)} NEAR; allocated or consumed: {formatNear(allowance.obligatedYocto)} NEAR; unallocated: {formatNear(allowance.remainingYocto)} NEAR. Existing contracts include any subcontract once. This does not guarantee operator liquidity.</p> : <p>No usable personal allowance is available. Ask the operator to configure your account before authorizing settlement.</p>}
+      </div>
       {intent === undefined ? (
         <p role="status">Loading payment state…</p>
       ) : !intent ? (
@@ -108,7 +113,7 @@ export function PaymentPanel({
                 <input type="checkbox" required />I approve this exact recipient
                 and testnet amount.
               </label>
-              <Button className="w-fit" disabled={busy || !config?.enabled}>
+              <Button className="w-fit" disabled={busy || !config?.enabled || !allowance?.configured}>
                 Authorize testnet payment
               </Button>
             </form>

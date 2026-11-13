@@ -1,3 +1,4 @@
+import { allowanceDenials } from "./allowanceHelpers";
 import { awardPaymentBlock } from "./settlementReadiness";
 // Bounded deterministic workflow. Every stage is an atomic, versioned mutation.
 // There are no network calls, browser worker endpoints or automatic payments.
@@ -174,10 +175,17 @@ export const advance = internalMutation({ args, handler: async (ctx, { jobId, ve
 } });
 export const step = internalMutation({ args, handler: async (ctx, input): Promise<null> => {
   try { await ctx.runMutation(internal.economyWorker.advance, input); }
-  catch {
+  catch (error) {
     // Subtransaction rolled back; preserve a bounded, sanitized failure audit.
     const job = await ctx.db.get(input.jobId);
     if (job && job.workerVersion === input.version && ["bidding", "working", "revision", "verifying"].includes(job.state)) {
+      const denial = error instanceof ConvexError && typeof error.data === "string" ? error.data : "";
+      if (job.state === "bidding" && allowanceDenials[denial]) {
+        await unavailable(ctx, job, `${denial}: ${allowanceDenials[denial]} No contract or payment was created for this offer.`);
+        await ctx.db.patch(job._id, { workerError: denial });
+        await event(ctx, job, "AUCTION_ALLOWANCE_BLOCKED", `${denial}: ${allowanceDenials[denial]} Create a new brief after operator review, or explicitly acknowledge metadata-only processing before launching.`);
+        return null;
+      }
       if ((job.retryCount ?? 0) >= 3) {
         await ctx.db.patch(job._id, { workerError: undefined });
         if (job.state === "bidding") await unavailable(ctx, job, "The workflow exhausted its three owner retries before an award. No payment was requested.");

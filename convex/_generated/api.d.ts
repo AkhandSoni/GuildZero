@@ -9,6 +9,7 @@
  */
 
 import type * as agentPolicies from "../agentPolicies.js";
+import type * as allowanceHelpers from "../allowanceHelpers.js";
 import type * as auth from "../auth.js";
 import type * as deliveryAccess from "../deliveryAccess.js";
 import type * as demo from "../demo.js";
@@ -43,6 +44,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   agentPolicies: typeof agentPolicies;
+  allowanceHelpers: typeof allowanceHelpers;
   auth: typeof auth;
   deliveryAccess: typeof deliveryAccess;
   demo: typeof demo;

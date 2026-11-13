@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { user, ownedJob } from "./ownership";
 import { audit, quote, bindingReason } from "./paymentHelpers";
+import { authorizeAllowance, allowanceSnapshot } from "./allowanceHelpers";
 import { configuration, candidateReason } from "../lib/settlement/policy";
 export const prepare = mutation({
   args: { jobId: v.id("jobs") },
@@ -78,6 +79,12 @@ export const authorize = mutation({
       await audit(ctx, job, "AUTHORIZE_PAYMENT", "ALREADY_AUTHORIZED");
       return { ok: false as const, code: "ALREADY_AUTHORIZED" };
     }
+    try { await authorizeAllowance(ctx, intent); }
+    catch (error) {
+      const code = error instanceof ConvexError ? String(error.data) : "DEMO_ALLOWANCE_CONFIGURATION_REQUIRED";
+      await audit(ctx, job, "AUTHORIZE_PAYMENT", code);
+      return { ok: false as const, code };
+    }
     await ctx.db.patch(intent._id, { authorizedAt: Date.now() });
     await audit(
       ctx,
@@ -131,6 +138,20 @@ export const status = query({
       return { enabled: configuration().enabled, network: "testnet" as const };
     } catch {
       return { enabled: false, network: "testnet" as const };
+    }
+  },
+});
+
+// Personal figures only: global obligations and other owners remain private.
+export const allowance = query({
+  args: {},
+  handler: async (ctx) => {
+    const ownerId = await user(ctx);
+    try {
+      const s = await allowanceSnapshot(ctx, ownerId);
+      return { configured: true as const, limitYocto: s.personalLimit.toString(), obligatedYocto: s.ownerUsed.toString(), remainingYocto: (s.personalLimit > s.ownerUsed ? s.personalLimit - s.ownerUsed : 0n).toString() };
+    } catch (error) {
+      return { configured: false as const, code: error instanceof ConvexError ? String(error.data) : "DEMO_ALLOWANCE_CONFIGURATION_REQUIRED" };
     }
   },
 });

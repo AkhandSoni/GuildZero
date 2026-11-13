@@ -1,3 +1,5 @@
+import { ConvexError } from "convex/values";
+import { allowanceSnapshot, allowanceDenials } from "./allowanceHelpers";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { configuration, PAYMENT_CAP, testnetAccount } from "../lib/settlement/policy";
@@ -25,7 +27,20 @@ export async function settlementReadiness(ctx: QueryCtx, mission: Doc<"missions"
     if (!configured(mission.serviceType)) reasons.push("No eligible seller has a valid testnet recipient for this service.");
     if (mission.cleanBeforeProcessing && !configured("csv_normalize")) reasons.push("The required cleaning service has no valid testnet recipient.");
   } catch { reasons.push("Testnet recipient configuration is invalid."); }
+  let allowance: { limitYocto: string; obligatedYocto: string; remainingYocto: string } | null = null;
+  const allowanceReasons: string[] = [];
+  try {
+    const s = await allowanceSnapshot(ctx, mission.ownerId);
+    const remaining = s.personalLimit > s.ownerUsed ? s.personalLimit - s.ownerUsed : 0n;
+    allowance = { limitYocto: s.personalLimit.toString(), obligatedYocto: s.ownerUsed.toString(), remainingYocto: remaining.toString() };
+    if (remaining === 0n) allowanceReasons.push("DEMO_OWNER_ALLOWANCE_EXCEEDED");
+    if (s.globalUsed >= s.globalLimit) allowanceReasons.push("DEMO_OPERATOR_ALLOWANCE_EXCEEDED");
+  } catch (error) {
+    const code = error instanceof ConvexError && typeof error.data === "string" && allowanceDenials[error.data] ? error.data : "DEMO_ALLOWANCE_CONFIGURATION_REQUIRED";
+    allowanceReasons.push(code);
+  }
+  reasons.push(...allowanceReasons.map(code => allowanceDenials[code]));
   const balance=sender?await ctx.db.query("operatorWalletSnapshots").withIndex("by_account",q=>q.eq("account",sender!)).unique():null;
-  return { blocked:reasons.length>0,reasons,paymentCapYocto:PAYMENT_CAP.toString(),
+  return { blocked:reasons.length>0,reasons,allowanceReasons,allowance,paymentCapYocto:PAYMENT_CAP.toString(),
     balance:balance?.checkedAt && balance.availableYocto!==undefined?{availableYocto:balance.availableYocto,checkedAt:balance.checkedAt,stale:Date.now()-balance.checkedAt>60000||!!balance.error}:null };
 }

@@ -11,6 +11,7 @@ async function setup(clean=false,human=false,service:"csv_summary"|"csv_normaliz
  vi.useFakeTimers();vi.stubEnv("NEAR_SETTLEMENT_ENABLED","false");
  const t=testBackend(schema,modules);
  const [ownerId,otherId]=await t.run(ctx=>Promise.all([ctx.db.insert("users",{email:"delivery@example.com"}),ctx.db.insert("users",{email:"outsider@example.com"})]));
+ vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON",JSON.stringify({[ownerId]:"10000000000000000000000000"}));vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO","10000000000000000000000000");
  const owner=await asUser(t,ownerId),other=await asUser(t,otherId);
  const missionId=await owner.mutation(api.missions.create,{title:"Actual computed delivery",serviceType:service,inputCsv:"product,units\n Bag ,3\nBook,5",options:service==="csv_summary"?{columns:["units"]}:{columns:["product"],caseMode:"preserve"},maxBudgetYocto:"1000000000000000000000000",acceptanceCriteria:"Check metadata and verification",requiresHumanReview:human,cleanBeforeProcessing:clean,deadlineAt:Date.now()+86400000});
  const jobId=await owner.mutation(api.jobs.start,{missionId,allowUnfundedPreview:true});await t.finishAllScheduledFunctions(vi.runAllTimers);

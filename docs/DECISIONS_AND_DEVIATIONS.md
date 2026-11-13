@@ -33,6 +33,12 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - SDK preparation uses the same fixed-testnet 15-second transport as other RPC operations. Stream response bytes through the existing size cap before decoding, cancelling oversized/error bodies. Offline real-SDK signing and transport tests add evidence without chain submission. Existing public receipt verification passed read-only; no real payout or credential change was made.
 - Hard process-death recovery and production identity/custody remain explicit architectural limitations. Do not infer safe lock release or resend from the timeout repair; no historical result, receipt or signer lock was recomputed or reset. Hosting/submission remain behind explicit human approval.
 
+## 2026-11-13 — issue #32 cumulative operator allowances
+
+- The user explicitly requested claiming four backlog issues, implementing each independently and opening separate PRs. The selected #32 policy is an operator-managed server configuration keyed by authenticated immutable user IDs, with cumulative personal/global limits. No user-facing allowance grant/reset endpoint or automatic signup credit exists. Missing policy blocks settlement while unpaid local processing remains usable.
+- Count an outstanding original parent award once, including child allocation even before child award. If parent work is rejected, retain nonfailed child obligations; always retain submitted/unknown/confirmed amounts. A failed payment does not erase the underlying unpaid completed contract. Existing histories are counted without migration, renewal or deletion. Configuration changes are rechecked before signing.
+- This bounded demo uses transactional scans capped at 1,000 records of each relevant table and fails closed above that size; production scale needs a separately designed durable ledger. Limits are permissions, not deposits or funding guarantees. The operator must review actual obligations before setting/lowering limits. No real allowance setting was installed, no data was reset, and no payment/deployment occurred.
+
 ## 2026-11-13 — Requested signup usability and password policy
 
 - The user explicitly requested an eight-character minimum, confirm password, visible-password controls and a conventional signup form. Changed the shared frontend/backend policy to 8–128 characters; existing credentials remain valid. Confirmation is a local typo check and is removed before calling Convex Auth. Passwords remain hashed by the existing provider; signup introduces no new wallet or account provisioning.
