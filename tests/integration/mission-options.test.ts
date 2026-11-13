@@ -1,12 +1,12 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const ownerId = await t.run((ctx) => ctx.db.insert("users", { email: "options@example.com" }));
-  const owner = t.withIdentity({ subject: `${ownerId}|session` });
+  const owner = await asUser(t, ownerId);
   const input = { title: "Migration fixture", serviceType: "csv_normalize" as const,
     inputCsv: " product ,units\n Bag ,3\nBook,5", maxBudgetYocto: "9007199254740993",
     deadlineAt: Date.now() + 86400000, acceptanceCriteria: "Trim the explicitly selected column." };

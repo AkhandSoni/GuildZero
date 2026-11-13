@@ -3,12 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "^24.22.3"
+    "node": "^24.22.3 || ^26.13.0"
   },
   "scripts": {
-    "dev": "next dev",
-    "predev:backend": "node scripts/check-node-runtime.mjs",
-    "dev:backend": "convex dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:backend": "node scripts/dev.mjs --backend",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
@@ -20,20 +19,22 @@
     "auth:keys": "node scripts/auth-keys.mjs",
     "test:e2e": "playwright test",
     "test:near": "node scripts/verify-testnet.mjs",
-    "check:client": "node scripts/check-client-boundary.mjs"
+    "check:client": "node scripts/check-client-boundary.mjs",
+    "dev:frontend": "node scripts/dev.mjs --frontend"
   },
   "dependencies": {
-    "@auth/core": "0.41.3",
-    "@convex-dev/auth": "0.0.98",
+    "@convex-dev/auth": "2.0.0",
+    "@convex-dev/rate-limiter": "0.4.3",
     "@radix-ui/react-slot": "1.5.0",
     "@xyflow/react": "12.12.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "convex": "1.49.0",
-    "lucide-react": "1.71.0",
+    "convex": "1.50.0",
+    "lucide-react": "1.72.0",
     "near-api-js": "7.5.3",
     "next": "16.4.6",
-    "papaparse": "5.7.0",
+    "papaparse": "5.7.1",
+    "password-hash-wasm": "0.0.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwind-merge": "3.7.0"
@@ -46,11 +47,12 @@
     "@types/papaparse": "5.5.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "convex-test": "0.0.69",
+    "convex-test": "0.0.71",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.5",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
+    "vite-plugin-wasm-module": "0.0.0",
     "vitest": "5.1.0"
   },
   "overrides": {
@@ -58,5 +60,9 @@
       "minimatch": "11.0.1"
     }
   },
-  "type": "module"
+  "type": "module",
+  "packageManager": "npm@12.2.2",
+  "allowScripts": {
+    "esbuild@0.27.0": true
+  }
 }

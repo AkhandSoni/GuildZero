@@ -1,4 +1,4 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
@@ -8,13 +8,13 @@ const modules = import.meta.glob("../../convex/**/*.ts");
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
 async function setup(overrides: Record<string, unknown> = {}) {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const [ownerId, otherId] = await t.run((ctx) => Promise.all([
     ctx.db.insert("users", { email: "automatic@example.com" }),
     ctx.db.insert("users", { email: "outsider@example.com" }),
   ]));
-  const owner = t.withIdentity({ subject: `${ownerId}|test` });
-  const outsider = t.withIdentity({ subject: `${otherId}|test` });
+  const owner = await asUser(t, ownerId);
+  const outsider = await asUser(t, otherId);
   const missionId = await owner.mutation(api.missions.create, {
     title: "Automatic marketplace", serviceType: "csv_summary",
     inputCsv: "product,units,price\n Bag , 3 , 12.5 \nNotebook,5,4",

@@ -1,12 +1,13 @@
-import { convexTest } from "convex-test";
+import { testBackend } from "../helpers/backend";
 import { expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
-it.each(["1234567", "x".repeat(129)])("rejects out-of-policy signup passwords on the backend before account creation", async (password) => {
-  const t = convexTest(schema, modules);
-  await expect(t.action(api.auth.signIn, { provider: "password", params: {
+it.each(["123456789", "x".repeat(101)])("rejects out-of-policy signup passwords on the backend before account creation", async (password) => {
+  const t = testBackend(schema, modules);
+  await expect(t.mutation(api.auth.signIn, {
     flow: "signUp", email: "invalid-policy@example.com", password,
-  } })).rejects.toThrow("Password must contain 8–128 characters.");
+  })).resolves.toMatchObject({ status: "error" });
   expect(await t.run((ctx) => ctx.db.query("authAccounts").collect())).toEqual([]);
+  expect(await t.run((ctx) => ctx.db.query("users").collect())).toEqual([]);
 });

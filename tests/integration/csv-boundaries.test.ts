@@ -1,13 +1,13 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 import { runService } from "../../lib/economy";
 const modules = import.meta.glob("../../convex/**/*.ts");
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const ownerId = await t.run((ctx) => ctx.db.insert("users", { email: "csv-boundary@example.com" }));
-  const owner = t.withIdentity({ subject: `${ownerId}|session` });
+  const owner = await asUser(t, ownerId);
   const input = { title: "CSV boundary", serviceType: "csv_summary" as const,
     inputCsv: "a,b\n1,2", options: { columns: ["a"] }, maxBudgetYocto: "10000000000000000000000000",
     deadlineAt: Date.now() + 86400000, acceptanceCriteria: "Summary" };

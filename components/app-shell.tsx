@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, Boxes, LayoutGrid, LogOut, Network, ShieldCheck } from "lucide-react";
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -13,13 +14,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [error, setError] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace("/sign-in");
   }, [isLoading, isAuthenticated, router]);
-  if (isLoading || !isAuthenticated)
+  if (signingOut || isLoading || !isAuthenticated)
     return (
       <main className="muted p-12" role="status">
-        Checking your session…
+        {signingOut ? "Signing out…" : "Checking your session…"}
       </main>
     );
   return (
@@ -38,9 +40,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="rail-link rail-signout" aria-label="Sign out" title="Sign out"
             onClick={async () => {
               try {
+                // Unsubscribe private views before Auth 2 revokes their session.
+                flushSync(() => setSigningOut(true));
                 await signOut();
                 router.replace("/sign-in");
               } catch {
+                setSigningOut(false);
                 setError("Could not sign out. Try again.");
               }
             }}

@@ -1,4 +1,4 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { afterEach, expect, it, vi } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
@@ -8,11 +8,11 @@ const privateFloor = "400000000000000000000001",
   diagnostic = "PRIVATE_COST_DIAGNOSTIC_ONLY";
 afterEach(() => vi.unstubAllEnvs());
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const ownerId = await t.run((ctx) =>
     ctx.db.insert("users", { email: "buyer@example.com" }),
   );
-  const buyer = t.withIdentity({ subject: `${ownerId}|session` });
+  const buyer = await asUser(t, ownerId);
   const missionId = await buyer.mutation(api.missions.create, {
     title: "Pricing privacy test",
     serviceType: "csv_summary",

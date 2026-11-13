@@ -5,7 +5,7 @@ test("unknown account and wrong password stay in the form, then valid signup and
   const password = randomBytes(24).toString("base64url");
   const authConsoleErrors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error" && message.text().includes("[CONVEX A(auth:signIn)]")) authConsoleErrors.push(message.text());
+    if (message.type() === "error" && /\[CONVEX [AMQ]\((?:auth:signIn|missions:list|marketViews:overview)\)\]/.test(message.text())) authConsoleErrors.push(message.text());
   });
   const rejected = page.getByRole("alert").filter({ hasText: "Unable to sign in. Check your email and password." });
   await page.goto("/sign-in");
@@ -23,6 +23,7 @@ test("unknown account and wrong password stay in the form, then valid signup and
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
+  expect(authConsoleErrors).toEqual([]);
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(randomBytes(24).toString("base64url"));
   await page.getByRole("button", { name: "Sign in", exact: true }).click();

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { api, internal } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 const modules = import.meta.glob("../../convex/**/*.ts");
@@ -40,7 +40,7 @@ async function setup(approval: "automatic" | "human" = "automatic") {
     JSON.stringify({ "stats-core": "worker.testnet" }),
   );
   vi.stubEnv("NEAR_SETTLEMENT_ENABLED", "false");
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   // Explicit database fixtures exercise policy/state only; no actual work/payment is claimed.
   const ids = await t.run(async (ctx) => {
     const owner = await ctx.db.insert("users", { email: "owner@example.com" }),
@@ -116,8 +116,8 @@ async function setup(approval: "automatic" | "human" = "automatic") {
     });
     return { owner, other, jobId };
   });
-  const owner = t.withIdentity({ subject: `${ids.owner}|session` }),
-    other = t.withIdentity({ subject: `${ids.other}|session` });
+  const owner = await asUser(t, ids.owner),
+    other = await asUser(t, ids.other);
   const result = await owner.mutation(api.payments.prepare, {
     jobId: ids.jobId,
   });

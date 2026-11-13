@@ -1,4 +1,3 @@
-const config = {
-  providers: [{ domain: process.env.CONVEX_SITE_URL, applicationID: "convex" }],
-};
+import { convexAuthProvider } from "@convex-dev/auth/server";
+const config = { providers: [convexAuthProvider()] };
 export default config;

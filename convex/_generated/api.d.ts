@@ -14,6 +14,7 @@ import type * as demo from "../demo.js";
 import type * as economyWorker from "../economyWorker.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
+import type * as legacyAuthSchema from "../legacyAuthSchema.js";
 import type * as maintenance from "../maintenance.js";
 import type * as marketModel from "../marketModel.js";
 import type * as marketViews from "../marketViews.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   economyWorker: typeof economyWorker;
   http: typeof http;
   jobs: typeof jobs;
+  legacyAuthSchema: typeof legacyAuthSchema;
   maintenance: typeof maintenance;
   marketModel: typeof marketModel;
   marketViews: typeof marketViews;
@@ -84,4 +86,8 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  auth: import("@convex-dev/auth/_generated/component.js").ComponentApi<"auth">;
+  authPassword: import("@convex-dev/auth/components/password/_generated/component.js").ComponentApi<"authPassword">;
+  legacyAuthLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"legacyAuthLimiter">;
+};

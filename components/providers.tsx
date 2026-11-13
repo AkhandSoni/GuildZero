@@ -2,6 +2,7 @@
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { useState } from "react";
+import { api } from "@/convex/_generated/api";
 import { convexLogger } from "@/lib/convex-logger";
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() =>
@@ -24,5 +25,5 @@ export function Providers({ children }: { children: React.ReactNode }) {
         </p>
       </main>
     );
-  return <ConvexAuthProvider client={client}>{children}</ConvexAuthProvider>;
+  return <ConvexAuthProvider client={client} api={{ refreshSession: api.auth.refreshSession, signOut: api.auth.signOut, isAuthenticated: api.auth.isAuthenticated }}>{children}</ConvexAuthProvider>;
 }

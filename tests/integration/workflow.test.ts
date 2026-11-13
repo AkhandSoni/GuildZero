@@ -1,4 +1,4 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
@@ -13,15 +13,15 @@ const positiveChecks = [
   },
 ];
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const [a, b] = await t.run(async (ctx) =>
     Promise.all([
       ctx.db.insert("users", { email: "a@example.com" }),
       ctx.db.insert("users", { email: "b@example.com" }),
     ]),
   );
-  const alice = t.withIdentity({ subject: `${a}|a` }),
-    bob = t.withIdentity({ subject: `${b}|b` });
+  const alice = await asUser(t, a),
+    bob = await asUser(t, b);
   const input = {
     title: "Summary",
     inputCsv: SAMPLE_CSV,

@@ -1,10 +1,10 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
 const modules = import.meta.glob("../../convex/**/*.ts");
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const [a, b] = await t.run((ctx) =>
     Promise.all([
       ctx.db.insert("users", { email: "a@example.com" }),
@@ -15,8 +15,8 @@ async function setup() {
     t,
     a,
     b,
-    alice: t.withIdentity({ subject: `${a}|s` }),
-    bob: t.withIdentity({ subject: `${b}|s` }),
+    alice: await asUser(t, a),
+    bob: await asUser(t, b),
   };
 }
 it("requires authentication for economy, profiles, samples and security history", async () => {

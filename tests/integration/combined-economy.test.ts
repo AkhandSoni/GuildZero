@@ -1,4 +1,4 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { afterEach, expect, it, vi } from "vitest";
 import schema from "../../convex/schema";
 import { api, internal } from "../../convex/_generated/api";
@@ -14,13 +14,13 @@ function value<T>(result: Result<T>): T {
   return result.value;
 }
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const [ownerId, outsiderId] = await t.run((ctx) => Promise.all([
     ctx.db.insert("users", { email: "combined-owner@example.com" }),
     ctx.db.insert("users", { email: "combined-outsider@example.com" }),
   ]));
-  const owner = t.withIdentity({ subject: `${ownerId}|test` });
-  const outsider = t.withIdentity({ subject: `${outsiderId}|test` });
+  const owner = await asUser(t, ownerId);
+  const outsider = await asUser(t, outsiderId);
   const missionId = await owner.mutation(api.missions.create, {
     title: "Combined kernel and lifecycle regression",
     serviceType: "csv_summary",

@@ -1,15 +1,17 @@
 "use client";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
+import { authErrorMessage, MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/auth-policy";
 export default function SignInPage() {
-  const { signIn } = useAuthActions();
+  const { setSession } = useAuthActions();
+  const signIn = useMutation(api.auth.signIn);
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
@@ -18,9 +20,11 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationError, setConfirmationError] = useState(false);
+  const [upgradePassword, setUpgradePassword] = useState(false);
+  const [showUpgradePassword, setShowUpgradePassword] = useState(false);
   useEffect(() => {
-    if (isAuthenticated) router.replace("/dashboard");
-  }, [isAuthenticated, router]);
+    if (isAuthenticated && !busy) router.replace("/dashboard");
+  }, [isAuthenticated, busy, router]);
   return (
     <main className="mx-auto w-full max-w-lg px-5 py-10 sm:py-14">
       <Link href="/" className="text-lg font-bold">
@@ -39,7 +43,7 @@ export default function SignInPage() {
             setError("");
             setConfirmationError(false);
             const data = new FormData(event.currentTarget);
-            if (flow === "signUp" && data.get("password") !== data.get("confirmPassword")) {
+            if ((flow === "signUp" || upgradePassword) && data.get(upgradePassword ? "newPassword" : "password") !== data.get("confirmPassword")) {
               setConfirmationError(true);
               document.getElementById("confirm-password")?.focus();
               return;
@@ -51,8 +55,10 @@ export default function SignInPage() {
             setShowPassword(false);
             setShowConfirmation(false);
             try {
-              const result = await signIn("password", data);
-              if (!result.signingIn) setError("Sign-in was not completed. Check your details and try again.");
+              const result = await signIn({ flow, email: String(data.get("email")), password: String(data.get("password")), ...(upgradePassword ? { newPassword: String(data.get("newPassword")) } : {}) });
+              if (result.status === "complete") await setSession(result.tokens);
+              else if (result.error === "PASSWORD_UPGRADE_REQUIRED") { setUpgradePassword(true); setError("Your account is preserved. Choose a new password to finish the authentication upgrade."); }
+              else setError(authErrorMessage(result.error));
             } catch {
               setError(
                 flow === "signIn"
@@ -81,12 +87,13 @@ export default function SignInPage() {
               visible={showPassword} onToggle={() => setShowPassword(!showPassword)}
               aria-describedby={flow === "signUp" ? "password-help" : undefined}
               minLength={flow === "signUp" ? MIN_PASSWORD_LENGTH : undefined}
-              maxLength={MAX_PASSWORD_LENGTH}
+              maxLength={flow === "signIn" ? 128 : MAX_PASSWORD_LENGTH}
               autoComplete={flow === "signIn" ? "current-password" : "new-password"} required
               onInput={() => setConfirmationError(false)} />
-            {flow === "signUp" && <p id="password-help" className="muted text-xs">Use 8–128 characters. A longer passphrase is better.</p>}
+            {flow === "signUp" && <p id="password-help" className="muted text-xs">Use 10–100 characters. A longer passphrase is better.</p>}
           </div>
-          {flow === "signUp" && <div className="grid gap-2">
+          {upgradePassword && <PasswordInput id="new-password" label="New password" name="newPassword" visible={showUpgradePassword} onToggle={() => setShowUpgradePassword(!showUpgradePassword)} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH} required />}
+          {(flow === "signUp" || upgradePassword) && <div className="grid gap-2">
             <PasswordInput id="confirm-password" label="Confirm password" name="confirmPassword"
               visible={showConfirmation} onToggle={() => setShowConfirmation(!showConfirmation)}
               autoComplete="new-password" maxLength={MAX_PASSWORD_LENGTH} required
@@ -115,6 +122,8 @@ export default function SignInPage() {
               setFlow(flow === "signIn" ? "signUp" : "signIn");
               setError("");
               setConfirmationError(false);
+              setUpgradePassword(false);
+              setShowUpgradePassword(false);
               setShowPassword(false);
               setShowConfirmation(false);
             }}

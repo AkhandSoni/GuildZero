@@ -15,7 +15,8 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./*"] },
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "allowImportingTsExtensions": true
   },
   "include": [
     "next-env.d.ts",

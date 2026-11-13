@@ -1,4 +1,4 @@
-import { authTables } from "@convex-dev/auth/server";
+import { legacyAuthTables } from "./legacyAuthSchema";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { jobState, optionsValidator, checkValidator, scoreValidator } from "./marketModel";
@@ -15,7 +15,7 @@ export const missionFields = {
   deadlineAt: v.number(),
 };
 export default defineSchema({
-  ...authTables,
+  ...legacyAuthTables,
   paymentIntents: defineTable({
     // Optional only for historical records. Unbound intents cannot be signed.
     policyVersion: v.optional(v.string()),

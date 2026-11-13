@@ -1,4 +1,4 @@
-import { convexTest } from "convex-test";
+import { testBackend, asUser } from "../helpers/backend";
 import { describe, expect, it } from "vitest";
 import schema from "../../convex/schema";
 import { api } from "../../convex/_generated/api";
@@ -14,7 +14,7 @@ const input = (): MissionInput => ({
 });
 const paginationOpts = { numItems: 20, cursor: null };
 async function setup() {
-  const t = convexTest(schema, modules);
+  const t = testBackend(schema, modules);
   const [a, b] = await t.run(async (ctx) =>
     Promise.all([
       ctx.db.insert("users", { email: "alice@example.com" }),
@@ -23,8 +23,8 @@ async function setup() {
   );
   return {
     t,
-    alice: t.withIdentity({ subject: `${a}|session-a` }),
-    bob: t.withIdentity({ subject: `${b}|session-b` }),
+    alice: await asUser(t, a),
+    bob: await asUser(t, b),
   };
 }
 describe("private mission API", () => {

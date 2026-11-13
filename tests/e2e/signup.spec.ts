@@ -1,18 +1,18 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-test("mobile signup validates confirmation, supports visibility and accepts an eight-character password", async ({ page }) => {
+test("mobile signup validates confirmation, supports visibility and accepts a ten-character password", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/sign-in");
   await expect(page.getByLabel("Confirm password", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   const email = `signup-${randomBytes(8).toString("hex")}@example.com`;
-  const password = randomBytes(4).toString("hex");
+  const password = randomBytes(5).toString("hex");
   const primary = page.getByLabel("Password", { exact: true });
   const confirm = page.getByLabel("Confirm password", { exact: true });
   await page.getByLabel("Email", { exact: true }).fill(email);
-  await expect(primary).toHaveAttribute("minlength", "8");
+  await expect(primary).toHaveAttribute("minlength", "10");
   await expect(primary).toHaveAttribute("autocomplete", "new-password");
-  await primary.fill("1234567"); await confirm.fill("1234567");
+  await primary.fill("123456789"); await confirm.fill("123456789");
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   expect(await primary.evaluate((input: HTMLInputElement) => input.validity.tooShort)).toBe(true);
   await expect(page).toHaveURL(/\/sign-in$/);
