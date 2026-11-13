@@ -115,8 +115,8 @@ export default function MissionPage({
           </Button>
         </div>
       )}
-      {!editing && <JobWorkspace key={mission._id} mission={mission} />}
-      {mission.state === "active" && <RetentionPanel key={mission._id} missionId={mission._id} />}
+      {!editing && <JobWorkspace key={`workspace:${mission._id}`} mission={mission} />}
+      {mission.state === "active" && <RetentionPanel key={`retention:${mission._id}`} missionId={mission._id} />}
       {confirming && (
         <div className="panel mt-5">
           <p>Delete this draft and its input? This cannot be undone.</p>

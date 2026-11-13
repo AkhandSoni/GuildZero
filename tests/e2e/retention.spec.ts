@@ -30,6 +30,7 @@ test("owner confirms content removal for unawarded work and removed source canno
   await expect(page.getByText(/Content removed on/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Private content removed", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Use as new mission", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Prepare exact payment", exact: true })).toBeDisabled();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Content removed by owner", exact: true })).toBeVisible();
