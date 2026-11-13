@@ -2,6 +2,14 @@
 
 Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the full public/account/workspace interface has been redesigned and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
+## Reviewed PR integration (#37, #41, #42) — 2026-11-13
+
+The owner explicitly requested reviewing all open PRs, posting necessary comments and merging those that pass review. Integrated #37 (unsaved brief protection), #41 (conservative payment-recovery proposal/model) and #42 (verified-account-recovery design) with current main. The only conflict in these merges was the decisions log for #37; both histories were retained. Existing per-mission preview acknowledgment, private ownership and confirmed-delivery gates remain intact. #41/#42 are design work only: payment retry and account recovery remain unavailable, and #33/#24 remain open.
+
+Independent review comments were posted on all seven PRs. #38, #39 and #40 remain open with requested changes for allowance admission feedback/readiness, deletion evidence and unpaid-result browser expectations respectively. #43 remains open for clarification of its offline subprocess evidence and the remaining target-runtime gate. Their branch-specific tests and applicable builds passed independently; this does not establish their compatibility with current main or resolve their reported findings/conflicts.
+
+Combined integration validation: **245 tests in 28 files**, including **125 integration tests in 16 files**, pass. Lint, typecheck, default production build, client-boundary scan (**28 assets**), diff checks and 12 relative documentation links pass. All **15 production browser scenarios** passed against an isolated real local Convex/Auth 2 backend: seven in 31.9 seconds, seven in 51.3 seconds, and session renewal after expiry in 1.2 minutes. An additional real-browser sign-out check preserved dirty input after cancellation and discarded it only on confirmation, with no page errors. No new live payment, public deployment, secret change or user-backend migration occurred. Main-checkout environment files, data and unrelated edits were preserved. Remote merge/push verification is reported separately.
+
 ## Confirmed delivery and commitment checks — 2026-11-13
 
 The owner authorized payment-gated full delivery, requested real business findings, then limited implementation to a few claimed issues. Claimed only **#31 (confirmed deliverable release)** and **#34 (launch/award settlement readiness)**. After an explicit pause and resume, both are implemented, validated and integrated into local main. #32, #33, #35 and #36 remain open/unimplemented; no additional business issue was claimed.
