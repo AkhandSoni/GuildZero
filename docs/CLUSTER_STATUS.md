@@ -2,6 +2,16 @@
 
 Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the full public/account/workspace interface has been redesigned and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
+## Updated PR review and integration (#39, #40) — 2026-11-13
+
+The owner requested reviewing updated PRs, commenting on remaining defects and merging those that pass. Re-reviewed heads #38 at 9f4d7ab, #39 at 3ae6f3a and #40 at abebdb4 against main 69d9c5e. #39 fixes deletion eligibility by reusing the exact shared confirmed-delivery group policy, retains immutable payment/accounting records, and prevents unsafe active/uncertain removal. #40 enforces selected-column strict numeric preflight before auction writes while preserving editable source and metadata-only unpaid output. Their previous inline review threads are resolved; both integrate without conflicts.
+
+#38 remains open with changes requested: its new terminal allowance denial stores workerError on an unawarded job, but the unchanged view renders the retryable-pause message and an enabled Retry workflow stage control; backend resume correctly rejects it. An isolated regression combining the real scheduled denial/owner projection with actual component rendering reproduced the mismatch. The earlier launch/preflight finding is fixed; this remaining view defect is not silently merged.
+
+Independent branch suites passed (#38: 267 tests, #39: 277, #40: 255). The combined #39/#40 candidate passes **284 tests in 32 files**, including **160 integration tests in 19 files** rerun separately, lint, typecheck, default production build, a **28-asset** client-boundary scan, diff checks, ten relative documentation links and npm audit (zero reported vulnerabilities). All **17 production-browser scenarios** pass against the isolated real local Convex/Auth2 backend: sixteen in 1.5 minutes and timed session renewal separately in 1.2 minutes. This covers removal/cancel/reload, strict-input correction, auth/privacy, unsaved changes, real execution/subcontracting and withholding unpaid output. No new live payment, user-backend migration, key/policy configuration change, public hosting or submission occurred. Existing root edits and environment/data remain untouched.
+
+#35/#36 stay open for representative-user and applicable operational validation; these engineering features do not establish legal compliance or currency/locale conversion. #32 stays open with PR #38. Recovery and target-runtime settlement gates remain unchanged. Remote merge/push verification is reported separately.
+
 ## Settlement subprocess SIGKILL and partial parent/child recovery tests (#9, #10) — 2026-11-13
 
 Added subprocess `SIGKILL` interruption and partial subcontract settlement regression coverage in `tests/integration/settlement-crash-recovery.test.ts` (using `tests/helpers/settlement-worker-subprocess.mjs`) and surfaced an explicit operator-review message in `components/payment-panel.tsx` when an intent is stranded in `SUBMITTING` without a recorded `txHash`:
