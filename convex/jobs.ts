@@ -1,3 +1,4 @@
+import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "../lib/summary-preflight";
 import { settlementReadiness } from "./settlementReadiness";
 import { deliveryAccess, deliverablePreview } from "./deliveryAccess";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
@@ -23,6 +24,7 @@ export const start = mutation({
     const mission = await ctx.db.get(args.missionId);
     if (!mission || mission.ownerId !== ownerId)
       throw new ConvexError("MISSION_NOT_FOUND");
+    if (mission.contentRemovedAt !== undefined) throw new ConvexError("DATASET_REMOVED");
     const existing = await ctx.db
       .query("jobs")
       .withIndex("by_mission", (q) => q.eq("missionId", args.missionId))
@@ -48,6 +50,11 @@ export const start = mutation({
       if (!assertion.ok) throw new ConvexError({ code: assertion.code, message: assertion.message });
       if (JSON.stringify(assertion.value) !== JSON.stringify(result.value))
         throw new ConvexError("START_OPTIONS_CHANGED");
+    }
+    if (mission.serviceType === "csv_summary") {
+      const preflight = inspectSummaryInput(mission.inputCsv, result.value.columns);
+      if (!preflight.ok) throw new ConvexError({ code: preflight.code, message: preflight.message });
+      if (preflight.value.length) throw new ConvexError({ code: preflight.value[0].code, message: `${summaryIssueMessage(preflight.value[0])} ${STRICT_SUMMARY_INPUT}` });
     }
     const readiness = await settlementReadiness(ctx, mission);
     if (readiness.blocked && args.allowUnfundedPreview !== true) throw new ConvexError("SETTLEMENT_NOT_READY_ACKNOWLEDGE_PREVIEW");

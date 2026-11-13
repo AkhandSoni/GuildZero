@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from "react";
 import { useUnsavedMission } from "@/components/use-unsaved-mission";
 import { DatasetPreview } from "@/components/dataset-preview";
 import { inspectDataset, readCsvFile } from "@/lib/dataset-preview";
+import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "@/lib/summary-preflight";
 import Papa from "papaparse";
 import { ConvexError } from "convex/values";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export function MissionForm({
   const [importError, setImportError] = useState("");
   const errorRef = useRef<HTMLParagraphElement>(null);
   const dataset = useMemo(() => inspectDataset(csv), [csv]);
+  const summaryInput = useMemo(() => inspectSummaryInput(csv, selectedColumns), [csv, selectedColumns]);
   function changeCsv(next: string) {
     setFileName("");
     setImportError("");
@@ -225,7 +227,10 @@ export function MissionForm({
           {serviceType === "csv_summary" && dataset.ok && dataset.value.numericColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([...dataset.value.numericColumns])}>Select numeric columns</Button>}
           {selectedColumns.length > 0 && <Button type="button" variant="outline" onClick={() => setSelectedColumns([])}>Clear column selection</Button>}
         </div>
-        {serviceType === "csv_summary" && dataset.ok && dataset.value.columns.some((c) => selectedColumns.includes(c.name) && c.invalid > 0) && <p role="status" className="text-sm text-amber-900">Non-numeric values in: {dataset.value.columns.filter(c => selectedColumns.includes(c.name) && c.invalid > 0).map(c => `${c.name} (CSV record ${c.invalidRows.join(", ")})`).join("; ")}. Use Select numeric columns to correct the selection. Cleaning trims text; it does not turn product or region names into numbers.</p>}
+        {serviceType === "csv_summary" && <div className="grid gap-2 text-sm" aria-label="Summary input requirements">
+          <p className="muted text-xs">{STRICT_SUMMARY_INPUT} Numeric values must be finite, within ±1e12 and must not underflow to zero. This is numerical analysis, not financial accounting.</p>
+          {summaryInput.ok && summaryInput.value.length > 0 && <div role="status" className="text-amber-900"><p>Save this draft to keep editing; an auction cannot start until these selected columns are corrected or deselected:</p><ul>{summaryInput.value.map(issue => <li key={issue.column}>{summaryIssueMessage(issue)}</li>)}</ul></div>}
+        </div>}
         <div className="column-choices">{headers.length > 0 && headers.length <= 32 ? headers.map((header, i) => (
           <label key={`${i}:${header}`} className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="column" value={header}

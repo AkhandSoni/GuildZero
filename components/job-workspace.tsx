@@ -11,6 +11,7 @@ import { inspectDataset } from "@/lib/dataset-preview";
 import { PaymentPanel } from "@/components/payment-panel";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import { eventLabel, statusLabels, workLabel } from "@/lib/workflow-view";
+import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "@/lib/summary-preflight";
 export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
   const jobs = useQuery(api.jobs.forMission, { missionId: mission._id });
   const start = useMutation(api.jobs.start);
@@ -31,6 +32,8 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
     <p className="muted mt-3">Edit this draft and save explicit processing columns before opening an auction. Existing input and budget are preserved.</p>
   </section>;
   const dataset = inspectDataset(mission.inputCsv);
+  const summaryInput = mission.serviceType === "csv_summary" ? inspectSummaryInput(mission.inputCsv, mission.options.columns) : null;
+  const inputBlocked = summaryInput !== null && (!summaryInput.ok || summaryInput.value.length > 0);
   return (
     <section className="panel mt-8">
       <h2>Open an auction</h2>
@@ -65,12 +68,13 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
       >
         {readiness?.blocked && <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={allowPreview} onChange={event=>setAllowPreview(event.target.checked)} required/><span>I understand only a metadata preview will be available until settlement is configured and confirmed.</span></label>}
         <p className="muted text-sm">Columns: {mission.options.columns.join(", ")}. Edit the draft to change processing options.</p>
+        {inputBlocked && <div role="alert" className="input-problem"><h3>Correct summary input before opening</h3>{summaryInput?.ok ? <ul>{summaryInput.value.map(issue => <li key={issue.column}>{summaryIssueMessage(issue)}</li>)}</ul> : <p>{summaryInput?.message}</p>}<p>{STRICT_SUMMARY_INPUT}</p><p>Edit this draft to correct the source or deselect the affected columns. The original dataset is unchanged.</p></div>}
         {error && (
           <p role="alert" className="text-red-800">
             {error}
           </p>
         )}
-        <Button disabled={busy || !readiness || readiness.blocked && !allowPreview} className="w-fit" type="submit">
+        <Button disabled={busy || inputBlocked || !readiness || readiness.blocked && !allowPreview} className="w-fit" type="submit">
           {busy ? "Opening…" : "Open auction"}
         </Button>
       </form>
@@ -105,6 +109,11 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
       setBusy(false);
     }
   };
+  if (data.job.contentRemovedAt !== undefined) return <section className="mt-8 grid gap-5" id={data.job.depth === 0 ? "mission-progress" : undefined}>
+    <div className="panel"><h2>Private content removed</h2><p className="muted mt-3">Work state: {statusLabels[data.job.state] ?? data.job.state}. Dataset and result downloads are no longer available. Financial records remain available below.</p></div>
+    <div id={data.job.depth === 0 ? "mission-settlement" : undefined}><PaymentPanel jobId={id} approved={false} /></div>
+    {data.children.map(child => <details className="panel" key={child._id}><summary>Cleaning subcontract · {child.state}</summary><JobDetail id={child._id} /></details>)}
+  </section>;
   return (
     <section id={data.job.depth === 0 ? "mission-progress" : undefined} className="mt-8 grid gap-5">
       <div className="panel job-overview">

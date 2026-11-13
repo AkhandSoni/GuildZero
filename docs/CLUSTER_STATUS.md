@@ -2,6 +2,16 @@
 
 Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the full public/account/workspace interface has been redesigned and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
+## Updated PR review and integration (#39, #40) — 2026-11-13
+
+The owner requested reviewing updated PRs, commenting on remaining defects and merging those that pass. Re-reviewed heads #38 at 9f4d7ab, #39 at 3ae6f3a and #40 at abebdb4 against main 69d9c5e. #39 fixes deletion eligibility by reusing the exact shared confirmed-delivery group policy, retains immutable payment/accounting records, and prevents unsafe active/uncertain removal. #40 enforces selected-column strict numeric preflight before auction writes while preserving editable source and metadata-only unpaid output. Their previous inline review threads are resolved; both integrate without conflicts.
+
+#38 remains open with changes requested: its new terminal allowance denial stores workerError on an unawarded job, but the unchanged view renders the retryable-pause message and an enabled Retry workflow stage control; backend resume correctly rejects it. An isolated regression combining the real scheduled denial/owner projection with actual component rendering reproduced the mismatch. The earlier launch/preflight finding is fixed; this remaining view defect is not silently merged.
+
+Independent branch suites passed (#38: 267 tests, #39: 277, #40: 255). The combined #39/#40 candidate passes **284 tests in 32 files**, including **160 integration tests in 19 files** rerun separately, lint, typecheck, default production build, a **28-asset** client-boundary scan, diff checks, ten relative documentation links and npm audit (zero reported vulnerabilities). All **17 production-browser scenarios** pass against the isolated real local Convex/Auth2 backend: sixteen in 1.5 minutes and timed session renewal separately in 1.2 minutes. This covers removal/cancel/reload, strict-input correction, auth/privacy, unsaved changes, real execution/subcontracting and withholding unpaid output. No new live payment, user-backend migration, key/policy configuration change, public hosting or submission occurred. Existing root edits and environment/data remain untouched.
+
+#35/#36 stay open for representative-user and applicable operational validation; these engineering features do not establish legal compliance or currency/locale conversion. #32 stays open with PR #38. Recovery and target-runtime settlement gates remain unchanged. Remote merge/push verification is reported separately.
+
 ## Settlement subprocess SIGKILL and partial parent/child recovery tests (#9, #10) — 2026-11-13
 
 Added subprocess `SIGKILL` interruption and partial subcontract settlement regression coverage in `tests/integration/settlement-crash-recovery.test.ts` (using `tests/helpers/settlement-worker-subprocess.mjs`) and surfaced an explicit operator-review message in `components/payment-panel.tsx` when an intent is stranded in `SUBMITTING` without a recorded `txHash`:
@@ -143,6 +153,16 @@ PR #15 review follow-up: resolved the unconditional terminal-record removal and 
 Fixed silent deletion of explicit all-empty CSV records, including one-column empty records and terminal LF/CRLF handling. Such records now count toward statistics and row limits; deleted-row deliverables fail independent verification. Replaced the unbounded selected-header explanation with a count/order summary; exact comparison and the 1,000-character persistence cap remain enforced. Added eight CSV regression cases and two real engine-to-Convex boundary tests at 11/32 maximum-length headers.
 
 Validation: lint, typecheck, production build and client-boundary check (25 assets) passed. All 124 tests in 12 files passed; the separate 58-test backend integration run is included in that total. All four live browser scenarios passed against `npm start` and the existing local Convex backend using Node 24.22.3 and the documented Chromium executable override. These tests include actual service execution and verification persisted via internal workflow mutations; selection in those boundary tests is an explicit trusted fixture, not a scheduled autonomous auction. No funded transfer or public deployment is claimed. The user authorized a branch push and PR; no merge or hackathon submission is included.
+
+## Strict summary input before commitment (#36) — 2026-11-13
+
+### Current-main integration corrections — 2026-11-13
+
+Merged current main `69d9c5e`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 255 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+
+Added strict numeric preflight in the editor, saved-brief launch panel and authenticated launch mutation. Unsupported selected currency/locale/percentage/formula-like inputs remain in editable drafts but cannot create a job or contract. Diagnostics identify selected columns and CSV record numbers; original bytes and valid columns are preserved. Results explicitly distinguish column sums from derived revenue. No locale conversion or new calculation is implemented. Representative CSV-owning user validation remains pending.
+
+Validation: all 221 unit/backend tests pass (including 7 new preflight cases), lint, typecheck, production build and client-boundary scan (27 assets) pass. The focused production browser scenario passed against isolated real local Auth 2: an invalid saved draft stayed unchanged/blocked across reload; deselecting its invalid price column allowed real scheduled summary execution for the remaining valid units column. Full browser suite was not rerun on this individual branch. No payment, public deployment or migration of existing work is included.
 
 ## PR #14 combination and validation — 2026-11-13
 
@@ -344,6 +364,15 @@ At the user's explicit request to test everything and push the completed foundat
 - Environment files and local backend state remain ignored. No future cluster work was authorized by this push request.
 - An additional walkthrough through the actual production UI confirmed a custom CSV is saved correctly, malformed CSV produces a visible error without saving, a one-yoctoNEAR budget preserves every decimal place after reload, editing updates the stored budget, canceling deletion preserves the mission, and confirming deletion removes it. Captured screenshots of the running mission workspace outside the repository.
 - Per the user's request, repository documentation is limited to setup (`README.md`), coding instructions (`AGENTS.md`), locked decisions, cluster status, and material deviations. Detailed handoff/architecture/workflow/planning notes remain local and are not included in the push.
+
+## Dataset stewardship follow-up (#35) — 2026-11-13
+
+### Current-main integration corrections — 2026-11-13
+
+Merged current main `69d9c5e`, retaining confirmed delivery, commitment checks and unsaved-edit protection. Resolved the review finding against the shared policy. Full branch suite: 277 tests passed; lint, typecheck, production build and client-boundary scan (28 assets) passed. No live payment or user-backend change. Combined browser validation is recorded separately.
+
+Added an explicit demo retention policy and owner-confirmed terminal mission content removal. Parent/child source, result and free-text copies are cleared together; ownership, active-work and exact finalized-settlement checks fail closed. Financial rows remain unchanged and removed records cannot be reused or quoted for new payment. Representative-user/jurisdiction validation, account erasure and operator backup deletion/expiry remain separate requirements; no legal compliance or automatic expiry is claimed. Validation results are recorded in the issue plan/PR.
+
 
 ## Functional application workspace and wallet — 2026-11-13
 

@@ -68,6 +68,12 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - CSV parsing preserves explicit empty records and removes only the parser's one terminal-separator artifact. Malformed-width blank records reject rather than disappear; empty records count toward the 500-row cap. Empty one-column normalization output is quoted to distinguish data from a terminal separator. Verification uses the preserved source records and rejects row-deleted outputs.
 - Column verification checks retain their exact comparisons but describe only the column count/order, keeping explanations within the existing Convex persistence cap. The cap is not relaxed. Boundary tests forward actual executor/verifier output through the trusted workflow with 11 and 32 maximum-length headers.
 
+## 2026-11-13 — Strict summary preflight (#36)
+
+- Implement the documented strict-input path rather than guessing locale/currency/percentage conversions. Drafts can retain unsupported numeric content for correction, but authenticated `jobs.start` validates selected original cells before recording any auction, job, award or payment. Existing started work remains untouched and retains independent executor/verifier rejection.
+- Share the bounded numeric/CSV grammar with frontend diagnostics. Show selected column names and up to three CSV record numbers per column; do not echo raw offending values into errors. Empty cells remain missing and signed decimals/scientific literals retain the existing finite ±1e12 and no-underflow bounds. Unselected columns and normalization behavior remain unchanged.
+- Literal column sums are not derived revenue or precise financial accounting. No locale conversion, new calculation, live payment, public deployment, representative-user validation or compliance claim is introduced. User validation of examples remains outstanding; this PR does not close that acceptance gate.
+
 ## 2026-11-13 — Combine merged economy kernel with application branches
 
 - The user explicitly authorized including merged PR #14 and testing it with the completed application branches on local main. Preserve both histories through a merge; no push or public deployment is included.
@@ -125,6 +131,13 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - Pinned Next.js 16.4.6 / React 19.3.1 / Convex 1.49.0 / Convex Auth 0.0.98 on the installed Node 26 toolchain. Patched `@auth/core` to compatible 0.41.3 after npm audit flagged the guide's 0.41.1. A scoped `minimatch` 11.0.1 override resolves the ESLint parser's development advisory; lint/typecheck validate compatibility.
 - Schema and generated Convex types cover only current auth and mission needs. No agent execution, auctions, payments, security lab, economy graph, or release scaffolding is included.
 
+## 2026-11-13 — Owner-controlled dataset retention (#35)
+
+- The owner requested implementation and separate PRs for four unclaimed issues. Implement the bounded demo policy in `docs/data-retention.md`; no production compliance, customer interview or jurisdiction validation is claimed.
+- Terminal mission-group content is removed atomically after ownership and exact confirmed settlement checks. IDs, money, work decisions and immutable payment rows survive; unresolved/failed payments, active work, signer locks, malformed or oversized histories refuse removal. No automatic expiry, receipt rewriting, recovery override or transfer is introduced.
+- A tombstone prevents reuse, reactivation and new payment quotes. Free-text evidence/column labels are removed as well as CSV/output copies. Independent downloads/backups and auth erasure remain explicitly documented operational gates.
+
+
 ## 2026-11-13 — Functional workspace and operator visibility
 
 - The owner explicitly requested a functional researched application beyond the reference image. Replace decorative dashboard cards and icon-only navigation with real routes, bounded main-job metrics, actionable review/payment queues, distinct parent/child outcomes, state-derived stages and expandable original audit evidence. Add a payment history route with owner-authorized mission links even when the job is outside the recent job window. No service-category expansion or new application runtime is included.
@@ -161,3 +174,8 @@ All locked choices are in `decisions.md`. Record any necessary change with date,
 - The owner requested reviews/comments on all open PRs and merging those that pass review. Merge #37/#41/#42 with the existing delivery/preflight implementation; resolve #37's documentation conflict by preserving both records. #41/#42 remain proposals rather than enabled recovery functionality. Keep #24/#33 open.
 - Independent reproductions support change requests on #38 (a committed unlisted owner's auction pauses with generic retry guidance) and #39 (removal accepts payment evidence rejected by the current delivery policy). #40's new browser result assertion conflicts with withholding unpaid content. #43's subprocess harness uses convex-test and a simulated chain in the surviving parent process; retain explicit evidence limits and review before integration. These four PRs remain open; no incomplete feature is silently merged.
 - Validation uses only isolated local test state and synthetic inputs. No new testnet transfer, signing-key import, private-data migration, provider enrollment, public hosting or submission is authorized by these merges.
+
+## 2026-11-13 — Updated business PR review
+
+- Under explicit review/merge authorization, integrate only #39/#40 after confirming shared final-evidence deletion checks and unpaid numeric-result protection. Preserve the existing per-mission preview acknowledgment and unsaved-edit guard. No new service, runtime, recovery permission or payment is introduced.
+- Keep #38 open for the reproduced nonretryable-allowance-denial/retry-control mismatch; its launch preflight improvement alone does not complete the user flow. Keep #35/#36 open for remaining real-user/operational acceptance rather than treating a code merge as customer validation. Root environment files, existing financial data and unrelated edits are preserved; local checks use only isolated synthetic test state.
