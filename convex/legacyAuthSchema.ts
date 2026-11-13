@@ -101,4 +101,3 @@ export const legacyAuthTables = {
     attemptsLeft: v.number(),
   }).index("identifier", ["identifier"]),
 };
-

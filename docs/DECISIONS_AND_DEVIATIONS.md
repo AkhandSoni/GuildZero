@@ -2,6 +2,23 @@
 
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
+## 2026-11-13 — Latest compatible releases and local startup
+
+- User explicitly selected keeping Convex with compatible latest releases, accepted the Auth 2 migration and a ten-character minimum, and requested plain npm run dev to start both services. Keep Next.js/Convex as the application architecture; no additional service or paid dependency is introduced.
+- Convex actions support Node 24 rather than the machine's Node 26. The launcher reuses installed pinned Node through mise/nvm or downloads and checksum-verifies the official archive into ignored local state. It changes no global shell configuration. package engines accept the supported Node 24 runtime and the tested Node 26 launcher entry point. TypeScript 7 is rejected by the current ESLint parser; Next's lint plugins do not support ESLint 10. Use TypeScript 6.0.3 and ESLint 9.39.5 until their peers support newer majors; do not force incompatible dependency resolution.
+- Official Auth 2 core/password components own sessions and new hashes. Preserve the no-email-service demo with an app-owned credential adapter rather than adding a mandatory email provider. The privileged component sign-in is guarded by a private credential verifier and accepts no client-specified identity/claims. Legacy Lucia Scrypt is verified using the official password-hash-wasm dependency, with account throttling and original NFKC normalization. New credentials use Auth 2's NFC policy. Existing user IDs, private resources and financial history are unchanged.
+- Existing eight-character credentials may be grandfathered only on proof of the old password. If Auth 2 rejects an old credential's other properties, require a verified replacement satisfying the new 10–100 policy. Old tables/keys remain for rollback; v1 tokens do not authorize the new path. Deployment-managed signing replaces manual JWT setup. No old payment, verification result or signer lock is recalculated.
+- Retain reviewed audit source repairs and executable regressions in main, preserving their behavior; omit the generated local audit reports and all environment files from commits. No new testnet transfer, hosting or submission is authorized by startup or this migration.
+
+## 2026-11-13 — Authorized system audit and reversible repairs
+
+- Applied the user's full-system audit instruction to the already integrated prototype, without expanding paused services or authorizing publication. Six confirmed defects were reproduced, repaired and regression-tested; the executable regressions are committed; generated detailed reports stay local.
+- Numeric analysis remains finite JavaScript numbers and the existing verification tolerance. Executor compensation and a separate verifier expansion sum repair cancellation loss; reject nonzero literal-to-zero underflow. No arbitrary-precision financial arithmetic or new dependency was introduced. Money remains integer yoctoNEAR strings/BigInt.
+- Strip one leading CSV BOM consistently after counting original bytes. Preserve embedded BOM data and existing mixed-separator rejection; saved mission input is not rewritten.
+- A disputed child without any output cannot be approved, so its working parent now enters owner review with capacity released. All original allocations and required child approval remain enforced. A child with output retains the human-approval/resume path; both paths have executable regressions. No migration touches old jobs.
+- SDK preparation uses the same fixed-testnet 15-second transport as other RPC operations. Stream response bytes through the existing size cap before decoding, cancelling oversized/error bodies. Offline real-SDK signing and transport tests add evidence without chain submission. Existing public receipt verification passed read-only; no real payout or credential change was made.
+- Hard process-death recovery and production identity/custody remain explicit architectural limitations. Do not infer safe lock release or resend from the timeout repair; no historical result, receipt or signer lock was recomputed or reset. Hosting/submission remain behind explicit human approval.
+
 ## 2026-11-13 — Requested signup usability and password policy
 
 - The user explicitly requested an eight-character minimum, confirm password, visible-password controls and a conventional signup form. Changed the shared frontend/backend policy to 8–128 characters; existing credentials remain valid. Confirmation is a local typo check and is removed before calling Convex Auth. Passwords remain hashed by the existing provider; signup introduces no new wallet or account provisioning.

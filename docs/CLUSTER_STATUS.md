@@ -2,7 +2,29 @@
 
 Current work: **Integrated local hackathon prototype completed and validated. PR #15 is merged, the scheduled economy is connected, the reference-inspired UI is complete and real parent/child testnet payments have confirmed. The verified integration is on main. Public hosting, final recording and submission remain pending. Broader service expansion remains paused.**
 
-## Signup usability follow-up — 2026-11-13
+## Compatible toolchain and single-command startup — 2026-11-13
+
+The user approved latest compatible releases with Convex retained, Auth 2 migration and a ten-character minimum for new passwords. Upgraded Convex to 1.50.0, Convex Auth to 2.0.0, TypeScript to 6.0.3, Lucide to 1.72.0, PapaParse to 5.7.1, convex-test to 0.0.71 and the application rate limiter to 0.4.3. Node 24.22.3 is pinned for Convex actions. ESLint 9 and TypeScript 6 are explicit compatibility exceptions to incompatible newer majors.
+
+Plain `npm run dev` now chooses/downloads the supported project runtime, deploys Convex, starts its watcher and starts Next.js. Separate frontend/backend commands remain available. Verified startup from system Node 26.13.0, including Ctrl+C cleanup, plus the official SHA-256-checked Node download fallback with version managers unavailable. Existing environment values, server-side keys and database history are preserved. A final exact-value signing-key scan found no match in tracked source. Auth 2 uses deployment-managed signing, so no manual auth-key generation is required.
+
+Existing user IDs and ownership survive lazy credential conversion; old sessions must sign in again. A live pre-upgrade eight-character account retained access to its pre-upgrade private draft after migration, then the temporary draft was deleted. A restricted private database backup was created before deployment. Seven new backend regressions cover ownership, wrong credentials, Unicode normalization, explicit password upgrades, throttling, revocation and rollback. New signup/replacement policy is 10–100 characters; valid grandfathered eight-character credentials can convert unchanged. The form handles required legacy password upgrades with original-password proof and confirmation. Private views unsubscribe before logout revokes their session.
+
+Current local validation: lint and types pass; **189 tests in 21 files**, including **90 integration tests**, pass; **nine real browser scenarios** pass against the actual local backend using the one-command development startup (2.0 minutes), including renewal after the initial access token expires. The same **nine production-browser scenarios passed in 1.8 minutes** against the final production build. Production build and client-secret boundary scan passed. A separate clean checkout with fresh npm ci, no copied environment files and no backend data passed lint, types, all 189 tests, build, client scan and npm audit (zero known vulnerabilities). The existing stored testnet receipt was independently rechecked read-only as CONFIRMED. No new payment was submitted by this upgrade.
+
+The existing audit source repairs and regression tests are retained in a separate commit; generated audit reports stay local. No paused service expansion, public hosting, recording or submission is included. Stop at the current release gate until explicitly authorized.
+
+## Full system audit and local repairs — 2026-11-13
+
+The user authorized a system-wide audit, executable adversarial tests and reversible local repairs. Six defects were reproduced and repaired: inaccurate cancellation sums accepted by the verifier; nonzero numeric underflow; BOM/quoted-header separator mismatch; stranded working parents after a child dispute with no output; SDK preparation reads outside the RPC timeout policy; and RPC size checks buffering an entire oversized response before rejection.
+
+Final checks: lint/types/build/client scan passed; **182 tests across 20 files** passed (27 added), including **83 integration tests**; **eight real production-browser scenarios** passed in 42.1 seconds. A separate source copy with fresh `npm ci` and no copied environment/backend files passed lint/types/all 182 tests/build/client scan. npm audit returned zero known vulnerabilities. Twenty maximum-row/column execution-plus-verification runs measured median 18.98 ms/p95 27.61 ms locally. The existing child receipt again verified read-only as `CONFIRMED`; no new transfer was submitted. Exact-value scanning of the locally available signing key found no source/public-asset match.
+
+Each confirmed issue has passing regression coverage in the committed tests. The generated detailed audit reports are retained locally and intentionally omitted from Git. No schema/dependency migration or historical recomputation was performed. Existing keys, worksheets and financial records remain intact. Audit-started frontend/backend processes are stopped at handoff, matching their initial stopped state.
+
+Audit gate: current prototype repairs complete; no production-readiness claim. Abrupt signer-process loss before hash persistence, demo identity/custody limitations, sustained load, other browsers and public hosting remain unverified. **Stop for explicit human approval before public hosting, recording/submission or service expansion.** No Git push or publication was performed for this audit.
+
+## Signup usability follow-up — 2026-11-13 (historical; superseded by Auth 2 above)
 
 Implemented the requested shared 8–128 character policy, signup-only password confirmation with focused mismatch errors, separately labelled keyboard-accessible Show/Hide controls, password-manager autocomplete, disabled password spellcheck/autocapitalization and a compact responsive form. Fields remain hidden by default and confirmation is never sent/stored as an account field. Added scoped white autofill styling and retained accurate no-recovery disclosure.
 

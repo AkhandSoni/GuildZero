@@ -8,33 +8,36 @@ Agents calculate offers from their own profiles, estimated costs, workload, capa
 
 ## Local setup (no account or paid service required)
 
-Requirements: **Node.js 24.22.3** (see `.nvmrc`), npm, and network access for initial downloads. Run `nvm install && nvm use` if you use nvm. Convex's local Node actions require a supported Node 22/24 runtime; Node 26 alone cannot deploy those actions. The backend startup command rejects unsupported Node versions before starting Convex, preventing stale function deployments. Dependencies are pinned in `package.json` and `package-lock.json`. Next.js and Convex remain the only application runtimes; XYFlow is a UI library, and Vitest/Playwright are development test tools.
+Requirements: npm and network access for initial downloads. The supported backend runtime is **Node.js 24.22.3** (see `.nvmrc`); Convex Node actions do not support Node 26. You can invoke the launcher from Node 26: it selects an installed project runtime through mise/nvm, or downloads the pinned official Node archive into ignored `.convex/runtime/` after checking its SHA-256 checksum. It does not change your system Node or shell configuration.
 
 ```sh
 npm ci
-npm run dev:backend
-```
-
-On the first run, choose **Start without an account (run Convex locally)** and confirm. Convex downloads its official local backend, generates `.env.local`, and deploys the schema/functions. Keep that terminal running. In another terminal:
-
-```sh
-npm run auth:keys
 npm run dev
 ```
 
-Open http://localhost:3000. Sign up using an email and an 8–128 character password, confirmed in the second field. Local signup works without email delivery. **Email verification and password recovery are not enabled**; use disposable demo accounts and keep your password.
+The single command deploys the configured Convex backend, starts its watcher, and starts Next.js. Open http://localhost:3000 after the services report readiness. Ctrl+C stops the processes it started. On a fresh clone, choose **Start without an account (run Convex locally)** in the first Convex prompt; the CLI creates ignored `.env.local` and downloads its local backend. Your existing configuration and data are reused. An already-running compatible local backend is reused; stop it separately when needed. Optional separate commands are `npm run dev:backend` and `npm run dev:frontend`.
 
-`auth:keys` generates RS256 keys in memory and sends them directly to the configured Convex backend over stdin. It never prints keys, saves them in source files, or overwrites existing keys. Run it once per new backend. Re-running against an already configured backend fails safely. Restart `npm run dev` after changing frontend environment variables.
+Sign up using email and a **10–100 character password**, with confirmation and visibility controls. Common passwords and surrounding whitespace are rejected. **Email verification and password recovery are not enabled**; use disposable demo accounts and retain your password. No email service is required.
 
-For a free Convex cloud development deployment, choose the login option in `npm run dev:backend` instead. You must supply your own Convex login and select a free project. Then run `npm run auth:keys` against that selected deployment. No deployment token is needed by the browser. Cloud deployment is not required for Cluster 1.
+## Authentication upgrade and existing accounts
+
+Convex Auth **2.0.0** manages sessions and password hashes in official Convex components. Its deployment signs access tokens automatically; manual JWT keys are no longer required. `npm run auth:keys` now only explains this and changes no keys. Existing backend secrets and old auth tables are retained, never deleted by startup.
+
+After the upgrade, sign in again. Existing accounts migrate only after successful password verification and retain their original user IDs, private missions and financial history. Existing eight-character passwords can migrate unchanged. If an old password violates Auth 2's common-password, whitespace or maximum-length policy, sign-in asks for a new password and confirmation while requiring the original password as proof. New accounts and explicitly chosen replacement passwords require at least ten characters. No bulk user-ID rewriting is performed.
+
+The application preserves its original unverified-email demo semantics using a credential adapter around official Auth 2 core/password components. Privileged component session creation is reachable only after the private credential verifier succeeds; clients cannot supply user IDs or claims. Legacy Scrypt verification is bounded and rate-limited. This is a local hackathon account system, not production account management.
 
 ## Environment and secrets
 
-`.env.example` documents the public URL placeholders. Convex writes actual local values to ignored `.env.local`; do not copy the empty example over that file. `NEXT_PUBLIC_CONVEX_URL` is required for the UI. `NEXT_PUBLIC_CONVEX_SITE_URL` is generated for HTTP auth routes; the backend supplies its own `CONVEX_SITE_URL` for JWT verification. Backend-only `JWT_PRIVATE_KEY` and `JWKS` are configured by the key helper, not put in a `NEXT_PUBLIC_` variable. Password-only auth does not require `SITE_URL`.
+`.env.example` lists public URL placeholders; do not overwrite a working `.env.local`. Convex writes the actual local deployment and public URLs. Auth 2 needs no application-managed JWT private key or JWKS. Old `JWT_PRIVATE_KEY`/`JWKS` values may remain in the backend for rollback; they are unused by the new authentication path. Existing ignored worksheets are retained and are not automatically imported.
 
-This working checkout also includes an ignored `.env.convex.local` worksheet with blank server-only fields, ready for manual configuration if needed. It is **not automatically loaded or synced**. For a different backend, fill every field and import with `npx convex env set --from-file .env.convex.local`, or use `npm run auth:keys` instead. Current local auth keys are already configured; leave them intact. Never import blank values into a working backend. The worksheet and `.env.local` are private local files and are intentionally absent from Git.
+Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions. Both local services must run; `npm run dev` handles them together. `.convex/`, `.env*` (except the example), build files and test artifacts are ignored. Dedicated NEAR testnet credentials stay backend-only; startup and account migration never submit payments. See [settlement setup](docs/settlement.md).
 
-Without `NEXT_PUBLIC_CONVEX_URL`, the frontend shows setup instructions instead of pretending storage/auth work. Both local processes are needed for local use. `.convex/`, `.env*` (except the example), build files, and test artifacts are ignored. NEAR signing code is confined to the backend Node action; configure dedicated testnet credentials there. The ignored `.env.near.local` worksheet is optional and is not automatically synchronized. See [settlement setup](docs/settlement.md).
+## Compatible toolchain
+
+Dependencies are pinned with their lockfile. The application uses Next.js 16.4.6, React 19.3.1, Convex 1.50.0 and Convex Auth 2.0.0. Supporting updates include PapaParse 5.7.1, Lucide 1.72.0 and convex-test 0.0.71 and rate-limiter 0.4.3.
+
+“Latest” means the newest compatible stable releases: Node 24 is required by Convex actions; TypeScript 6.0.3 is retained because the current TypeScript ESLint parser rejects TypeScript 7; ESLint 9.39.5 is retained because Next's React/import/accessibility plugins do not support ESLint 10. Test tooling is development-only; Next.js and Convex remain the application architecture.
 
 ## Foundation walkthrough
 
@@ -57,6 +60,8 @@ At `/security`, select your job and run a controlled probe. Reputation/depth pro
 
 Input limits: 64 KiB of UTF-8 CSV, 1–500 data rows, at most 32 columns, unique nonempty headers, consistent row widths, 100-character titles, and 1,000-character acceptance notes. No external URL fetching or file execution. Notes are stored as text, not executed or treated as policy. The executor and independent verifier enforce the same bounded CSV contract.
 
+Summary values use finite JavaScript numbers within ±1e12; nonzero literals that underflow to zero are rejected. Compensated summation preserves small contributions when large opposing values cancel, and a separate reference sum verifies the result within the documented tolerance. This is numerical analysis, not arbitrary-precision decimal accounting; all NEAR amounts separately use integer strings and BigInt.
+
 ## Validation
 
 ```sh
@@ -71,7 +76,7 @@ npm audit
 Vitest uses `convex-test` for isolated backend tests; it does not substitute for a live auth check. Browser tests use real Convex Auth and the running backend:
 
 ```sh
-# Start npm run dev:backend and configure auth keys first.
+# Start npm run dev first; no auth key setup is required.
 npx playwright install chromium
 npm run test:e2e
 # Or use an existing compatible system Chromium:
@@ -89,7 +94,7 @@ For a production-build smoke check, run `npm run build`, then `npm start` while 
 ## Architecture and boundaries
 
 - `app/`, `components/`: Next.js App Router UI, Tailwind, shadcn/ui-style Button/Input primitives, Convex client subscriptions, and authenticated navigation.
-- `convex/`: Convex Auth managed tables and HTTP routes; mission schema and owner-scoped query/create/update/delete functions. Owner IDs come exclusively from the verified session. Lists use indexed pagination; denied and nonexistent mission IDs return the same error.
+- `convex/`: Convex Auth component sessions, preserved legacy tables; mission schema and owner-scoped query/create/update/delete functions. Owner IDs come exclusively from the verified session. Lists use indexed pagination; denied and nonexistent mission IDs return the same error.
 - `convex/economyWorker.ts`: bounded versioned scheduled stages; atomic writes/scheduling, stale-callback guards, sanitized pause events and limited owner retries. No signing or network calls.
 - `convex/jobs.ts`, `workflow.ts`, `workflowHelpers.ts`: owner-facing job controls and internal worker transitions. No public endpoint accepts bidder scores, verification verdicts or reputation deltas. Parent holdback plus child price equals the original award; child reservations are a breakdown of that award, not a second charge to the buyer. Rejected/pending obligations remain recorded conservatively for later settlement integration.
 - `lib/`: bounded mission validation, BigInt money conversion, static initial agents, and shared economy types/options validation. The integrated economy kernel contains the real decision algorithms, CSV executor and independent verifier.
@@ -101,8 +106,8 @@ PRs #14 and #15 combined the engine and application histories. The scheduled dri
 
 Auth uses the documented Convex Auth React provider in a client boundary. Private mission data is fetched only after authentication, and marketplace functions independently check backend identity and ownership. Protected routes may serve a public HTML shell, but never private mission data in that shell. Authentication endpoints necessarily allow credential exchange; every marketplace entry point requires an authenticated session and applicable resource ownership. Convex Auth is beta. The demo currently has neither email verification nor recovery, so it must not be represented as production account management.
 
-The `minimatch` override patches a development-only ESLint dependency advisory while retaining pinned compatible tooling. Convex Auth uses the patched compatible `@auth/core` 0.41.3 rather than the older version shown in its setup example.
+The `minimatch` override patches a development-only ESLint dependency advisory while retaining compatible tooling. Auth 2 no longer requires the old direct `@auth/core` dependency.
 
-Official setup references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Convex Auth setup](https://labs.convex.dev/auth/setup), [manual auth/key configuration](https://labs.convex.dev/auth/setup/manual), [password provider](https://labs.convex.dev/auth/config/passwords), and [Convex testing](https://docs.convex.dev/testing/convex-test).
+Official references: [Auth 2 source and migration notes](https://github.com/convex/convex-auth), [Convex runtimes](https://docs.convex.dev/functions/runtimes), [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), and [Convex testing](https://docs.convex.dev/testing/convex-test).
 
 See [cluster status](docs/CLUSTER_STATUS.md), [decisions and deviations](docs/DECISIONS_AND_DEVIATIONS.md), and [locked product decisions](docs/decisions.md). On 2026-11-12 the user authorized continued sequential work and feature-branch pushes; acceptance gates still require actual working evidence.
