@@ -97,7 +97,7 @@ The mission form imports one UTF-8 CSV within the existing 64 KiB/500-row/32-col
 
 Use **Search saved missions**, service filters and draft/started filters to retrieve your work beyond the currently loaded page. **Use as new mission** copies an owned brief into a new private draft with a refreshed deadline; it carries no jobs, contracts, payment authorizations or receipts. The dashboard surfaces work waiting for a human decision separately from prepared payment approvals.
 
-Research, priorities, acceptance criteria and GitHub issues are recorded in [user requirements](docs/USER_REQUIREMENTS.md). The owner selected business users processing sales or operations CSVs; detailed needs are desk-research hypotheses, not claims of completed user interviews. Unsaved-navigation protection, account recovery and representative-user validation remain tracked follow-ups.
+Research, priorities, acceptance criteria and GitHub issues are recorded in [user requirements](docs/USER_REQUIREMENTS.md). The owner selected business users processing sales or operations CSVs; detailed needs are desk-research hypotheses, not claims of completed user interviews. The editor warns before discarding unsaved changes through same-tab links, Back, reload/close, Sign out or Cancel editing. It keeps edits in React memory only; nothing is autosaved. Browser shutdown or suppressed dialogs cannot guarantee recovery. Account recovery and representative-user validation remain tracked follow-ups.
 
 ## Application workspace
 
