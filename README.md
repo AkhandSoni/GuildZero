@@ -27,6 +27,8 @@ After the upgrade, sign in again. Existing accounts migrate only after successfu
 
 The application preserves its original unverified-email demo semantics using a credential adapter around official Auth 2 core/password components. Privileged component session creation is reachable only after the private credential verifier succeeds; clients cannot supply user IDs or claims. Legacy Scrypt verification is bounded and rate-limited. This is a local hackathon account system, not production account management.
 
+Account recovery remains unavailable. The [issue #24 recovery design](docs/account-recovery-design.md) defines opt-in verified enrollment, proof/session safeguards and the provider approval/test gates. Stored login emails are not recovery proofs; existing user IDs and private ownership remain unchanged.
+
 ## Environment and secrets
 
 `.env.example` lists public URL placeholders; do not overwrite a working `.env.local`. Convex writes the actual local deployment and public URLs. Auth 2 needs no application-managed JWT private key or JWKS. Old `JWT_PRIVATE_KEY`/`JWKS` values may remain in the backend for rollback; they are unused by the new authentication path. Existing ignored worksheets are retained and are not automatically imported.
