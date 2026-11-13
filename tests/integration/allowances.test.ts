@@ -166,3 +166,19 @@ it("retains an uncertain failed-parent transfer in addition to an unpaid child o
   expect(await s.alice.query(api.payments.allowance, {})).toMatchObject({ obligatedYocto: NEAR.toString() });
   expect(child.jobId).toBeTruthy();
 });
+it("never discounts known transfers when historical parent and child allocations overlap", async () => {
+  const s = await setup();
+  // Deliberately inconsistent historical split: parent holdback was never
+  // reduced for this child. The real workflow prevents creating this shape.
+  const parent = await s.job(s.a, NEAR / 2n), child = await s.job(s.a, NEAR / 2n, true, parent.jobId);
+  const p = await s.alice.mutation(api.payments.prepare, { jobId: parent.jobId });
+  const c = await s.alice.mutation(api.payments.prepare, { jobId: child.jobId });
+  if (!p.ok || !c.ok) throw new Error("Fixture prepare failed");
+  for (const status of ["READY", "SUBMITTING", "CONFIRMING", "UNKNOWN_RECONCILE", "CONFIRMED"] as const) {
+    await s.t.run(async ctx => {
+      await ctx.db.patch(p.intentId, { status, authorizedAt: Date.now() });
+      await ctx.db.patch(c.intentId, { status, authorizedAt: Date.now() });
+    });
+    expect(await s.alice.query(api.payments.allowance, {})).toMatchObject({ obligatedYocto: NEAR.toString() });
+  }
+});

@@ -23,7 +23,7 @@ export async function allowanceSnapshot(ctx: QueryCtx | MutationCtx, ownerId: Id
   if ([jobs, contracts, intents].some(rows => rows.length > LIMIT))
     throw new ConvexError("DEMO_ACCOUNTING_CAPACITY_REACHED");
   const jobMap = new Map(jobs.map(job => [job._id, job]));
-  const groups = new Map<Id<"jobs">, { ownerId: Id<"users">; contract: bigint; uncoveredTransfers: bigint }>();
+  const groups = new Map<Id<"jobs">, { ownerId: Id<"users">; contract: bigint; uncoveredTransfers: bigint; totalTransfers: bigint }>();
   const group = (jobId: Id<"jobs">) => {
     const job = jobMap.get(jobId);
     if (!job) throw new ConvexError("DEMO_ACCOUNTING_INVALID");
@@ -31,7 +31,7 @@ export async function allowanceSnapshot(ctx: QueryCtx | MutationCtx, ownerId: Id
     if (!root || root.parentId || root.ownerId !== job.ownerId) throw new ConvexError("DEMO_ACCOUNTING_INVALID");
     let entry = groups.get(root._id);
     if (!entry) {
-      entry = { ownerId: root.ownerId, contract: 0n, uncoveredTransfers: 0n };
+      entry = { ownerId: root.ownerId, contract: 0n, uncoveredTransfers: 0n, totalTransfers: 0n };
       groups.set(root._id, entry);
     }
     return { entry, job, root };
@@ -68,12 +68,16 @@ export async function allowanceSnapshot(ctx: QueryCtx | MutationCtx, ownerId: Id
   }
   for (const [jobId, paid] of paidByJob) {
     const { entry } = group(jobId);
+    entry.totalTransfers += paid;
     const covered = coveredByJob.get(jobId) ?? 0n;
     if (paid > covered) entry.uncoveredTransfers += paid - covered;
   }
   let ownerUsed = 0n, globalUsed = 0n;
   for (const entry of groups.values()) {
-    const used = entry.contract + entry.uncoveredTransfers;
+    // Historical split fields may be inconsistent: known transfers are an
+    // independent lower bound, never reduced by overlapping allocations.
+    const obligated = entry.contract + entry.uncoveredTransfers;
+    const used = obligated > entry.totalTransfers ? obligated : entry.totalTransfers;
     globalUsed += used;
     if (entry.ownerId === ownerId) ownerUsed += used;
   }
