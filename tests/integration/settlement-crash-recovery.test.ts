@@ -354,6 +354,8 @@ it("retains signer lock and blocks duplicate/concurrent claims when worker proce
   const ownerId = await t.run((ctx) =>
     ctx.db.insert("users", { email: "crash-pre-hash@example.com" }),
   );
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", JSON.stringify({ [ownerId]: "10000000000000000000000000" }));
+  vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO", "10000000000000000000000000");
   const owner = await asUser(t, ownerId);
   const job1 = await createApprovedJobFixture(
     t,
@@ -450,6 +452,8 @@ it("persists signed txHash and nonce before broadcast, survives post-hash SIGKIL
   const ownerId = await t.run((ctx) =>
     ctx.db.insert("users", { email: "crash-post-hash@example.com" }),
   );
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", JSON.stringify({ [ownerId]: "10000000000000000000000000" }));
+  vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO", "10000000000000000000000000");
   const owner = await asUser(t, ownerId);
   const jobUnbroadcast = await createApprovedJobFixture(
     t,
@@ -522,6 +526,8 @@ it("recovers partial parent/child subcontract settlement across post-broadcast S
   const ownerId = await t.run((ctx) =>
     ctx.db.insert("users", { email: "partial-parent-child@example.com" }),
   );
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", JSON.stringify({ [ownerId]: "10000000000000000000000000" }));
+  vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO", "10000000000000000000000000");
   const owner = await asUser(t, ownerId);
 
   const missionId = await owner.mutation(api.missions.create, {
