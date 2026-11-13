@@ -15,9 +15,9 @@ async function setup(child = false) {
     const missionId = await ctx.db.insert("missions", { ownerId, title: secret, acceptanceCriteria: secret, inputCsv: secret, options: { columns: [secret] }, serviceType: "csv_summary", state: "active", maxBudgetYocto: "100", deadlineAt: Date.now() + 100000, createdAt: 1, updatedAt: 1 });
     const jobs = [];
     for (let i = 0; i < (child ? 2 : 1); i++) {
-      const jobId: Id<"jobs"> = await ctx.db.insert("jobs", { ownerId, missionId, depth: i as 0 | 1, ...(i ? { parentId: jobs[0].jobId } : {}), serviceType: "csv_summary", state: "approved", inputCsv: secret, options: { columns: [secret] }, workerError: secret, budgetYocto: "100", reservedYocto: "50", revisionCount: 0, createdAt: 1, updatedAt: 1 });
-      const bidId = await ctx.db.insert("bids", { jobId, agentId: "stats-core", priceYocto: "50", minimumYocto: "20", etaMs: 1, rationale: secret, createdAt: 1 });
-      const contractId = await ctx.db.insert("contracts", { jobId, bidId, agentId: "stats-core", amountYocto: "50", holdbackYocto: "50", state: "completed", selectionReason: secret, createdAt: 1 });
+      const jobId: Id<"jobs"> = await ctx.db.insert("jobs", { ownerId, missionId, depth: i as 0 | 1, ...(i ? { parentId: jobs[0].jobId } : {}), serviceType: "csv_summary", state: "approved", inputCsv: secret, options: { columns: [secret] }, workerError: secret, budgetYocto: "100", reservedYocto: child && i === 0 ? "100" : "50", revisionCount: 0, createdAt: 1, updatedAt: 1 });
+      const bidId = await ctx.db.insert("bids", { jobId, agentId: "stats-core", priceYocto: child && i === 0 ? "100" : "50", minimumYocto: "20", etaMs: 1, rationale: secret, createdAt: 1 });
+      const contractId = await ctx.db.insert("contracts", { jobId, bidId, agentId: "stats-core", amountYocto: child && i === 0 ? "100" : "50", holdbackYocto: "50", state: "completed", selectionReason: secret, createdAt: 1 });
       const deliverableId = await ctx.db.insert("deliverables", { jobId, attempt: 0, format: "json", content: secret, verificationPayload: secret, createdAt: 1 });
       const verificationId = await ctx.db.insert("verifications", { jobId, deliverableId, verdict: "pass", checks: [{ code: "VALID", passed: true, detail: secret }], createdAt: 1 });
       await ctx.db.insert("disputes", { jobId, reason: secret, decision: "approve", decidedBy: ownerId, decidedAt: 1 });
