@@ -115,6 +115,7 @@ export function MissionForm({
           Service template
           <select
             className="control"
+            aria-label="Service template"
             name="serviceType"
             value={serviceType}
             onChange={(e) => setServiceType(e.target.value as ServiceType)}
