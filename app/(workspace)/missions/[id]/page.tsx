@@ -43,9 +43,10 @@ export default function MissionPage({
       {editing ? (
         <MissionForm
           initial={mission}
+          onCancel={() => setEditing(false)}
           onSave={async (input) => {
             await update({ id: mission._id, ...input });
-            setEditing(false);
+            return () => setEditing(false);
           }}
         />
       ) : (
@@ -100,10 +101,10 @@ export default function MissionPage({
         catch { setError("Could not reuse this brief. Check its input or try again."); }
         finally { setBusy(false); }
       }}>Use as new mission</Button><p className="muted mt-2 text-xs">Creates a private draft with the same input and options, a new deadline and no copied contracts or payments.</p></div>}
-      {mission.state === "draft" && (
+      {mission.state === "draft" && !editing && (
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => setEditing(!editing)}>
-            {editing ? "Cancel editing" : "Edit mission"}
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Edit mission
           </Button>
           <Button
             variant="destructive"

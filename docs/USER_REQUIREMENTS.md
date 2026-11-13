@@ -45,7 +45,7 @@ Validation must connect these IDs to unit, backend ownership/pagination/copy and
 - [U9: Define a safe account-recovery path before real business adoption](https://github.com/AkhandSoni/GuildZero/issues/24) — follow-up backlog.
 - [U10: Validate business-user requirements with representative task sessions](https://github.com/AkhandSoni/GuildZero/issues/25) — follow-up backlog.
 
-U8 records accidental loss of unsaved edits; no browser or in-app dirty-form warning is implemented yet. U9 records the existing no-recovery demo-account limitation; a safe recovery channel and configuration must be agreed before any implementation. U10 records the lack of representative-user validation; no interview results or adoption metrics are invented.
+U8 now has browser/in-app dirty-form warnings, explicit discard and guarded cancellation; see docs/issue-23-plan.md for implementation and validation. Private inputs remain in React memory, with no browser-storage autosave. U9 records the existing no-recovery demo-account limitation; a safe recovery channel and configuration must be agreed before any implementation. U10 records the lack of representative-user validation; no interview results or adoption metrics are invented.
 
 ## Implementation evidence
 

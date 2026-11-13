@@ -24,7 +24,7 @@ function NewMissionEditor() {
         defaultService={service}
         onSave={async (input) => {
           const id = await create(input);
-          router.push(`/missions/${id}`);
+          return () => router.push(`/missions/${id}`);
         }}
       />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
+import { useUnsavedMission } from "@/components/use-unsaved-mission";
 import { DatasetPreview } from "@/components/dataset-preview";
 import { inspectDataset, readCsvFile } from "@/lib/dataset-preview";
 import Papa from "papaparse";
@@ -23,10 +24,12 @@ export function MissionForm({
   initial,
   defaultService = "csv_summary",
   onSave,
+  onCancel,
 }: {
   initial?: MissionInput;
   defaultService?: ServiceType;
-  onSave: (input: MissionInput) => Promise<unknown>;
+  onSave: (input: MissionInput) => Promise<void | (() => void)>;
+  onCancel?: () => void;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [budget, setBudget] = useState(initial ? formatNear(initial.maxBudgetYocto) : "10");
@@ -59,6 +62,10 @@ export function MissionForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const snapshot = JSON.stringify({ title, budget, criteria, caseMode, cleanFirst, humanReview, csv, serviceType, selectedColumns, deadline });
+  const [baseline, setBaseline] = useState(snapshot);
+  const dirty = snapshot !== baseline;
+  const guard = useUnsavedMission(dirty);
   return (
     <form
       className="mission-form min-w-0 grid gap-5"
@@ -82,7 +89,10 @@ export function MissionForm({
             requiresHumanReview: humanReview,
             cleanBeforeProcessing: serviceType === "csv_summary" && cleanFirst,
           });
-          await onSave(input);
+          const afterSave = await onSave(input);
+          await guard.saved();
+          setBaseline(snapshot);
+          afterSave?.();
         } catch (err) {
           setError(
             err instanceof ConvexError
@@ -97,6 +107,7 @@ export function MissionForm({
         }
       }}
     >
+      <p role="status" className="muted text-sm">{dirty ? "Unsaved changes. Save this private brief to keep your edits." : "No unsaved changes."} Nothing is autosaved in this browser.</p>
       <section className="form-section"><div className="form-section-heading"><span>01</span><div><h2>Define the mission</h2><p>Choose the work, its budget cap and deadline.</p></div></div>
       <label className="field">
         Mission title
@@ -262,7 +273,7 @@ export function MissionForm({
       </section>
       <div className="form-submit"><p>Saving creates a private brief. It does not open an auction or send funds.</p><Button type="submit" className="w-fit" disabled={busy || readingFile}>
         {busy ? "Saving…" : initial ? "Save changes" : "Create private mission"}
-      </Button></div>
+      </Button>{onCancel && <Button type="button" variant="outline" disabled={busy || readingFile} onClick={async () => { if (await guard.discard()) onCancel(); }}>Cancel editing</Button>}</div>
     </form>
   );
 }
