@@ -11,6 +11,7 @@ import { inspectDataset } from "@/lib/dataset-preview";
 import { PaymentPanel } from "@/components/payment-panel";
 import { WorkflowProgress } from "@/components/workflow-progress";
 import { eventLabel, statusLabels, workLabel } from "@/lib/workflow-view";
+import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "@/lib/summary-preflight";
 import Papa from "papaparse";
 import { isUnsafeFormulaValue } from "@/lib/economy/csv-input";
 function safeCsv(content: string) {
@@ -35,6 +36,8 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
     <p className="muted mt-3">Edit this draft and save explicit processing columns before opening an auction. Existing input and budget are preserved.</p>
   </section>;
   const dataset = inspectDataset(mission.inputCsv);
+  const summaryInput = mission.serviceType === "csv_summary" ? inspectSummaryInput(mission.inputCsv, mission.options.columns) : null;
+  const inputBlocked = summaryInput !== null && (!summaryInput.ok || summaryInput.value.length > 0);
   return (
     <section className="panel mt-8">
       <h2>Open an auction</h2>
@@ -66,12 +69,13 @@ export function JobWorkspace({ mission }: { mission: Doc<"missions"> }) {
         }}
       >
         <p className="muted text-sm">Columns: {mission.options.columns.join(", ")}. Edit the draft to change processing options.</p>
+        {inputBlocked && <div role="alert" className="input-problem"><h3>Correct summary input before opening</h3>{summaryInput?.ok ? <ul>{summaryInput.value.map(issue => <li key={issue.column}>{summaryIssueMessage(issue)}</li>)}</ul> : <p>{summaryInput?.message}</p>}<p>{STRICT_SUMMARY_INPUT}</p><p>Edit this draft to correct the source or deselect the affected columns. The original dataset is unchanged.</p></div>}
         {error && (
           <p role="alert" className="text-red-800">
             {error}
           </p>
         )}
-        <Button disabled={busy} className="w-fit" type="submit">
+        <Button disabled={busy || inputBlocked} className="w-fit" type="submit">
           {busy ? "Opening…" : "Open auction"}
         </Button>
       </form>

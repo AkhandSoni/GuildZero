@@ -1,3 +1,4 @@
+import { inspectSummaryInput, summaryIssueMessage, STRICT_SUMMARY_INPUT } from "../lib/summary-preflight";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
@@ -46,6 +47,11 @@ export const start = mutation({
       if (!assertion.ok) throw new ConvexError({ code: assertion.code, message: assertion.message });
       if (JSON.stringify(assertion.value) !== JSON.stringify(result.value))
         throw new ConvexError("START_OPTIONS_CHANGED");
+    }
+    if (mission.serviceType === "csv_summary") {
+      const preflight = inspectSummaryInput(mission.inputCsv, result.value.columns);
+      if (!preflight.ok) throw new ConvexError({ code: preflight.code, message: preflight.message });
+      if (preflight.value.length) throw new ConvexError({ code: preflight.value[0].code, message: `${summaryIssueMessage(preflight.value[0])} ${STRICT_SUMMARY_INPUT}` });
     }
     const now = Date.now();
     const id = await ctx.db.insert("jobs", {

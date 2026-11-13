@@ -62,6 +62,9 @@ Input limits: 64 KiB of UTF-8 CSV, 1–500 data rows, at most 32 columns, unique
 
 Summary values use finite JavaScript numbers within ±1e12; nonzero literals that underflow to zero are rejected. Compensated summation preserves small contributions when large opposing values cancel, and a separate reference sum verifies the result within the documented tolerance. This is numerical analysis, not arbitrary-precision decimal accounting; all NEAR amounts separately use integer strings and BigInt.
 
+Summary launch uses a strict-input preflight, including for older drafts: selected columns must contain only blank cells or plain decimal/scientific numbers (for example `-1234.50` or `1.25e3`). The CSV delimiter is a comma; quote fields containing commas, but quoting does not turn `"1,234.50"`, `"1234,50"`, `$12.50`, or `25%` into supported numbers. Currency, thousands separators, decimal commas and percentages are never guessed or converted. Choose the desired format/units explicitly in your source export or deselect those columns, then save the edited draft. The editor and saved brief identify selected columns and CSV record numbers before an auction can start; invalid drafts remain saved and editable. Cleaning trims whitespace only. Original CSV remains unchanged. A price-column sum is literally that column's sum, not quantity-times-price revenue. These numerical summaries do not infer currency or accounting precision. Representative CSV-owning user validation remains pending.
+
+
 ## Validation
 
 ```sh

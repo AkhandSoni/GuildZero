@@ -71,7 +71,11 @@ it("requires an owner decision on subjective acceptance criteria", async () => {
   await expect(s.owner.mutation(api.jobs.resolveDispute, { id: s.jobId, decision: "approve", reason: "again" })).rejects.toThrow("NO_OPEN_DISPUTE");
 });
 it("handles an unexecutable dataset without inventing output or allowing approval", async () => {
-  const s = await setup({ inputCsv: "units,price\nnot-a-number,4", options: { columns: ["units"] } }); await s.drain();
+  const s = await setup({ options: { columns: ["units"] } });
+  // Historical already-started job from before numeric preflight. New launches
+  // reject this input; the executor must still fail closed for existing work.
+  await s.t.run(ctx => ctx.db.patch(s.jobId, { inputCsv: "units,price\nnot-a-number,4" }));
+  await s.drain();
   expect((await s.detail()).job.state).toBe("disputed"); expect((await s.detail()).deliverables).toEqual([]);
   await expect(s.owner.mutation(api.jobs.resolveDispute, { id: s.jobId, decision: "approve", reason: "No output" })).rejects.toThrow("NO_DELIVERABLE_TO_APPROVE");
   await s.owner.mutation(api.jobs.resolveDispute, { id: s.jobId, decision: "reject", reason: "Correct the source" });
