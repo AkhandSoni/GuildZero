@@ -1,5 +1,6 @@
 import { internalMutation, internalQuery } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
+import { enforceAllowance } from "./allowanceHelpers";
 import { quote, audit, bindingReason } from "./paymentHelpers";
 import { inspectReceipt } from "../lib/settlement/policy";
 import { preparationReason } from "../lib/settlement/failures";
@@ -19,6 +20,7 @@ export const claim = internalMutation({
     let reason: string | null;
     try {
       reason = bindingReason(intent, await quote(ctx, job));
+      if (!reason) await enforceAllowance(ctx, intent.ownerId);
     } catch (error) {
       reason = error instanceof ConvexError && typeof error.data === "string"
         ? error.data : "PAYMENT_POLICY_CHANGED";

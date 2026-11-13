@@ -1,3 +1,5 @@
+import { enforceAllowance } from "./allowanceHelpers";
+import { allowancePolicyConfigured } from "../lib/settlement/allowance";
 // Trusted worker boundary. These functions are INTERNAL: a browser/agent cannot
 // submit its own scores, verification verdict, payout, or reputation delta.
 import { ConvexError, v } from "convex/values";
@@ -268,6 +270,8 @@ export const award = internalMutation({
         .unique()
     )
       throw new ConvexError("ALREADY_AWARDED");
+    if (allowancePolicyConfigured())
+      await enforceAllowance(ctx, job.ownerId, job.parentId ? 0n : amount(price));
     const id = await ctx.db.insert("contracts", {
       jobId: job._id,
       agentId: agent.id,

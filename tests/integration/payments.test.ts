@@ -116,6 +116,8 @@ async function setup(approval: "automatic" | "human" = "automatic") {
     });
     return { owner, other, jobId };
   });
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", JSON.stringify({ [ids.owner]: "1000000000000000000000000" }));
+  vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO", "1000000000000000000000000");
   const owner = await asUser(t, ids.owner),
     other = await asUser(t, ids.other);
   const result = await owner.mutation(api.payments.prepare, {
