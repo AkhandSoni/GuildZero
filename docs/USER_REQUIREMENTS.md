@@ -68,3 +68,9 @@ Additional desk research: [n8n's execution list](https://docs.n8n.io/workflows/e
 - #29: Show the shared testnet operator account, final block/time evidence, total and an exact available estimate excluding storage collateral and 0.01 NEAR gas reserve. Explain pending contracts are not deducted and mission budgets are not deposits. Authenticated, throttled refresh uses fixed testnet RPC only and never signs. Preserve successful stale readings on network errors; whitelist future pre-broadcast diagnostics, with no historical root-cause guesses or payment retries.
 
 Account recovery, representative-user research and public release remain separate tracked gates. No data retention policy or recovery channel is invented to make the dashboard appear complete.
+
+## Whole-application visual consistency (#30)
+
+The owner observed that a workspace-only revision left the public home and account/form/detail pages looking like unrelated prototypes. The approved follow-up covers the entire existing app. [Linear's interface hierarchy](https://linear.app/now/behind-the-latest-design-refresh), [Geist foundations](https://vercel.com/geist/introduction) and [Trigger.dev's inspector](https://trigger.dev/changelog/run-page-inspector) informed subdued navigation, consistent typography, meaningful public examples and evidence available on demand. These references inform design; GuildZero does not claim their capabilities or reuse their screen artwork.
+
+Acceptance includes the public home, authentication, all private routes and fallback states; actual sample calculations, usable service links, structured mission creation, clear result/evidence presentation, readable contrast, keyboard-accessible controls and responsive layouts. Original CSV, deliverable and negotiation evidence stays available behind explicit expanders. Metrics, transaction states and private ownership remain unchanged. Only observed source/test evidence can close #30.
