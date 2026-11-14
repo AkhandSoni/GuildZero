@@ -80,7 +80,7 @@ export function MasterAgentHome({ initialService }: { initialService?: ServiceTy
         router.push(`/master-agent/${runId}?plan=1`);
       } catch (e) { setError(errorMessage(e)); setBusy(false); }
     }}>
-      <label className="grid gap-2 text-sm">What should the agents do?<textarea className="control min-h-28" value={prompt} maxLength={4000} required onChange={e => setPrompt(e.target.value)} placeholder="Group my sales by product and summarize the existing units and revenue columns." /></label>
+      <div className="grid gap-2 text-sm"><label htmlFor="master-agent-prompt">What should the agents do?</label><textarea id="master-agent-prompt" className="control min-h-28" value={prompt} maxLength={4000} required onChange={e => setPrompt(e.target.value)} placeholder="Group my sales by product and summarize the existing units and revenue columns." /></div>
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="grid gap-2 text-sm">Maximum contract transfers (testnet NEAR)<Input value={budget} onChange={e => setBudget(e.target.value)} inputMode="decimal" required /><span className="muted text-xs">A planning cap, not a deposit. Network gas is separate.</span></label>
         <label className="grid gap-2 text-sm">Deadline (your local time)<Input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} required /></label>

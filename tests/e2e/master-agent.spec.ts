@@ -44,6 +44,11 @@ test("planner saves a private CSV request, reports missing inference configurati
   await expect(page.getByRole("alert").filter({ hasText: "Groq is not configured yet" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Proposed execution plan", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/missions\/new\?service=unknown$/);
+  await expect(page.getByRole("button", { name: "Generate plan", exact: true })).toBeEnabled();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/master-agent\/[a-z0-9]+\?plan=1$/);
   await page.goto("/master-agent"); await expect(page).toHaveURL(/\/missions\/new$/); await expect(page.getByRole("link", { name: "Summarize units and price.", exact: true })).toBeVisible();
 });
 
