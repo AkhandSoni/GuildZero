@@ -1,7 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
-import { query, mutation, type QueryCtx } from "./_generated/server";
+import { query, mutation, type QueryCtx, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { missionFields } from "./schema";
 import { validateMission, MissionValidationError, type MissionInput } from "../lib/missions";
@@ -17,7 +17,7 @@ async function ownedMission(ctx: QueryCtx, id: Id<"missions">) {
     throw new ConvexError("MISSION_NOT_FOUND");
   return mission;
 }
-function validated(input: MissionInput) {
+export function validated(input: MissionInput) {
   try {
     return validateMission(input);
   } catch (error) {
@@ -28,10 +28,7 @@ function validated(input: MissionInput) {
     );
   }
 }
-export const list = query({
-  args: { paginationOpts: paginationOptsValidator, search: v.optional(v.string()), state: v.optional(v.union(v.literal("draft"), v.literal("active"))), serviceType: v.optional(missionFields.serviceType) },
-  handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+export async function listOwned(ctx: QueryCtx, args: {paginationOpts: {numItems: number; cursor: string | null}; search?: string; state?: "draft" | "active"; serviceType?: MissionInput["serviceType"]}, ownerId: Id<"users">) {
     const paginationOpts = {
       ...args.paginationOpts,
       numItems: Math.max(1, Math.min(args.paginationOpts.numItems, 50)),
@@ -53,16 +50,17 @@ export const list = query({
       const filter = q.eq("ownerId", ownerId);
       return args.state ? filter.eq("state", args.state) : filter;
     }).order("desc").paginate(paginationOpts);
-  },
+}
+
+export const list = query({
+  args: { paginationOpts: paginationOptsValidator, search: v.optional(v.string()), state: v.optional(v.union(v.literal("draft"), v.literal("active"))), serviceType: v.optional(missionFields.serviceType) },
+  handler: async (ctx, args) => listOwned(ctx, args, await requireUser(ctx)),
 });
 export const get = query({
   args: { id: v.id("missions") },
   handler: (ctx, args) => ownedMission(ctx, args.id),
 });
-export const create = mutation({
-  args: missionFields,
-  handler: async (ctx, args) => {
-    const ownerId = await requireUser(ctx);
+export async function createOwned(ctx: MutationCtx, args: MissionInput, ownerId: Id<"users">) {
     const input = validated(args);
     const now = Date.now();
     return ctx.db.insert("missions", {
@@ -72,7 +70,11 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  },
+}
+
+export const create = mutation({
+  args: missionFields,
+  handler: async (ctx, args) => createOwned(ctx, args, await requireUser(ctx)),
 });
 export const update = mutation({
   args: { id: v.id("missions"), ...missionFields },

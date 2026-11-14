@@ -4,7 +4,7 @@ import { Account, KeyPairSigner, actions, baseEncode, type KeyPairString } from 
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { configuration } from "../lib/settlement/policy";
+import { configuration, yocto } from "../lib/settlement/policy";
 import { assertTestnet, rpc } from "../lib/settlement/rpc";
 import { settlementProvider } from "../lib/settlement/provider";
 import type { PreparationFailure } from "../lib/settlement/failures";
@@ -17,6 +17,7 @@ export const settle = internalAction({ args: { attemptId: v.id("paymentAttempts"
   const intent = claimed.intent;
   let stage: PreparationFailure = "SENDER_CONFIGURATION_CHANGED";
   try {
+    yocto(intent.amountYocto);
     const config = configuration();
     if (!config.enabled || config.sender !== intent.sender) throw new Error("CONFIGURATION_CHANGED");
     // Recoverable preparation is READ ONLY. No key is parsed or passed to an

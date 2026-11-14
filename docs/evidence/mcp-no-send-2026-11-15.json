@@ -1,0 +1,17 @@
+{
+  "capturedAt": "2026-11-14T20:07:01.619Z",
+  "environment": "isolated local Convex; actual persisted synthetic workflows",
+  "chainEvidence": "none; no blockchain execution claimed",
+  "authorizedIntents": 0,
+  "jobStates": {
+    "approved": 8
+  },
+  "paymentStates": {
+    "READY": 3
+  },
+  "settlementEnabled": false,
+  "signerLocks": 0,
+  "signingCredentialConfigured": false,
+  "syntheticMissions": 6,
+  "transactionHashes": 0
+}

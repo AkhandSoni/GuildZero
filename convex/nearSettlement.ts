@@ -9,7 +9,7 @@ import {
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { configuration } from "../lib/settlement/policy";
+import { configuration, yocto } from "../lib/settlement/policy";
 import { assertTestnet, rpc } from "../lib/settlement/rpc";
 import type { PreparationFailure } from "../lib/settlement/failures";
 import { settlementProvider } from "../lib/settlement/provider";
@@ -30,6 +30,7 @@ export const settle = internalAction({
     let broadcasting = false;
     let failureStage: PreparationFailure = "SENDER_CONFIGURATION_CHANGED";
     try {
+      yocto(intent.amountYocto);
       if (config.sender !== intent.sender) throw new Error("SENDER_CHANGED");
       failureStage = "TESTNET_CHECK_FAILED";
       await assertTestnet();
