@@ -7,8 +7,7 @@ import { MCP_TOOL_NAMES, toolArgumentsSchemas, toolDataSchemas, toolScope, MAX_G
 import { credentialDigest, validToken, errorResult, MCP_RATE_WINDOW, MCP_INTEGRATION_RATE, MCP_OWNER_RATE } from "./mcpPolicy";
 import { createOwned, listOwned } from "./missions";
 import { startOwned } from "./jobs";
-import { prepareOwned } from "./payments";
-import { quote, bindingReason } from "./paymentHelpers";
+import { prepareIntent, quote, bindingReason } from "./paymentHelpers";
 import { currentAttempt, recoveryEnabled } from "./paymentRecoveryHelpers";
 import { missionProjection, jobReference, jobProjection, paymentProjection, resultProjection, safeEventDetail } from "./mcpProjections";
 import { publicBid, publicContract, publicEvent, publicNegotiation } from "./publicMarket";
@@ -169,7 +168,7 @@ export const dispatch = internalMutation({args: {digest: v.string(), request: v.
     case "guildzero_get_result": data=await resultProjection(ctx,job!);break;
     case "guildzero_get_payment_status": data={jobId:job!._id,intent:await paymentProjection(ctx,job!)};break;
     case "guildzero_prepare_payment": {
-      const result=await prepareOwned(ctx,job!);if(!result.ok){await audit(ctx,principal,tool,"deny","NOT_READY",job!._id);return failure("NOT_READY");}
+      const result=await prepareIntent(ctx,job!);if(!result.ok){await audit(ctx,principal,tool,"deny","NOT_READY",job!._id);return failure("NOT_READY");}
       data={jobId:job!._id,intent:await paymentProjection(ctx,job!)};break;
     }
     case "guildzero_request_payment_authorization": {

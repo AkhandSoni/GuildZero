@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, FileSpreadsheet, LayoutDashboard, LogOut, Network, ShieldCheck, Users, Wallet, Plug } from "lucide-react";
+import { ArrowUpRight, FileSpreadsheet, LayoutDashboard, LogOut, Network, ShieldCheck, Users, Wallet, Sparkles, Plug } from "lucide-react";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isLoading,isAuthenticated }=useConvexAuth();
   const connection=useConvexConnectionState();
@@ -15,7 +15,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [error,setError]=useState("");const [signingOut,setSigningOut]=useState(false);
   useEffect(()=>{if(!isLoading&&!isAuthenticated)router.replace("/sign-in");},[isLoading,isAuthenticated,router]);
   if(signingOut||isLoading||!isAuthenticated)return <main className="muted p-12" role="status">{signingOut?"Signing out…":"Checking your session…"}</main>;
-  const section=pathname==="/dashboard"?"Dashboard":pathname==="/economy"?"Live economy":pathname==="/payments"?"Payments":pathname==="/integrations"?"Assistant connections":pathname==="/security"?"Security lab":pathname==="/agents"?"Agent directory":pathname.startsWith("/agents")?"Agent profile":pathname==="/missions"?"Missions":pathname==="/missions/new"?"New mission":"Mission workspace";
+  const planner=pathname==="/missions/new"||pathname.startsWith("/master-agent");
+  const section=planner?"Personal Master Agent":pathname==="/missions/new/manual"?"Advanced / Manual creation":pathname==="/dashboard"?"Dashboard":pathname==="/economy"?"Live economy":pathname==="/payments"?"Payments":pathname==="/integrations"?"Assistant connections":pathname==="/security"?"Security lab":pathname==="/agents"?"Agent directory":pathname.startsWith("/agents")?"Agent profile":pathname==="/missions"?"Missions":"Mission workspace";
   return <div className="workspace-app">
     <a href="#workspace-main" className="skip-link">Skip to workspace</a>
     <aside className="workspace-sidebar" aria-label="Workspace sidebar">
@@ -23,7 +24,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <p className="sidebar-label">Workspace</p>
       <nav className="workspace-nav" aria-label="Main navigation">{[
         {href:"/dashboard",label:"Dashboard",Icon:LayoutDashboard,active:pathname==="/dashboard"},
-        {href:"/missions",label:"Missions",Icon:FileSpreadsheet,active:pathname.startsWith("/missions")},
+        {href:"/missions/new",label:"Personal planner",Icon:Sparkles,active:planner},
+        {href:"/missions",label:"Missions",Icon:FileSpreadsheet,active:pathname.startsWith("/missions")&&!planner},
         {href:"/economy",label:"Economy",Icon:Network,active:pathname==="/economy"},
         {href:"/payments",label:"Payments",Icon:Wallet,active:pathname==="/payments"},
         {href:"/agents",label:"Agent directory",Icon:Users,active:pathname.startsWith("/agents")},

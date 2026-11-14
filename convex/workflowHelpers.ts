@@ -32,6 +32,8 @@ export async function event(
     detail: text(detail),
     createdAt: Date.now(),
   });
+  const step = await ctx.db.query("masterSteps").withIndex("by_mission", q => q.eq("missionId", job.missionId)).unique();
+  if (step) await ctx.scheduler.runAfter(0, internal.masterAgentWorker.step, { runId: step.runId });
 }
 export async function childrenComplete(ctx: MutationCtx, job: Doc<"jobs">) {
   const child = await ctx.db

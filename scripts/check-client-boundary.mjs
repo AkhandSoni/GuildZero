@@ -14,6 +14,9 @@ const forbidden = [
   "CONVEX_DEPLOY_KEY",
   "claimToken",
   "NEAR_PAYMENT_RETRY_ENABLED",
+  "GROQ_API_KEY",
+  "MASTER_AGENT_AUTOPAY_ENABLED",
+  "planningClaimToken",
 ];
 let scanned = 0;
 const violations = [];

@@ -60,6 +60,10 @@ export const settle = internalAction({
         account_id: intent.recipient,
         finality: "final",
       });
+      if (intent.masterGrantId) {
+        failureStage = "MASTER_SIGNING_NOT_PERMITTED";
+        if (!(await ctx.runMutation(internal.paymentWorker.masterSigningPermit, { intentId }))) throw new Error("MASTER_SIGNING_NOT_PERMITTED");
+      }
       failureStage = "SIGNER_KEY_INVALID";
       const signer = KeyPairSigner.fromSecretKey(
         process.env.NEAR_PRIVATE_KEY! as KeyPairString,

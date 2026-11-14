@@ -84,7 +84,7 @@ module.registerHooks({
 });
 
 const recoveryProtocol = process.env.WORKER_PROTOCOL === "recovery";
-if (recoveryProtocol) {
+if (recoveryProtocol || process.env.WORKER_OBSERVE_INITIALIZATION === "true") {
   const initialize = KeyPairSigner.fromSecretKey;
   KeyPairSigner.fromSecretKey = function (...args) {
     void callParent({ type: "signer_initialization" }).catch(() => {});

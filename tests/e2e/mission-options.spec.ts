@@ -10,6 +10,7 @@ test("normalization options and exact budget survive editing and reload", async 
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "+ New mission" }).click();
+  await page.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true }).click();
   await page.getByLabel("Mission title").fill("Normalization options fixture");
   await page.getByLabel("Service template").selectOption("csv_normalize");
   await page.getByLabel("CSV dataset").fill('product\n" Bag "\nBook');

@@ -105,3 +105,52 @@ export function bindingReason(
     return "PAYMENT_POLICY_CHANGED";
   return null;
 }
+
+import { appendAttempt, recoveryEnabled } from "./paymentRecoveryHelpers";
+
+
+/** Shared preparation; callers must establish ownership/authority before entry. */
+export async function prepareIntent(ctx: MutationCtx, job: Doc<"jobs">) {
+    const old = await ctx.db
+      .query("paymentIntents")
+      .withIndex("by_job", (q) => q.eq("jobId", job._id))
+      .unique();
+    if (old) return { ok: true as const, intentId: old._id };
+    let q: Awaited<ReturnType<typeof quote>>;
+    try { q = await quote(ctx, job); }
+    catch (error) {
+      const code = error instanceof ConvexError ? String(error.data) : "PAYMENT_CONFIGURATION_OR_POLICY";
+      await audit(ctx, job, "PREPARE_PAYMENT", code);
+      return { ok: false as const, code };
+    }
+    // Once writes begin, let failures abort the entire mutation. In particular,
+    // an attempt write must not leave an orphaned stable intent behind.
+    const intentId = await ctx.db.insert("paymentIntents", {
+      ...(recoveryEnabled() ? { recoveryVersion: 2 as const } : {}),
+      ownerId: job.ownerId,
+      jobId: job._id,
+      contractId: q.contract._id,
+      policyVersion: q.policyVersion,
+      deliverableId: q.deliverableId,
+      verificationId: q.verificationId,
+      ...(q.disputeId ? { disputeId: q.disputeId } : {}),
+      sender: q.sender,
+      recipient: q.recipient,
+      amountYocto: q.amountYocto,
+      network: "testnet",
+      status: "READY",
+      createdAt: Date.now(),
+    });
+    if (recoveryEnabled()) {
+      const attemptId = await appendAttempt(ctx, (await ctx.db.get(intentId))!, 1);
+      await ctx.db.patch(intentId, { currentAttemptId: attemptId, attemptCount: 1 });
+    }
+    await audit(
+      ctx,
+      job,
+      "PREPARE_PAYMENT",
+      "EXACT_TRANSFER_PREPARED",
+      "allow",
+    );
+    return { ok: true as const, intentId };
+}

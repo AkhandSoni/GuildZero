@@ -10,7 +10,7 @@ test("owner confirms content removal for unawarded work and removed source canno
   await page.getByLabel("Confirm password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto("/missions/new");
+  await page.goto("/missions/new/manual");
   await page.getByLabel("Mission title").fill("Synthetic retention example");
   await page.getByLabel("CSV dataset").fill("units\n12345");
   await page.getByRole("checkbox", { name: "units", exact: true }).check();

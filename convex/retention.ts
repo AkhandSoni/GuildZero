@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { user } from "./ownership";
 import { deliveryAccess } from "./deliveryAccess";
@@ -9,7 +9,7 @@ const terminal = new Set(["approved", "rejected", "cancelled", "unawarded"]);
 
 // Bounds cover the current depth-one/two-attempt workflow. Unexpected legacy
 // groups fail closed, so no partial deletion or silently truncated audit occurs.
-async function snapshot(ctx: QueryCtx, id: Id<"missions">) {
+export async function contentRemovalSnapshot(ctx: QueryCtx, id: Id<"missions">) {
   const ownerId = await user(ctx);
   const mission = await ctx.db.get(id);
   if (!mission || mission.ownerId !== ownerId) throw new ConvexError("MISSION_NOT_FOUND");
@@ -53,15 +53,25 @@ async function snapshot(ctx: QueryCtx, id: Id<"missions">) {
 export const status = query({
   args: { missionId: v.id("missions") },
   handler: async (ctx, { missionId }) => {
-    const { mission, reason } = await snapshot(ctx, missionId);
-    return { removedAt: mission.contentRemovedAt ?? null, eligible: reason === null, reason };
+    const { mission, reason } = await contentRemovalSnapshot(ctx, missionId);
+    const master = await ctx.db.query("masterSteps").withIndex("by_mission", q => q.eq("missionId", missionId)).unique();
+    const scopedReason = master && mission.contentRemovedAt === undefined ? "Remove content from its Personal planner workspace so all planner and mission copies are handled together." : reason;
+    return { removedAt: mission.contentRemovedAt ?? null, eligible: scopedReason === null, reason: scopedReason };
   },
 });
 
 export const removeContent = mutation({
   args: { missionId: v.id("missions"), confirm: v.literal("REMOVE_DATASET_AND_OUTPUTS") },
   handler: async (ctx, { missionId }) => {
-    const { mission, rows, reason } = await snapshot(ctx, missionId);
+    if (await ctx.db.query("masterSteps").withIndex("by_mission", q => q.eq("missionId", missionId)).unique())
+      throw new ConvexError("Remove content through the Personal planner workspace to include every private copy.");
+    await removeOwnedContent(ctx, missionId);
+  },
+});
+
+/** Shared authenticated removal; bundle callers validate every mission first. */
+export async function removeOwnedContent(ctx: MutationCtx, missionId: Id<"missions">) {
+    const { mission, rows, reason } = await contentRemovalSnapshot(ctx, missionId);
     if (mission.contentRemovedAt !== undefined) return;
     if (reason) throw new ConvexError(reason);
     const now = Date.now();
@@ -79,5 +89,4 @@ export const removeContent = mutation({
     }
     const root = rows.find(r => r.job.depth === 0)!.job;
     await ctx.db.insert("economyEvents", { ownerId: mission.ownerId, missionId, jobId: root._id, type: "CONTENT_REMOVED", detail: "Owner removed private content under demo retention policy v1. Financial identities and public chain evidence retained.", createdAt: now });
-  },
-});
+}

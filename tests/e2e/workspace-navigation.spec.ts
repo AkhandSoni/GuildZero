@@ -21,6 +21,11 @@ test("application navigation, real filters, wallet setup state and mobile layout
   await expect(page).toHaveURL(/\/agents$/);
   await expect(page.getByRole("link",{name:/Stats Core/})).toBeVisible();
   await page.goto("/missions/new?service=csv_normalize");
+  await expect(page.getByLabel("What should the agents do?",{exact:true})).toHaveValue(/Trim surrounding whitespace/);
+  await page.reload();
+  await expect(page.getByLabel("What should the agents do?",{exact:true})).toHaveValue(/Trim surrounding whitespace/);
+  await page.getByRole("link",{name:"Advanced / Manual Mission Creation",exact:true}).click();
+  await expect(page).toHaveURL(/\/missions\/new\/manual\?service=csv_normalize$/);
   await expect(page.getByLabel("Service template",{exact:true})).toHaveValue("csv_normalize");
   await expect(page.getByRole("heading",{name:"Define the mission",exact:true})).toBeVisible();
   for (const width of [1440,768,390]) {
@@ -33,7 +38,7 @@ test("application navigation, real filters, wallet setup state and mobile layout
     await expect(page.getByLabel("Search saved missions",{exact:true})).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   }
-  await page.goto("/missions/new");
+  await page.goto("/missions/new/manual");
   for (const width of [1440,1024,768,640,390,320]) {
     await page.setViewportSize({width,height:900});
     await page.evaluate(()=>document.fonts.ready);
