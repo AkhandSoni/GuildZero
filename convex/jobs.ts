@@ -5,7 +5,8 @@ import { settlementReadiness } from "./settlementReadiness";
 import { deliveryAccess, deliverablePreview } from "./deliveryAccess";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { ownedJob, user } from "./ownership";
 import { optionsValidator } from "./marketModel";
@@ -18,11 +19,7 @@ import {
   publicContract,
   publicEvent,
 } from "./publicMarket";
-export const start = mutation({
-  // options is a compatibility assertion, never an override of the saved brief.
-  args: { missionId: v.id("missions"), options: v.optional(optionsValidator), allowUnfundedPreview: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
-    const ownerId = await user(ctx);
+export async function startOwned(ctx: MutationCtx, args: {missionId: Id<"missions">; options?: import("../lib/economy/types").ServiceOptions; allowUnfundedPreview?: boolean}, ownerId: Id<"users">) {
     const mission = await ctx.db.get(args.missionId);
     if (!mission || mission.ownerId !== ownerId)
       throw new ConvexError("MISSION_NOT_FOUND");
@@ -95,7 +92,12 @@ export const start = mutation({
     if (readiness.blocked) await event(ctx, (await ctx.db.get(id))!, "UNFUNDED_PREVIEW_ACKNOWLEDGED", "Owner acknowledged settlement is not ready. Only metadata preview is available until configured payments are confirmed.");
     await ctx.scheduler.runAfter(1500, internal.economyWorker.step, { jobId: id, version: 0 });
     return id;
-  },
+}
+
+export const start = mutation({
+  // options is a compatibility assertion, never an override of the saved brief.
+  args: { missionId: v.id("missions"), options: v.optional(optionsValidator), allowUnfundedPreview: v.optional(v.boolean()) },
+  handler: async (ctx, args) => startOwned(ctx, args, await user(ctx)),
 });
 export const resume = mutation({
   args: { id: v.id("jobs") },

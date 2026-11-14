@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, FileSpreadsheet, LayoutDashboard, LogOut, Network, ShieldCheck, Users, Wallet, Sparkles } from "lucide-react";
+import { ArrowUpRight, FileSpreadsheet, LayoutDashboard, LogOut, Network, ShieldCheck, Users, Wallet, Sparkles, Plug } from "lucide-react";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isLoading,isAuthenticated }=useConvexAuth();
   const connection=useConvexConnectionState();
@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(()=>{if(!isLoading&&!isAuthenticated)router.replace("/sign-in");},[isLoading,isAuthenticated,router]);
   if(signingOut||isLoading||!isAuthenticated)return <main className="muted p-12" role="status">{signingOut?"Signing out…":"Checking your session…"}</main>;
   const planner=pathname==="/missions/new"||pathname.startsWith("/master-agent");
-  const section=planner?"Personal Master Agent":pathname==="/missions/new/manual"?"Advanced / Manual creation":pathname==="/dashboard"?"Dashboard":pathname==="/economy"?"Live economy":pathname==="/payments"?"Payments":pathname==="/security"?"Security lab":pathname==="/agents"?"Agent directory":pathname.startsWith("/agents")?"Agent profile":pathname==="/missions"?"Missions":"Mission workspace";
+  const section=planner?"Personal Master Agent":pathname==="/missions/new/manual"?"Advanced / Manual creation":pathname==="/dashboard"?"Dashboard":pathname==="/economy"?"Live economy":pathname==="/payments"?"Payments":pathname==="/integrations"?"Assistant connections":pathname==="/security"?"Security lab":pathname==="/agents"?"Agent directory":pathname.startsWith("/agents")?"Agent profile":pathname==="/missions"?"Missions":"Mission workspace";
   return <div className="workspace-app">
     <a href="#workspace-main" className="skip-link">Skip to workspace</a>
     <aside className="workspace-sidebar" aria-label="Workspace sidebar">
@@ -29,6 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {href:"/economy",label:"Economy",Icon:Network,active:pathname==="/economy"},
         {href:"/payments",label:"Payments",Icon:Wallet,active:pathname==="/payments"},
         {href:"/agents",label:"Agent directory",Icon:Users,active:pathname.startsWith("/agents")},
+        {href:"/integrations",label:"Connections",Icon:Plug,active:pathname==="/integrations"},
         {href:"/security",label:"Security",Icon:ShieldCheck,active:pathname==="/security"},
       ].map(({href,label,Icon,active})=><Link href={href} key={label} className={active?"selected":""} aria-current={active?"page":undefined}><Icon size={18} aria-hidden="true"/><span>{label}</span></Link>)}</nav>
       <div className="sidebar-bottom"><div className="sidebar-note"><span className="network-label">NEAR testnet</span><p>Real data processing.<br/>Test tokens only.</p><Link href="/">About GuildZero <ArrowUpRight size={12}/></Link></div>

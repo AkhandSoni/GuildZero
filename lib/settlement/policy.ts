@@ -1,4 +1,12 @@
 export const PAYMENT_CAP = 10n ** 24n;
+
+export function activePaymentCap() {
+  const value = process.env.NEAR_MAX_TRANSFER_YOCTO;
+  if (value === undefined) return PAYMENT_CAP;
+  if (!/^[1-9]\d{0,24}$/.test(value) || BigInt(value) > PAYMENT_CAP) return 0n;
+  return BigInt(value);
+}
+
 export function candidateReason(
   expected: { recipient: string; amountYocto: string; status: string },
   candidate: { recipient: string; amountYocto: string },
@@ -37,7 +45,7 @@ export function testnetAccount(value: string) {
 export function yocto(value: string) {
   if (!/^[1-9]\d{0,24}$/.test(value)) throw new Error("INVALID_AMOUNT");
   const n = BigInt(value);
-  if (n > PAYMENT_CAP) throw new Error("PAYMENT_CAP");
+  if (n > activePaymentCap()) throw new Error("PAYMENT_CAP");
   return n;
 }
 export function configuration() {

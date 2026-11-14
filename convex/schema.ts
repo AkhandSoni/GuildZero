@@ -3,6 +3,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { jobState, optionsValidator, checkValidator, scoreValidator } from "./marketModel";
 import { paymentState, attemptPhase } from "./paymentModel";
+import { mcpScope } from "./mcpPolicy";
 import { SERVICE_TYPES } from "../lib/services";
 export const missionFields = {
   cleanBeforeProcessing: v.optional(v.boolean()),
@@ -39,6 +40,20 @@ export default defineSchema({
     .index("by_grant", ["grantId"]).index("by_intent", ["intentId"]),
   masterEvents: defineTable({ runId: v.id("masterRuns"), ownerId: v.id("users"), type: v.string(), detail: v.string(), createdAt: v.number() })
     .index("by_run", ["runId"]),
+  mcpIntegrations: defineTable({
+    ownerId: v.id("users"), clientId: v.string(), label: v.string(), digest: v.string(),
+    scopes: v.array(mcpScope), missionIds: v.optional(v.array(v.id("missions"))),
+    createdAt: v.number(), expiresAt: v.number(), active: v.boolean(), revokedAt: v.optional(v.number()),
+  }).index("by_digest", ["digest"]).index("by_owner", ["ownerId"]).index("by_owner_active", ["ownerId", "active"]).index("by_owner_client", ["ownerId", "clientId"]),
+  mcpRequests: defineTable({
+    ownerId: v.id("users"), integrationId: v.id("mcpIntegrations"), requestId: v.string(),
+    fingerprint: v.string(), missionId: v.id("missions"), createdAt: v.number(),
+  }).index("by_integration_request", ["integrationId", "requestId"]),
+  mcpAudit: defineTable({
+    ownerId: v.id("users"), integrationId: v.id("mcpIntegrations"), tool: v.string(), resourceId: v.optional(v.string()),
+    decision: v.union(v.literal("allow"), v.literal("deny")), reason: v.string(), createdAt: v.number(),
+  }).index("by_owner", ["ownerId"]).index("by_integration", ["integrationId"]),
+  mcpRateLimits: defineTable({key: v.string(), windowStart: v.number(), count: v.number()}).index("by_key", ["key"]),
   paymentIntents: defineTable({
     masterGrantId: v.optional(v.id("masterGrants")),
     masterSigningAdmittedAt: v.optional(v.number()),

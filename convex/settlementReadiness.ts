@@ -2,13 +2,13 @@ import { ConvexError } from "convex/values";
 import { allowanceSnapshot, allowanceDenials } from "./allowanceHelpers";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { configuration, PAYMENT_CAP, testnetAccount } from "../lib/settlement/policy";
+import { configuration, activePaymentCap, testnetAccount } from "../lib/settlement/policy";
 import { PUBLIC_AGENTS } from "../lib/agent-directory";
 import type { ServiceType } from "../lib/services";
 import { allowanceRequired } from "../lib/settlement/allowance";
 export function awardPaymentBlock(job: Pick<Doc<"jobs">,"engineManaged"|"serviceType"|"cleanBeforeProcessing"|"unfundedPreviewAcknowledged">, agentId: string, price: string) {
   if (!job.engineManaged) return null; // Existing legacy orchestration is not silently repriced.
-  if (!/^[1-9]\d{0,27}$/.test(price) || BigInt(price) > PAYMENT_CAP) return "AWARD_EXCEEDS_SETTLEMENT_CAP";
+  if (!/^[1-9]\d{0,27}$/.test(price) || BigInt(price) > activePaymentCap()) return "AWARD_EXCEEDS_SETTLEMENT_CAP";
   if (job.unfundedPreviewAcknowledged) return null;
   try {
     const config=configuration();
@@ -43,6 +43,6 @@ export async function settlementReadiness(ctx: QueryCtx, mission: Doc<"missions"
   }
   reasons.push(...allowanceReasons.map(code => allowanceDenials[code]));
   const balance=sender?await ctx.db.query("operatorWalletSnapshots").withIndex("by_account",q=>q.eq("account",sender!)).unique():null;
-  return { blocked:reasons.length>0,reasons,allowanceReasons,allowance,paymentCapYocto:PAYMENT_CAP.toString(),
+  return { blocked:reasons.length>0,reasons,allowanceReasons,allowance,paymentCapYocto:activePaymentCap().toString(),
     balance:balance?.checkedAt && balance.availableYocto!==undefined?{availableYocto:balance.availableYocto,checkedAt:balance.checkedAt,stale:Date.now()-balance.checkedAt>60000||!!balance.error}:null };
 }
