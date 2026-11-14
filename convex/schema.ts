@@ -2,7 +2,7 @@ import { legacyAuthTables } from "./legacyAuthSchema";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { jobState, optionsValidator, checkValidator, scoreValidator } from "./marketModel";
-import { paymentState } from "./paymentModel";
+import { paymentState, attemptPhase } from "./paymentModel";
 import { SERVICE_TYPES } from "../lib/services";
 export const missionFields = {
   cleanBeforeProcessing: v.optional(v.boolean()),
@@ -18,6 +18,10 @@ export const missionFields = {
 export default defineSchema({
   ...legacyAuthTables,
   paymentIntents: defineTable({
+    recoveryVersion: v.optional(v.literal(2)),
+    currentAttemptId: v.optional(v.id("paymentAttempts")),
+    attemptCount: v.optional(v.number()),
+    lastRecoveryAt: v.optional(v.number()),
     // Optional only for historical records. Unbound intents cannot be signed.
     policyVersion: v.optional(v.string()),
     deliverableId: v.optional(v.id("deliverables")),
@@ -40,11 +44,33 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_job", ["jobId"])
-    .index("by_owner", ["ownerId"]),
+    .index("by_owner", ["ownerId"])
+    .index("by_hash", ["txHash"])
+    .index("by_sender_nonce", ["sender", "nonce"]),
   signerLocks: defineTable({
     sender: v.string(),
     intentId: v.id("paymentIntents"),
+    attemptId: v.optional(v.id("paymentAttempts")),
   }).index("by_sender", ["sender"]),
+  paymentAttempts: defineTable({
+    intentId: v.id("paymentIntents"), ownerId: v.id("users"),
+    jobId: v.id("jobs"), contractId: v.id("contracts"),
+    deliverableId: v.id("deliverables"), verificationId: v.id("verifications"),
+    disputeId: v.optional(v.id("disputes")), policyVersion: v.string(),
+    network: v.literal("testnet"), sender: v.string(), recipient: v.string(),
+    amountYocto: v.string(), generation: v.number(), phase: attemptPhase,
+    claimToken: v.optional(v.string()), authorizedAt: v.optional(v.number()),
+    closedAt: v.optional(v.number()), signingStartedAt: v.optional(v.number()),
+    broadcastStartedAt: v.optional(v.number()), txHash: v.optional(v.string()),
+    nonce: v.optional(v.string()), blockHash: v.optional(v.string()),
+    lastReason: v.optional(v.string()), lastCheckAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_intent", ["intentId"]),
+  paymentRecoveryRequests: defineTable({
+    ownerId: v.id("users"), requestId: v.string(), fingerprint: v.string(),
+    intentId: v.id("paymentIntents"), failedAttemptId: v.id("paymentAttempts"),
+    createdAttemptId: v.id("paymentAttempts"), createdAt: v.number(),
+  }).index("by_owner_request", ["ownerId", "requestId"]),
   securityEvents: defineTable({
     ownerId: v.id("users"),
     jobId: v.id("jobs"),

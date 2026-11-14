@@ -116,6 +116,12 @@ Current validation results and remaining release gates are recorded in [cluster 
 
 For a production-build smoke check, run `npm run build`, then `npm start` while the configured Convex backend is running. Do not run the production build and development server concurrently in the same checkout.
 
+## Safe payment retry rollout
+
+A bounded retry implementation is available behind the **backend-only** NEAR_PAYMENT_RETRY_ENABLED=true switch. It defaults off pending independent production-code review and the operator enablement decision required by [the recovery protocol](docs/payment-recovery.md). Existing demo payments continue on the established path. Only newly prepared v2 intents can gain retry eligibility; no historical FAILED/uncertain record is reset or backfilled with proof.
+
+An eligible attempt must have a verified closure before any signing permit. **Prepare payment retry** creates a new immutable attempt, then requires a separate exact recipient/amount confirmation before scheduling payment. Request replay is idempotent, five total attempts are allowed, and preparations are throttled to one per 15 seconds. Signed/uncertain attempts retain their identity and signer lock for reconciliation/operator review. A failed label, missing hash or transaction-not-found response alone never grants a retry. Internal claim tokens never appear in buyer query responses.
+
 ## Dataset retention
 
 Saved content has no automatic expiry. Owners can remove eligible terminal mission inputs/outputs from **Dataset retention** on the mission page after all work and exact payment obligations are settled. Removal includes parent/child data and free-text evidence, prevents brief reuse, and retains financial identities/receipts. Active, failed or uncertain settlement blocks removal. Drafts retain their separate Delete draft control. Public NEAR records, independent downloads, copies, backups and auth records have separate boundaries. See [demo retention policy](docs/data-retention.md); use synthetic data, not sensitive customer datasets.

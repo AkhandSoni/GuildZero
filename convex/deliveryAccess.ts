@@ -6,6 +6,7 @@ import { event } from "./workflowHelpers";
 import { parseBoundedCsv } from "../lib/economy/csv-input";
 import { readSummary } from "../lib/dataset-preview";
 import { readBusinessOutput } from "../lib/business-output";
+import { confirmedAttempt } from "./paymentRecoveryHelpers";
 
 const validHash = (value: string | undefined) => !!value && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
 const positive = (value: string) => /^[1-9]\d{0,27}$/.test(value);
@@ -27,7 +28,7 @@ async function obligation(ctx: QueryCtx, job: Doc<"jobs">) {
     testnetAccount(payment.sender) && testnetAccount(payment.recipient) && payment.sender !== payment.recipient;
   const confirmed = !!(bound && payment.status === "CONFIRMED" && payment.network === "testnet" && payment.lastReason === "FINAL_MATCHING_TRANSFER" &&
     validHash(payment.txHash) && validHash(payment.blockHash) && /^\d{1,30}$/.test(payment.nonce ?? "") &&
-    Number.isSafeInteger(payment.authorizedAt) && Number.isSafeInteger(payment.lastCheckAt));
+    Number.isSafeInteger(payment.authorizedAt) && Number.isSafeInteger(payment.lastCheckAt) && await confirmedAttempt(ctx, payment));
   return { job, contract, deliverable, payment, verification, confirmed };
 }
 /** Read-only policy over persisted trusted evidence, independent of current key/config rotation. */

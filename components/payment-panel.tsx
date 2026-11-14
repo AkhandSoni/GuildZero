@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -19,7 +19,9 @@ export function PaymentPanel({
     allowance = useQuery(api.payments.allowance, {});
   const prepare = useMutation(api.payments.prepare),
     authorize = useMutation(api.payments.authorize),
-    reconcile = useMutation(api.payments.reconcile);
+    reconcile = useMutation(api.payments.reconcile),
+    prepareRetry = useMutation(api.paymentRecovery.prepareRetry);
+  const retryRequest = useRef<{ attemptId: string; id: string } | null>(null);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
   const act = async (fn: () => Promise<{ ok: boolean; code?: string }>) => {
@@ -27,7 +29,7 @@ export function PaymentPanel({
     setMessage("");
     try {
       const r = await fn();
-      if (!r.ok) setMessage(r.code ?? "Payment request rejected.");
+      if (!r.ok) setMessage(r.code === "PAYMENT_RECOVERY_RATE_LIMIT" ? "Please wait 15 seconds before preparing another retry." : r.code ?? "Payment request rejected.");
     } catch (e) {
       setMessage(
         e instanceof ConvexError
@@ -72,6 +74,7 @@ export function PaymentPanel({
         </>
       ) : (
         <div className="receipt-content">
+          {intent.status === "READY" && intent.recovery && !intent.recovery.enabled && <p className="muted text-sm">This payment attempt is paused for operator review before authorization can resume.</p>}
           <p className="receipt-confirmation">
             {intent.status === "CONFIRMED"
               ? "Matching final chain receipt verified."
@@ -108,6 +111,7 @@ export function PaymentPanel({
                     intentId: intent._id,
                     recipient: intent.recipient,
                     amountYocto: intent.amountYocto,
+                    ...(intent.currentAttemptId ? { attemptId: intent.currentAttemptId } : {}),
                   }),
                 );
               }}
@@ -116,7 +120,7 @@ export function PaymentPanel({
                 <input type="checkbox" required /><span>I approve this exact recipient
                 and testnet amount.</span>
               </label>
-              <Button className="w-fit" disabled={busy || !config?.enabled || !allowance || allowance.required && !allowance.configured}>
+              <Button className="w-fit" disabled={busy || !config?.enabled || !allowance || allowance.required && !allowance.configured || Boolean(intent.recovery && !intent.recovery.enabled)}>
                 Authorize testnet payment
               </Button>
             </form>
@@ -152,9 +156,31 @@ export function PaymentPanel({
             )}
           {intent.status === "FAILED" && (
             <p className="muted">
-              {isPreBroadcastFailure(intent.lastReason) ? "Nothing was broadcast for this attempt, so it used no transaction gas. No automatic retry will occur." : "No automatic retry is allowed. Gas may have been charged if a transaction was submitted."}
+              {intent.recovery?.phase === "CLOSED_PRE_SIGN_FAILURE"
+                ? "This attempt was closed before signing and used no transaction gas. A replacement needs your separate approval before any payment can be sent."
+                : isPreBroadcastFailure(intent.lastReason) ? "Nothing was broadcast for this attempt, so it used no transaction gas. No automatic retry will occur." : "No automatic retry is allowed. Gas may have been charged if a transaction was submitted."}
             </p>
           )}
+          {intent.status === "FAILED" && intent.recovery?.eligible && intent.recovery.attemptId && intent.recovery.generation && (
+            <Button variant="outline" disabled={busy} onClick={() => act(async () => {
+              const recovery = intent.recovery!;
+              if (retryRequest.current?.attemptId !== recovery.attemptId)
+                retryRequest.current = { attemptId: recovery.attemptId!, id: crypto.randomUUID() };
+              return prepareRetry({ intentId: intent._id, attemptId: recovery.attemptId!, generation: recovery.generation!,
+                recipient: intent.recipient, amountYocto: intent.amountYocto, requestId: retryRequest.current!.id });
+            })}>Prepare payment retry</Button>
+          )}
+          {intent.status === "FAILED" && !intent.recovery?.eligible && (
+            <p className="muted text-sm">{intent.recovery?.reason === "PAYMENT_RETRY_LIMIT_REACHED"
+              ? "This payment has reached the five-attempt limit. Operator review is required."
+              : "A safe retry is unavailable for this attempt. Its existing record is preserved for operator review."}</p>
+          )}
+          {intent.status === "UNKNOWN_RECONCILE" && !intent.txHash && (
+            <p className="muted text-sm">Signing may have started without a saved transaction identity. The signer lock is held and retry is unavailable pending operator review.</p>
+          )}
+          {intent.recovery && <details className="text-sm"><summary>Payment attempt history</summary><ol className="mt-3 grid gap-2">
+            {intent.recovery.history.map(attempt => <li key={attempt.id}>Attempt {attempt.generation} · {attempt.phase.toLowerCase().replaceAll("_", " ")}</li>)}
+          </ol></details>}
         </div>
       )}
       {message && (

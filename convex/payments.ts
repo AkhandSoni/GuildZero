@@ -6,6 +6,7 @@ import { audit, quote, bindingReason } from "./paymentHelpers";
 import { authorizeAllowance, allowanceSnapshot } from "./allowanceHelpers";
 import { allowanceRequired } from "../lib/settlement/allowance";
 import { configuration, candidateReason } from "../lib/settlement/policy";
+import { appendAttempt, currentAttempt, recoveryEnabled, recoveryProjection } from "./paymentRecoveryHelpers";
 export const prepare = mutation({
   args: { jobId: v.id("jobs") },
   handler: async (ctx, { jobId }) => {
@@ -15,39 +16,43 @@ export const prepare = mutation({
       .withIndex("by_job", (q) => q.eq("jobId", jobId))
       .unique();
     if (old) return { ok: true as const, intentId: old._id };
-    try {
-      const q = await quote(ctx, job);
-      const intentId = await ctx.db.insert("paymentIntents", {
-        ownerId: job.ownerId,
-        jobId,
-        contractId: q.contract._id,
-        policyVersion: q.policyVersion,
-        deliverableId: q.deliverableId,
-        verificationId: q.verificationId,
-        ...(q.disputeId ? { disputeId: q.disputeId } : {}),
-        sender: q.sender,
-        recipient: q.recipient,
-        amountYocto: q.amountYocto,
-        network: "testnet",
-        status: "READY",
-        createdAt: Date.now(),
-      });
-      await audit(
-        ctx,
-        job,
-        "PREPARE_PAYMENT",
-        "EXACT_TRANSFER_PREPARED",
-        "allow",
-      );
-      return { ok: true as const, intentId };
-    } catch (error) {
-      const code =
-        error instanceof ConvexError
-          ? String(error.data)
-          : "PAYMENT_CONFIGURATION_OR_POLICY";
+    let q: Awaited<ReturnType<typeof quote>>;
+    try { q = await quote(ctx, job); }
+    catch (error) {
+      const code = error instanceof ConvexError ? String(error.data) : "PAYMENT_CONFIGURATION_OR_POLICY";
       await audit(ctx, job, "PREPARE_PAYMENT", code);
       return { ok: false as const, code };
     }
+    // Once writes begin, let failures abort the entire mutation. In particular,
+    // an attempt write must not leave an orphaned stable intent behind.
+    const intentId = await ctx.db.insert("paymentIntents", {
+      ...(recoveryEnabled() ? { recoveryVersion: 2 as const } : {}),
+      ownerId: job.ownerId,
+      jobId,
+      contractId: q.contract._id,
+      policyVersion: q.policyVersion,
+      deliverableId: q.deliverableId,
+      verificationId: q.verificationId,
+      ...(q.disputeId ? { disputeId: q.disputeId } : {}),
+      sender: q.sender,
+      recipient: q.recipient,
+      amountYocto: q.amountYocto,
+      network: "testnet",
+      status: "READY",
+      createdAt: Date.now(),
+    });
+    if (recoveryEnabled()) {
+      const attemptId = await appendAttempt(ctx, (await ctx.db.get(intentId))!, 1);
+      await ctx.db.patch(intentId, { currentAttemptId: attemptId, attemptCount: 1 });
+    }
+    await audit(
+      ctx,
+      job,
+      "PREPARE_PAYMENT",
+      "EXACT_TRANSFER_PREPARED",
+      "allow",
+    );
+    return { ok: true as const, intentId };
   },
 });
 export const authorize = mutation({
@@ -55,6 +60,7 @@ export const authorize = mutation({
     intentId: v.id("paymentIntents"),
     recipient: v.string(),
     amountYocto: v.string(),
+    attemptId: v.optional(v.id("paymentAttempts")),
   },
   handler: async (ctx, args) => {
     const ownerId = await user(ctx),
@@ -63,6 +69,11 @@ export const authorize = mutation({
       throw new ConvexError("PAYMENT_NOT_FOUND");
     const job = await ownedJob(ctx, intent.jobId);
     let code = candidateReason(intent, args) ?? "";
+    const attempt = intent.recoveryVersion === 2 ? await currentAttempt(ctx, intent) : null;
+    if (!code && intent.recoveryVersion === 2 && !recoveryEnabled()) code = "PAYMENT_RECOVERY_DISABLED";
+    if (!code && (intent.recoveryVersion === 2
+      ? !attempt || attempt.phase !== "READY" || args.attemptId !== attempt._id
+      : args.attemptId !== undefined)) code = "PAYMENT_ATTEMPT_CHANGED";
     if (!code)
       try {
         const q = await quote(ctx, job);
@@ -86,7 +97,9 @@ export const authorize = mutation({
       await audit(ctx, job, "AUTHORIZE_PAYMENT", code);
       return { ok: false as const, code };
     }
-    await ctx.db.patch(intent._id, { authorizedAt: Date.now() });
+    const authorizedAt = Date.now();
+    await ctx.db.patch(intent._id, { authorizedAt });
+    if (attempt) await ctx.db.patch(attempt._id, { authorizedAt });
     await audit(
       ctx,
       job,
@@ -94,9 +107,8 @@ export const authorize = mutation({
       "EXACT_TRANSFER_OWNER_APPROVED",
       "allow",
     );
-    await ctx.scheduler.runAfter(0, internal.nearSettlement.settle, {
-      intentId: intent._id,
-    });
+    if (attempt) await ctx.scheduler.runAfter(0, internal.nearRecovery.settle, { attemptId: attempt._id });
+    else await ctx.scheduler.runAfter(0, internal.nearSettlement.settle, { intentId: intent._id });
     return { ok: true as const };
   },
 });
@@ -104,10 +116,11 @@ export const forJob = query({
   args: { jobId: v.id("jobs") },
   handler: async (ctx, { jobId }) => {
     await ownedJob(ctx, jobId);
-    return ctx.db
+    const intent = await ctx.db
       .query("paymentIntents")
       .withIndex("by_job", (q) => q.eq("jobId", jobId))
       .unique();
+    return intent ? { ...intent, recovery: await recoveryProjection(ctx, intent) } : null;
   },
 });
 export const reconcile = mutation({
@@ -125,9 +138,9 @@ export const reconcile = mutation({
     if (intent.lastCheckAt && Date.now() - intent.lastCheckAt < 15000)
       throw new ConvexError("CHECK_RATE_LIMIT");
     await ctx.db.patch(intentId, { lastCheckAt: Date.now() });
-    await ctx.scheduler.runAfter(0, internal.nearSettlement.reconcile, {
-      intentId,
-    });
+    if (intent.recoveryVersion === 2 && intent.currentAttemptId)
+      await ctx.scheduler.runAfter(0, internal.nearRecovery.reconcile, { attemptId: intent.currentAttemptId });
+    else await ctx.scheduler.runAfter(0, internal.nearSettlement.reconcile, { intentId });
     return { ok: true };
   },
 });

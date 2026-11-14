@@ -8,13 +8,16 @@ import { preparationReason } from "../lib/settlement/failures";
 import { event } from "./workflowHelpers";
 export const snapshot = internalQuery({
   args: { intentId: v.id("paymentIntents") },
-  handler: (ctx, { intentId }) => ctx.db.get(intentId),
+  handler: async (ctx, { intentId }) => {
+    const intent = await ctx.db.get(intentId);
+    return intent?.recoveryVersion === 2 ? null : intent;
+  },
 });
 export const claim = internalMutation({
   args: { intentId: v.id("paymentIntents") },
   handler: async (ctx, { intentId }) => {
     const intent = await ctx.db.get(intentId);
-    if (!intent || intent.status !== "READY" || !intent.authorizedAt)
+    if (!intent || intent.recoveryVersion === 2 || intent.status !== "READY" || !intent.authorizedAt)
       return null;
     const job = await ctx.db.get(intent.jobId);
     if (!job) throw new ConvexError("JOB_NOT_FOUND");
@@ -63,7 +66,7 @@ export const prepared = internalMutation({
   },
   handler: async (ctx, args) => {
     const intent = await ctx.db.get(args.intentId);
-    if (!intent || intent.status !== "SUBMITTING" || intent.txHash)
+    if (!intent || intent.recoveryVersion === 2 || intent.status !== "SUBMITTING" || intent.txHash)
       throw new ConvexError("INVALID_PAYMENT_STATE");
     if (
       !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(args.txHash) ||
@@ -88,7 +91,7 @@ export const outcome = internalMutation({
   handler: async (ctx, args) => {
     const intent = await ctx.db.get(args.intentId);
     if (
-      !intent ||
+      !intent || intent.recoveryVersion === 2 ||
       !["SUBMITTING", "CONFIRMING", "UNKNOWN_RECONCILE"].includes(intent.status)
     )
       return;

@@ -1,0 +1,75 @@
+{
+  "baseCommit": "c2877ac66a5f1a7e2aba47e508e58b7b53561773",
+  "checkedAt": "2026-11-14T18:44:31.212Z",
+  "branch": "feat/safe-payment-retry",
+  "runtime": "v24.22.3",
+  "rollout": "Disabled by default; independent production-code review and operator enablement pending",
+  "tests": {
+    "total": 368,
+    "backendIntegration": 211,
+    "offlineRealSdkChildCases": 6,
+    "recoveryStateCases": 17,
+    "paymentPanelCases": 5,
+    "productionBrowserCases": 19
+  },
+  "realBrowser": {
+    "result": "PASS",
+    "oldAttempt": "ms73syw1z7q8kk663pgdjzvws58j6z74",
+    "nextAttempt": "ms74jqcffqjz51h9av28ryzpcx8j67k4",
+    "intentId": "m177te8jamd6h8kg9jjjd417hd8j6v3f",
+    "ownerConfirmations": 2,
+    "attempts": 2,
+    "preSignFailures": 2,
+    "backendRestart": true,
+    "staleWorkerDenied": true,
+    "newApprovalCheckboxInitiallyUnchecked": true,
+    "noUnpaidDownload": true,
+    "claimTokenLeaked": false,
+    "pageErrors": 0,
+    "usedDeliberatelyInvalidKey": true,
+    "finishedAt": "2026-11-14T18:29:31.543Z"
+  },
+  "persistedAfterRestart": {
+    "currentAttemptId": "ms74jqcffqjz51h9av28ryzpcx8j67k4",
+    "history": [
+      {
+        "broadcastPermitRecorded": false,
+        "closedAt": 1794680956983,
+        "generation": 1,
+        "phase": "CLOSED_PRE_SIGN_FAILURE",
+        "signingPermitRecorded": false,
+        "transactionIdentityRecorded": false
+      },
+      {
+        "broadcastPermitRecorded": false,
+        "closedAt": 1794680971353,
+        "generation": 2,
+        "phase": "CLOSED_PRE_SIGN_FAILURE",
+        "signingPermitRecorded": false,
+        "transactionIdentityRecorded": false
+      }
+    ],
+    "intentVersion": 2,
+    "signerLockCount": 0,
+    "status": "FAILED"
+  },
+  "budget": {
+    "maximumYocto": "1000000000000000000000000",
+    "previousSpentYocto": "948414440562500000000000",
+    "additionalRetryTestingSpentYocto": "0",
+    "remainingYocto": "51585559437500000000000",
+    "testAccount": "guildzero-restart-mwg85wgp.testnet",
+    "finalBalanceYocto": "7336611735800000000000000"
+  },
+  "boundaries": "Real browser exercised actual local Convex pre-sign failures, replacement, backend SIGKILL/restart, stale-worker rejection, new owner authorization, private projection and mobile layout. Deliberately unusable test key/missing account made live signing impossible; successful v2 signing/confirmation uses the real SDK with ephemeral offline keys and a simulated chain. No new public-testnet transfer, legacy reset, demo-key import or independent review signoff is claimed.",
+  "sourceSha256": {
+    "convex/nearRecovery.ts": "03922a2fe90a2f054da75857275ec25b2860561caa3d48d218a9dd3dad6fad95",
+    "convex/paymentRecoveryWorker.ts": "af84a0ef8477089de8142f8289833f268afb2b4d1bc139fd59c949d22917d210",
+    "convex/paymentRecovery.ts": "0d8e890f7294ddb356b13981c4e96285bae56234cdedcfa7e300433036345eb0",
+    "convex/paymentRecoveryHelpers.ts": "2d607587df3a815ef4f43024e9200a2e5db75077cb608eac912a238e9176c2ec",
+    "components/payment-panel.tsx": "b9130359b631c34ede71d6963f971547c3659251881803547c2a5cbf90a53040",
+    "convex/payments.ts": "2b4c789d0880e6c7aff68c4055f8044d516276b5fc4a72d8d928cc0360549691",
+    "convex/schema.ts": "f1c43e73c695c87ec95ecc745baf2bbc09fbe429e83b802215536b5115cd46dc",
+    "components/job-workspace.tsx": "ea2da0c2a4ce3dec2ea2c02a0ece463b5d6d5832720b7d00eebf076fbcdc9d62"
+  }
+}

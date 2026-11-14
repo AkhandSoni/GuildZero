@@ -20,6 +20,10 @@ export function isPreBroadcastFailure(reason?: string) {
   return reason === prefix || reason?.startsWith(`${prefix}:`) === true;
 }
 export function paymentFailureMessage(reason?: string) {
+  if (reason?.startsWith("VERIFIED_PRE_SIGN_FAILURE:")) {
+    const code = reason.slice("VERIFIED_PRE_SIGN_FAILURE:".length);
+    return Object.hasOwn(preparationFailures, code) ? preparationFailures[code as PreparationFailure] : "Payment preparation stopped before signing.";
+  }
   if (reason === prefix) return "Preparation failed before sending. The exact step was not recorded for this older attempt.";
   if (!reason?.startsWith(`${prefix}:`)) return null;
   const code = reason.slice(prefix.length+1);

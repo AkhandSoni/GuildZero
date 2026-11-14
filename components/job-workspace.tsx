@@ -252,7 +252,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
               className="border-l border-[var(--border)] pl-4 text-sm"
             >
               <p>{eventLabel(e.type)}</p>
-              <p className="muted">{e.detail}</p>
+              <p className="muted [overflow-wrap:anywhere]">{e.detail}</p>
               <time className="muted text-xs">
                 {new Date(e.createdAt).toLocaleString()}
               </time>

@@ -12,6 +12,8 @@ const forbidden = [
   "NEAR_PRIVATE_KEY",
   "JWT_PRIVATE_KEY",
   "CONVEX_DEPLOY_KEY",
+  "claimToken",
+  "NEAR_PAYMENT_RETRY_ENABLED",
 ];
 let scanned = 0;
 const violations = [];

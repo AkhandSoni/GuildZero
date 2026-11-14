@@ -83,7 +83,17 @@ module.registerHooks({
   },
 });
 
-const { settle, reconcile } = await import("../../convex/nearSettlement.ts");
+const recoveryProtocol = process.env.WORKER_PROTOCOL === "recovery";
+if (recoveryProtocol) {
+  const initialize = KeyPairSigner.fromSecretKey;
+  KeyPairSigner.fromSecretKey = function (...args) {
+    void callParent({ type: "signer_initialization" }).catch(() => {});
+    return initialize.apply(this, args);
+  };
+}
+const { settle, reconcile } = recoveryProtocol
+  ? await import("../../convex/nearRecovery.ts")
+  : await import("../../convex/nearSettlement.ts");
 const ctx = {
   runMutation: (fn, args) =>
     callParent({
@@ -104,6 +114,6 @@ const ctx = {
 const action = process.env.WORKER_ACTION || "settle";
 const intentId = process.env.WORKER_INTENT_ID;
 const fn = action === "reconcile" ? reconcile : settle;
-const result = await fn._handler(ctx, { intentId });
+const result = await fn._handler(ctx, recoveryProtocol ? { attemptId: process.env.WORKER_ATTEMPT_ID } : { intentId });
 await callParent({ type: "done", result });
 process.exit(0);

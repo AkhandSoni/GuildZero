@@ -1,8 +1,14 @@
 # Payment recovery protocol v2 — proposal for issue #33
 
+## Implementation status — 2026-11-14
+
+The owner subsequently authorized implementing bounded retry on feat/safe-payment-retry. New v2 tables, attempt/token-fenced callbacks, pre-sign closure/signing/broadcast permits, idempotent owner replacement, exact new-attempt authorization, private history and UI controls are now implemented. The backend-only NEAR_PAYMENT_RETRY_ENABLED switch defaults off; independent production-code review and explicit operator enablement remain required. Historical intents stay v1 and cannot be promoted or reset. The proposal below defines the safety contract; earlier statements about absent runtime code describe its original baseline.
+
+Offline SDK/process tests and a real local-backend/production-browser restart exercise provide separate evidence. The real browser exercise deliberately used a missing sender and unusable key, so it could not send value; two pre-sign closures, separate approval, persisted replacement and stale-worker denial passed without exposing claim tokens. Successful v2 signing/finality tests use an ephemeral real SDK key and simulated offline chain. No fresh v2 public-testnet payout or independent reviewer signoff is claimed.
+
 ## Decision and current limit
 
-Do not reset `FAILED` to `READY`, delete an intent/lock, or infer safety from `lastReason`, absent `txHash`, balance changes, a timeout or a transaction-not-found response. Current payments still cannot be retried. No schema or runtime authorization changes are included here.
+Do not reset `FAILED` to `READY`, delete an intent/lock, or infer safety from `lastReason`, absent `txHash`, balance changes, a timeout or a transaction-not-found response. Historical payments still cannot be retried. The new v2 implementation described above remains gated until review; no legacy schema/authorization migration is performed.
 
 At baseline `3f27703`, `nearSettlement.settle` marks `broadcasting` only after `paymentWorker.prepared`. A metadata mutation can commit even when its caller does not receive the response. Failures are labelled by action-local stage and an internal Boolean. `prepared` and `outcome` carry only an intent ID, not a claim/attempt generation. They cannot distinguish an old worker from a replacement. A human must not convert those labels into a new payment permission. These are repository observations; they do not establish that any existing transfer duplicated.
 
@@ -14,7 +20,7 @@ Keep one stable obligation/intent per job. Add a versioned `paymentAttempts` tab
 
 All action entry points and callbacks must carry the attempt ID and unguessable server-generated claim token; callbacks atomically compare both with the intent's current generation and sender lock. Never trust a browser-provided owner, safety flag, failure phase or binding. The claim token is internal-only and is not a payment credential exposed in owner query results.
 
-The stable intent remains the financial obligation. Attempts are execution history, not additional debt or fresh budget. Superseded attempts retain their evidence; old uncertain attempts cannot be superseded at all. Confirmed consumption and pending/uncertain amounts remain counted. Integration must use #32's actual allowance implementation (PR #38), never a duplicate permissive policy or a per-attempt allowance reset.
+The stable intent remains the financial obligation. Attempts are execution history, not additional debt or fresh budget. Superseded attempts retain their evidence; old uncertain attempts cannot be superseded at all. Confirmed consumption and pending/uncertain amounts remain counted. Integration uses the existing allowance implementation, never a duplicate policy or per-attempt allowance reset. Under the subsequently approved demo policy, cumulative quotas are optional and apply only when NEAR_DEMO_ALLOWANCES_REQUIRED is enabled.
 
 ## Proposed transitions
 
