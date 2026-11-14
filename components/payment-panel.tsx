@@ -39,18 +39,20 @@ export function PaymentPanel({
     }
   };
   return (
-    <section className="panel payment-receipt">
-      <p className="eyebrow">Custodial settlement · NEAR testnet only</p>
-      <h2>Payment receipt</h2>
+    <section className="panel payment-receipt" aria-label="Payment receipt">
+      <header className="receipt-heading">
+        <div><p className="eyebrow">NEAR testnet settlement</p><h2>Payment receipt</h2></div>
+        {intent && <span className={`receipt-state ${intent.status.toLowerCase()}`}>Status: <strong>{intent.status.replaceAll("_", " ")}</strong></span>}
+      </header>
       <p className="muted mt-3 text-sm">
         {config?.enabled
           ? "Settlement is enabled. Review the exact recipient and amount before authorizing."
           : "Settlement is disabled until dedicated testnet credentials are configured. No real funds are used."}
       </p>
-      <div className="muted mt-3 text-sm">
+      {allowance?.required && <div className="muted mt-3 text-sm">
         <p>Operator-managed demo allowance: permission to use shared testnet funds, not a wallet or deposit.</p>
         {allowance?.configured ? <p>Your lifetime limit: {formatNear(allowance.limitYocto)} NEAR; allocated or consumed: {formatNear(allowance.obligatedYocto)} NEAR; unallocated: {formatNear(allowance.remainingYocto)} NEAR. Existing contracts include any subcontract once. This does not guarantee operator liquidity.</p> : <p>No usable personal allowance is available. Ask the operator to configure your account before authorizing settlement.</p>}
-      </div>
+      </div>}
       {intent === undefined ? (
         <p role="status">Loading payment state…</p>
       ) : !intent ? (
@@ -69,15 +71,16 @@ export function PaymentPanel({
           </Button>
         </>
       ) : (
-        <div className="mt-4 grid gap-3 text-sm">
-          <p>
-            Status: <strong>{intent.status}</strong>
+        <div className="receipt-content">
+          <p className="receipt-confirmation">
             {intent.status === "CONFIRMED"
-              ? " · Matching final chain receipt verified"
-              : " · Not a confirmed payment"}
+              ? "Matching final chain receipt verified."
+              : "Not a confirmed payment. No result release until the transfer confirms."}
           </p>
-          <p className="break-all">Recipient: {intent.recipient}</p>
-          <p>Amount: {formatNear(intent.amountYocto)} testnet NEAR</p>
+          <dl className="receipt-summary">
+            <div><dt>Payment amount</dt><dd className="receipt-amount">{formatNear(intent.amountYocto)}<span>testnet NEAR</span></dd></div>
+            <div><dt>Recipient account</dt><dd className="receipt-recipient">{intent.recipient}</dd></div>
+          </dl>
           {paymentFailureMessage(intent.lastReason) && <p className="muted">{paymentFailureMessage(intent.lastReason)}</p>}
           {intent.lastReason && <details className="text-xs muted"><summary>Technical payment details</summary><code className="break-all">{intent.lastReason}</code></details>}
           {intent.txHash && (
@@ -97,7 +100,7 @@ export function PaymentPanel({
           )}
           {intent.status === "READY" && !intent.authorizedAt && (
             <form
-              className="grid gap-3"
+              className="payment-authorization"
               onSubmit={(e) => {
                 e.preventDefault();
                 void act(() =>
@@ -109,11 +112,11 @@ export function PaymentPanel({
                 );
               }}
             >
-              <label className="flex items-start gap-2">
-                <input type="checkbox" required />I approve this exact recipient
-                and testnet amount.
+              <label className="payment-approval">
+                <input type="checkbox" required /><span>I approve this exact recipient
+                and testnet amount.</span>
               </label>
-              <Button className="w-fit" disabled={busy || !config?.enabled || !allowance?.configured}>
+              <Button className="w-fit" disabled={busy || !config?.enabled || !allowance || allowance.required && !allowance.configured}>
                 Authorize testnet payment
               </Button>
             </form>

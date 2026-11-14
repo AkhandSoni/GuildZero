@@ -5,6 +5,7 @@ import type { Doc } from "./_generated/dataModel";
 import { configuration, PAYMENT_CAP, testnetAccount } from "../lib/settlement/policy";
 import { PUBLIC_AGENTS } from "../lib/agent-directory";
 import type { ServiceType } from "../lib/services";
+import { allowanceRequired } from "../lib/settlement/allowance";
 export function awardPaymentBlock(job: Pick<Doc<"jobs">,"engineManaged"|"serviceType"|"cleanBeforeProcessing"|"unfundedPreviewAcknowledged">, agentId: string, price: string) {
   if (!job.engineManaged) return null; // Existing legacy orchestration is not silently repriced.
   if (!/^[1-9]\d{0,27}$/.test(price) || BigInt(price) > PAYMENT_CAP) return "AWARD_EXCEEDS_SETTLEMENT_CAP";
@@ -30,7 +31,7 @@ export async function settlementReadiness(ctx: QueryCtx, mission: Doc<"missions"
   } catch { reasons.push("Testnet recipient configuration is invalid."); }
   let allowance: { limitYocto: string; obligatedYocto: string; remainingYocto: string } | null = null;
   const allowanceReasons: string[] = [];
-  try {
+  if (allowanceRequired()) try {
     const s = await allowanceSnapshot(ctx, mission.ownerId);
     const remaining = s.personalLimit > s.ownerUsed ? s.personalLimit - s.ownerUsed : 0n;
     allowance = { limitYocto: s.personalLimit.toString(), obligatedYocto: s.ownerUsed.toString(), remainingYocto: remaining.toString() };

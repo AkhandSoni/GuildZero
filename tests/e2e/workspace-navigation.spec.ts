@@ -33,4 +33,17 @@ test("application navigation, real filters, wallet setup state and mobile layout
     await expect(page.getByLabel("Search saved missions",{exact:true})).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   }
+  await page.goto("/missions/new");
+  for (const width of [1440,1024,768,640,390,320]) {
+    await page.setViewportSize({width,height:900});
+    await page.evaluate(()=>document.fonts.ready);
+    const service = await page.getByLabel("Service template", {exact:true}).boundingBox();
+    const budget = await page.getByLabel("Maximum budget (testnet NEAR)").boundingBox();
+    expect(service).not.toBeNull();expect(budget).not.toBeNull();
+    if (width >= 640) {
+      expect(Math.abs(service!.y-budget!.y)).toBeLessThan(1);
+      expect(Math.abs(service!.height-budget!.height)).toBeLessThan(1);
+    } else expect(budget!.y).toBeGreaterThan(service!.y+service!.height);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  }
 });

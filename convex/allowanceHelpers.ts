@@ -1,7 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { allowanceConfiguration } from "../lib/settlement/allowance";
+import { allowanceConfiguration, allowanceRequired } from "../lib/settlement/allowance";
 
 // Fail closed rather than ignore history when the bounded demo grows too large.
 const LIMIT = 1000;
@@ -84,6 +84,7 @@ export async function allowanceSnapshot(ctx: QueryCtx | MutationCtx, ownerId: Id
   return { ownerUsed, globalUsed, personalLimit, globalLimit: config.global };
 }
 export async function enforceAllowance(ctx: MutationCtx, ownerId: Id<"users">, extra = 0n) {
+  if (!allowanceRequired()) return;
   const snapshot = await allowanceSnapshot(ctx, ownerId);
   if (snapshot.ownerUsed + extra > snapshot.personalLimit) throw new ConvexError("DEMO_OWNER_ALLOWANCE_EXCEEDED");
   if (snapshot.globalUsed + extra > snapshot.globalLimit) throw new ConvexError("DEMO_OPERATOR_ALLOWANCE_EXCEEDED");
@@ -91,6 +92,7 @@ export async function enforceAllowance(ctx: MutationCtx, ownerId: Id<"users">, e
 
 /** A preview has no reserved allowance; admit its exact new transfer atomically. */
 export async function authorizeAllowance(ctx: MutationCtx, intent: import("./_generated/dataModel").Doc<"paymentIntents">) {
+  if (!allowanceRequired()) return;
   const job = await ctx.db.get(intent.jobId);
   const root = job?.parentId ? await ctx.db.get(job.parentId) : job;
   await enforceAllowance(ctx, intent.ownerId, root?.unfundedPreviewAcknowledged ? amount(intent.amountYocto) : 0n);

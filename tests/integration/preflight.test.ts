@@ -8,6 +8,7 @@ import schema from "../../convex/schema";
 const modules=import.meta.glob("../../convex/**/*.ts");
 afterEach(()=>{vi.useRealTimers();vi.unstubAllEnvs();});
 async function setup(clean=false){
+ vi.stubEnv("NEAR_DEMO_ALLOWANCES_REQUIRED", "true");
  vi.useFakeTimers();vi.stubEnv("NEAR_SETTLEMENT_ENABLED","false");vi.stubEnv("NEAR_AGENT_RECIPIENTS_JSON","{}");
  const t=testBackend(schema,modules);const [userId,otherId]=await t.run(ctx=>Promise.all([ctx.db.insert("users",{email:"preflight@example.com"}),ctx.db.insert("users",{email:"other@example.com"})]));const owner=await asUser(t,userId),other=await asUser(t,otherId);
  const missionId=await owner.mutation(api.missions.create,{title:"Preflight mission",serviceType:"csv_summary",inputCsv:"units\n3\n5",options:{columns:["units"]},maxBudgetYocto:"1000000000000000000000000000",acceptanceCriteria:"Template checks",requiresHumanReview:false,cleanBeforeProcessing:clean,deadlineAt:Date.now()+86400000});

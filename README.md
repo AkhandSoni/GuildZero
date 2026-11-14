@@ -137,6 +137,8 @@ Before launch, the mission workspace checks server configuration and recipient a
 
 Without settlement configured, explicitly acknowledge metadata-only delivery before opening an auction. Real processing/verification still runs, but full output remains locked until configuration is corrected and actual payments confirm. Preflight is not a reservation or funding guarantee. Configuration is rechecked at automated award unless the owner chose metadata-only processing. Human acceptance decisions review metadata, objective verification and acceptance requirements; they do not imply inspection of the withheld full output. Failed/uncertain payment intents are not reset or replaced; recovery remains tracked in #33 and #9/#10. No additional payment occurs during startup or release checks.
 
+Demo payments do not require per-user allowance setup. Every authenticated owner can authorize their own approved job against the shared testnet operator, subject to its actual balance, exact contract allocation and existing 1 NEAR cap. No automatic payment occurs. Optional cumulative quotas require an explicit backend opt-in; see [settlement configuration](docs/settlement.md).
+
 ## Application workspace
 
 The public site, account pages and all workspace routes share a graphite/white/orange visual system with self-hosted Geist fonts (SIL OFL license in `app/fonts/LICENSE.txt`). The public service example computes real output from a labeled synthetic CSV in the browser; it creates no mission, auction or payment. Mission creation is divided into four sections; saved missions separate the brief, work/results and settlement, with the original input available on demand and full result evidence gated by settlement.

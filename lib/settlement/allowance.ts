@@ -1,4 +1,9 @@
 /** Server-side demo policy; these limits are permission, never a funded balance. */
+export const allowanceRequired = () => {
+  const setting = process.env.NEAR_DEMO_ALLOWANCES_REQUIRED;
+  // Hackathon default: no cumulative quotas. Unknown explicit values fail closed.
+  return setting !== undefined && setting !== "false";
+};
 export function allowanceConfiguration() {
   const raw = process.env.NEAR_DEMO_ALLOWANCES_JSON;
   const global = process.env.NEAR_DEMO_OPERATOR_LIMIT_YOCTO;
@@ -16,5 +21,4 @@ export function allowanceConfiguration() {
   }
   return { owners, global: BigInt(global) };
 }
-export const allowancePolicyConfigured = () =>
-  process.env.NEAR_DEMO_ALLOWANCES_JSON !== undefined || process.env.NEAR_DEMO_OPERATOR_LIMIT_YOCTO !== undefined;
+export const allowancePolicyConfigured = allowanceRequired;

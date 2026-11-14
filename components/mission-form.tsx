@@ -137,9 +137,9 @@ export function MissionForm({
           placeholder="Summarize weekly sales"
         />
       </label>
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="form-field-pair">
         <label className="field">
-          Service template
+          <span>Service template</span>
           <select
             className="control"
             aria-label="Service template"
@@ -153,7 +153,7 @@ export function MissionForm({
           </select>
         </label>
         <label className="field">
-          Maximum budget (testnet NEAR)
+          <span>Maximum budget (testnet NEAR)</span>
           <Input
             name="budget"
             type="text"
@@ -292,9 +292,9 @@ export function MissionForm({
         <label className="flex items-start gap-3"><input type="checkbox" name="requiresHumanReview" checked={humanReview} onChange={(event) => setHumanReview(event.target.checked)} className="mt-1 shrink-0" /><span>Require human review of acceptance notes<span className="muted block text-xs mt-1">Automatic verification covers the selected template and columns. Extra subjective requirements need your recorded decision before payment.</span></span></label>
       </div>
       </section>
-      <div className="form-submit"><p>Saving creates a private brief. It does not open an auction or send funds.</p><Button type="submit" className="w-fit" disabled={busy || readingFile}>
+      <div className="form-submit"><p>Saving creates a private brief. It does not open an auction or send funds.</p><div className="form-submit-actions"><Button type="submit" className="w-fit" disabled={busy || readingFile}>
         {busy ? "Saving…" : initial ? "Save changes" : "Create private mission"}
-      </Button>{onCancel && <Button type="button" variant="outline" disabled={busy || readingFile} onClick={async () => { if (await guard.discard()) onCancel(); }}>Cancel editing</Button>}</div>
+      </Button>{onCancel && <Button type="button" variant="outline" disabled={busy || readingFile} onClick={async () => { if (await guard.discard()) onCancel(); }}>Cancel editing</Button>}</div></div>
       </fieldset>
     </form>
   );

@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { user, ownedJob } from "./ownership";
 import { audit, quote, bindingReason } from "./paymentHelpers";
 import { authorizeAllowance, allowanceSnapshot } from "./allowanceHelpers";
+import { allowanceRequired } from "../lib/settlement/allowance";
 import { configuration, candidateReason } from "../lib/settlement/policy";
 export const prepare = mutation({
   args: { jobId: v.id("jobs") },
@@ -147,11 +148,12 @@ export const allowance = query({
   args: {},
   handler: async (ctx) => {
     const ownerId = await user(ctx);
+    if (!allowanceRequired()) return { required: false as const, configured: false as const };
     try {
       const s = await allowanceSnapshot(ctx, ownerId);
-      return { configured: true as const, limitYocto: s.personalLimit.toString(), obligatedYocto: s.ownerUsed.toString(), remainingYocto: (s.personalLimit > s.ownerUsed ? s.personalLimit - s.ownerUsed : 0n).toString() };
+      return { required: true as const, configured: true as const, limitYocto: s.personalLimit.toString(), obligatedYocto: s.ownerUsed.toString(), remainingYocto: (s.personalLimit > s.ownerUsed ? s.personalLimit - s.ownerUsed : 0n).toString() };
     } catch (error) {
-      return { configured: false as const, code: error instanceof ConvexError ? String(error.data) : "DEMO_ALLOWANCE_CONFIGURATION_REQUIRED" };
+      return { required: true as const, configured: false as const, code: error instanceof ConvexError ? String(error.data) : "DEMO_ALLOWANCE_CONFIGURATION_REQUIRED" };
     }
   },
 });

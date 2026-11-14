@@ -8,6 +8,7 @@ const NEAR = 10n ** 24n;
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 async function setup() {
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_REQUIRED", "true");
   vi.stubEnv("NEAR_OPERATOR_ACCOUNT_ID", "operator.testnet");
   vi.stubEnv("NEAR_AGENT_RECIPIENTS_JSON", JSON.stringify({ "stats-core": "worker.testnet" }));
   vi.stubEnv("NEAR_NETWORK", "testnet");
@@ -36,10 +37,47 @@ async function setup() {
   }
   return { t, a, b, outsider, alice, bob, unlisted, configure, job };
 }
+it("demo default allows a new owner to authorize verified work without cumulative allowance settings", async () => {
+  const s = await setup();
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_REQUIRED", undefined);
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", undefined);
+  vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO", undefined);
+  expect(await s.unlisted.query(api.payments.allowance, {})).toEqual({ required: false, configured: false });
+  await expect(s.t.query(api.payments.allowance, {})).rejects.toThrow("UNAUTHENTICATED");
+  const { jobId } = await s.job(s.outsider, NEAR / 4n);
+  const missionId = (await s.t.run(ctx => ctx.db.get(jobId)))!.missionId;
+  expect((await s.unlisted.query(api.jobs.preflight, { missionId })).allowanceReasons).toEqual([]);
+  const prepared = await s.unlisted.mutation(api.payments.prepare, { jobId });
+  if (!prepared.ok) throw Error(prepared.code);
+  const exact = { intentId: prepared.intentId, recipient: "worker.testnet", amountYocto: (NEAR / 4n).toString() };
+  await expect(s.alice.mutation(api.payments.authorize, exact)).rejects.toThrow("PAYMENT_NOT_FOUND");
+  expect(await s.unlisted.mutation(api.payments.authorize, { ...exact, recipient: "substitution.testnet" })).toMatchObject({ ok: false });
+  expect(await s.unlisted.mutation(api.payments.authorize, { ...exact, amountYocto: NEAR.toString() })).toMatchObject({ ok: false });
+  expect(await s.unlisted.mutation(api.payments.authorize, exact)).toEqual({ ok: true });
+  expect(await s.t.mutation(internal.paymentWorker.claim, { intentId: prepared.intentId })).not.toBeNull();
+  expect(await s.t.mutation(internal.paymentWorker.claim, { intentId: prepared.intentId })).toBeNull();
+  // Do not drain scheduled signing actions: this is an offline policy fixture.
+});
+it("explicit demo mode ignores stale cumulative settings but keeps approval and per-transfer limits", async () => {
+  const s = await setup();
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_REQUIRED", "false");
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", "malformed-old-settings");
+  vi.stubEnv("NEAR_DEMO_OPERATOR_LIMIT_YOCTO", "0");
+  expect(await s.unlisted.query(api.payments.allowance, {})).toEqual({ required: false, configured: false });
+  const unapproved = await s.job(s.outsider, NEAR / 4n, false);
+  expect(await s.unlisted.mutation(api.payments.prepare, { jobId: unapproved.jobId })).toMatchObject({ ok: false });
+  const excessive = await s.job(s.outsider, 2n * NEAR);
+  expect(await s.unlisted.mutation(api.payments.prepare, { jobId: excessive.jobId })).toMatchObject({ ok: false });
+});
+it("an unknown explicit quota mode cannot silently turn off operator restrictions", async () => {
+  const s = await setup();
+  vi.stubEnv("NEAR_DEMO_ALLOWANCES_REQUIRED", "typo");
+  expect(await s.unlisted.query(api.payments.allowance, {})).toEqual({ required: true, configured: false, code: "DEMO_OWNER_NOT_ALLOWLISTED" });
+});
 it("requires an explicit valid owner allowlist and never grants a signup balance", async () => {
   const s = await setup();
   await expect(s.t.query(api.payments.allowance, {})).rejects.toThrow();
-  expect(await s.unlisted.query(api.payments.allowance, {})).toEqual({ configured: false, code: "DEMO_OWNER_NOT_ALLOWLISTED" });
+  expect(await s.unlisted.query(api.payments.allowance, {})).toEqual({ required: true, configured: false, code: "DEMO_OWNER_NOT_ALLOWLISTED" });
   vi.stubEnv("NEAR_DEMO_ALLOWANCES_JSON", "{}");
   expect((await s.alice.query(api.payments.allowance, {})).configured).toBe(false);
   for (const raw of ["", "{", "[]", JSON.stringify({ [s.a]: 1 }), JSON.stringify({ [s.a]: "1.5" })]) {
@@ -97,7 +135,7 @@ it("counts authorized, submitted, uncertain and confirmed consumption once and h
   if (!p.ok) throw new Error(p.code);
   for (const status of ["READY", "SUBMITTING", "CONFIRMING", "UNKNOWN_RECONCILE", "CONFIRMED"] as const) {
     await s.t.run(ctx => ctx.db.patch(p.intentId, { status, authorizedAt: Date.now() }));
-    expect(await s.alice.query(api.payments.allowance, {})).toEqual({ configured: true, limitYocto: (2n * NEAR).toString(), obligatedYocto: NEAR.toString(), remainingYocto: NEAR.toString() });
+    expect(await s.alice.query(api.payments.allowance, {})).toEqual({ required: true, configured: true, limitYocto: (2n * NEAR).toString(), obligatedYocto: NEAR.toString(), remainingYocto: NEAR.toString() });
   }
 });
 it("revalidates lowered limits and removed owner permission at authorization and signer claim", async () => {
