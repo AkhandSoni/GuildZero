@@ -1,3 +1,4 @@
+import { activePaymentCap } from "../lib/settlement/policy";
 import { ConvexError, v } from "convex/values";
 import { internalMutation, httpAction, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -95,7 +96,7 @@ export const dispatch = internalMutation({args: {digest: v.string(), request: v.
   switch (tool) {
     case "guildzero_list_services": {
       const optionNames = {csv_normalize:["columns","caseMode"],csv_summary:["columns"],csv_validate:["columns","numericColumns"],csv_reconcile:["columns","keyColumn","comparisonCsv"],csv_report:["columns","groupBy"]};
-      data = {services:SERVICE_TYPES.map(id => ({id,label:SERVICE_LABELS[id],requiredDatasets:id === "csv_reconcile" ? 2 : 1,options:optionNames[id],outputFormats:id === "csv_normalize" ? ["csv"] : ["json"]})),limits:{csvBytes:65536,rows:500,columns:32,deliverableBytes:131072,maxAutomatedAwardYocto:"1000000000000000000000000",maxTransferYocto:"1000000000000000000000000"}};
+      data = {services:SERVICE_TYPES.map(id => ({id,label:SERVICE_LABELS[id],requiredDatasets:id === "csv_reconcile" ? 2 : 1,options:optionNames[id],outputFormats:id === "csv_normalize" ? ["csv"] : ["json"]})),limits:{csvBytes:65536,rows:500,columns:32,deliverableBytes:131072,maxAutomatedAwardYocto:activePaymentCap().toString(),maxTransferYocto:activePaymentCap().toString()}};
       break;
     }
     case "guildzero_list_agents": {
