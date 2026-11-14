@@ -151,7 +151,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
         {data.bids.length > 0 && <div className="job-bid-list" aria-label="Agent offers">{data.bids.map(b => <div className="job-bid" key={b._id}><strong>{b.agentId}</strong><div><span>{formatNear(b.priceYocto)} testnet NEAR</span><p>{b.rationale}</p></div></div>)}</div>}
         <WorkflowError engineManaged={data.job.engineManaged === true} state={data.job.state} code={data.job.workerError} retryCount={data.job.retryCount ?? 0} busy={busy} onRetry={() => { void act(() => resume({ id })); }} />
         {data.job.state === "unawarded" && <p className="muted mt-4 text-sm">No offer could be awarded within the budget, deadline and negotiation limits. Create a revised mission to try again. No payment was submitted.</p>}
-        {data.contracts.map((c) => <div key={c._id} className="mt-5 border-t border-[#d5dccf] pt-4"><h3 className="text-sm font-medium">Contract · {c.agentId}</h3><p className="muted text-xs mt-2">Award: {formatNear(c.amountYocto)} · Parent payable allocation: {formatNear(c.holdbackYocto)} testnet NEAR</p>{c.score && <p className="muted text-xs mt-2">Utility {c.score.total}/10000 · Price {c.score.price} · Time {c.score.time} · Reputation {c.score.reputation} · Capability {c.score.capability}</p>}</div>)}
+        {data.contracts.map((c) => <div key={c._id} className="mt-5 border-t border-[var(--border)] pt-4"><h3 className="text-sm font-medium">Contract · {c.agentId}</h3><p className="muted text-xs mt-2">Award: {formatNear(c.amountYocto)} · Parent payable allocation: {formatNear(c.holdbackYocto)} testnet NEAR</p>{c.score && <p className="muted text-xs mt-2">Utility {c.score.total}/10000 · Price {c.score.price} · Time {c.score.time} · Reputation {c.score.reputation} · Capability {c.score.capability}</p>}</div>)}
         {data.children.map((c) => (
           <div className="subcontract-outcome mt-4" key={c._id}><div><h3>Cleaning subcontract</h3><p>{statusLabels[c.state] ?? c.state}. Its allocation is included in the parent award.</p>{c.state === "approved" && data.job.state !== "approved" && <p>Cleaning finished; the main analysis has a separate outcome.</p>}</div></div>
         ))}
@@ -224,7 +224,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           <ol className="mt-4 grid gap-3">
             {data.negotiations.map((n) => (
               <li
-                className="border-l border-[#d5dccf] pl-4 text-sm"
+                className="border-l border-[var(--border)] pl-4 text-sm"
                 key={n._id}
               >
                 <p>
@@ -249,7 +249,7 @@ function JobDetail({ id }: { id: Id<"jobs"> }) {
           {data.events.slice(0, 6).map((e) => (
             <li
               key={e._id}
-              className="border-l border-[#d5dccf] pl-4 text-sm"
+              className="border-l border-[var(--border)] pl-4 text-sm"
             >
               <p>{eventLabel(e.type)}</p>
               <p className="muted">{e.detail}</p>

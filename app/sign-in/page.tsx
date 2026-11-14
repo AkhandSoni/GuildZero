@@ -133,7 +133,7 @@ export default function SignInPage() {
               : "Already registered? Sign in"}
           </button>
         </form>
-        <p className="muted mt-6 border-t border-[#d9ddd6] pt-4 text-xs">Demo accounts use email and password. Email verification and password recovery are not enabled.</p>
+        <p className="muted mt-6 border-t border-[var(--border)] pt-4 text-xs">Demo accounts use email and password. Email verification and password recovery are not enabled.</p>
       </div></div>
     </main>
   );

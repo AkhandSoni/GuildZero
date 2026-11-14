@@ -6,7 +6,7 @@ export function DatasetPreview({ csv, data }: { csv: string; data: ReturnType<ty
   return <section className="min-w-0 grid gap-3" aria-label="Dataset preview">
     <h2 className="!text-base">Dataset preview</h2>
     <p className="muted text-sm">{data.value.rowCount} data rows · {data.value.headers.length} columns · {data.value.bytes.toLocaleString()} bytes. Showing the first {data.value.previewRows.length} rows.</p>
-    <div className="max-w-full overflow-x-auto rounded-xl border border-[#d5dccf]" tabIndex={0} role="region" aria-label="Preview rows">
+    <div className="max-w-full overflow-x-auto rounded-xl border border-[var(--border)]" tabIndex={0} role="region" aria-label="Preview rows">
       <table className="dataset-table w-full text-left text-xs"><thead><tr>{data.value.headers.map((h) => <th key={h} scope="col" className="whitespace-pre-wrap p-3 border-b">{h}</th>)}</tr></thead><tbody>{data.value.previewRows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} className="max-w-64 min-w-20 whitespace-pre-wrap break-words p-3 border-b">{cell || <span className="muted italic">Empty</span>}</td>)}</tr>)}</tbody></table>
     </div>
     <div className="max-w-full overflow-x-auto" tabIndex={0} role="region" aria-label="Column quality">

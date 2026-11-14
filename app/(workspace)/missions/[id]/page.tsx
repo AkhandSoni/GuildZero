@@ -94,7 +94,7 @@ export default function MissionPage({
             </p>
           </div>
           <details className="brief-source"><summary>Input CSV · view saved source</summary>
-            <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-[#eef1e9] p-4 text-xs leading-relaxed">
+            <pre className="mt-3 max-h-80 overflow-auto rounded-md bg-[var(--surface-muted)] p-4 text-xs leading-relaxed">
               {mission.contentRemovedAt !== undefined ? "Input removed by owner." : mission.inputCsv}
             </pre>
           </details>

@@ -141,7 +141,7 @@ Demo payments do not require per-user allowance setup. Every authenticated owner
 
 ## Application workspace
 
-The public site, account pages and all workspace routes share a graphite/white/orange visual system with self-hosted Geist fonts (SIL OFL license in `app/fonts/LICENSE.txt`). The public service example computes real output from a labeled synthetic CSV in the browser; it creates no mission, auction or payment. Mission creation is divided into four sections; saved missions separate the brief, work/results and settlement, with the original input available on demand and full result evidence gated by settlement.
+The public site, account pages and all workspace routes share a warm ivory/forest/white visual system with sage and terracotta accents with self-hosted Geist fonts (SIL OFL license in `app/fonts/LICENSE.txt`). The public service example computes real output from a labeled synthetic CSV in the browser; it creates no mission, auction or payment. Mission creation is divided into four sections; saved missions separate the brief, work/results and settlement, with the original input available on demand and full result evidence gated by settlement.
 
 The dashboard summarizes recent main-job outcomes and links to actual human reviews and prepared payments. `/missions` provides private search and filters; `/agents` lists the built-in roles; `/payments` filters the latest 50 owner-private payment intents and links to their mission receipts. `/economy` combines the recorded graph with per-mission workflow stories; original event codes remain available in the technical audit trail. Main work, cleaning outcomes and payment confirmation are shown separately. Counts and history windows are explicitly bounded, not all-time totals.
 

@@ -97,7 +97,7 @@ export default function Security() {
             {history.map((e) => (
               <li
                 key={e._id}
-                className="border-l border-[#d5dccf] pl-4 text-sm"
+                className="border-l border-[var(--border)] pl-4 text-sm"
               >
                 <p>
                   {e.scenario} · {e.decision}

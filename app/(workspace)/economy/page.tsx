@@ -14,9 +14,9 @@ export default function Economy() {
     ...n,
     data: { ...n.data, label: <Link href={n.data.href}>{n.data.label}</Link> },
     style: {
-      background: "#ffffff",
-      color: "#444d5b",
-      border: "1px solid #d4dae4",
+      background: "var(--surface)",
+      color: "var(--foreground)",
+      border: "1px solid var(--sage)",
       borderRadius: 6,
       width: 250,
       whiteSpace: "pre-wrap" as const,
@@ -33,7 +33,7 @@ export default function Economy() {
       </p></div>
       {nodes.length > 0 && (
         <div
-          className="mt-8 h-[420px] overflow-hidden rounded-lg border border-[#d5dccf]"
+          className="mt-8 h-[420px] overflow-hidden rounded-lg border border-[var(--border)]"
           aria-label="Recorded economy network"
         >
           <ReactFlow
