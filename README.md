@@ -4,7 +4,7 @@ GuildZero is an autonomous economic marketplace for real, deterministic data-pro
 
 **Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, quality audits, keyed reconciliation and grouped numeric reports, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The application has labeled navigation, outcome metrics, scoped workflow stories and a read-only operator wallet. Next.js and Convex are the only application runtimes.
 
-Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. No LLM, model training, mainnet payments or fabricated activity is involved. The bounded business-data expansion adds three typed services without changing the application runtimes or payment rules. Public hosting, final demo recording and hackathon submission remain pending.
+Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. No LLM, model training, mainnet payments or fabricated activity is involved. The bounded business-data expansion adds three typed services without changing the application runtimes or payment rules. A local demo recording and actual backend restart/payment evidence are prepared. Public posting, hosting and hackathon submission remain pending.
 
 ## Local setup (no account or paid service required)
 
@@ -158,7 +158,7 @@ The operator wallet shows the configured public testnet account and finalized RP
 
 ## Branch combination and release
 
-PRs #14 and #15 combined the engine and application histories. The scheduled driver now connects them. Use [release instructions](docs/release.md) for the remaining hosting and human submission requirements. Do not merge the paused expansion worktree or claim a public deployment from local checks. Existing local environment files and backend state are ignored and must never be committed.
+PRs #14 and #15 combined the engine and application histories. The scheduled driver now connects them. Use [release instructions](docs/release.md) for the remaining hosting and human submission requirements. The bounded business-data expansion is already integrated; obsolete expansion branches must not be merged again. Do not claim a public deployment from local checks. Existing local environment files and backend state are ignored and must never be committed.
 
 Auth uses the documented Convex Auth React provider in a client boundary. Private mission data is fetched only after authentication, and marketplace functions independently check backend identity and ownership. Protected routes may serve a public HTML shell, but never private mission data in that shell. Authentication endpoints necessarily allow credential exchange; every marketplace entry point requires an authenticated session and applicable resource ownership. Convex Auth is beta. The demo currently has neither email verification nor recovery, so it must not be represented as production account management.
 

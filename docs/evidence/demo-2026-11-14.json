@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-11-14T10:11:06.347Z",
+  "fixture": "Synthetic four-row in-app sales CSV",
+  "screenCapture": "73.24-second authenticated production-browser run; no login form or storage-state file",
+  "sourceCommitBeforeSingleStatusTextFix": "b75af1eecaa59c41147a27abc1db9508a28f4e35",
+  "statusTextFix": "Paid work next step now points to full results and downloads",
+  "receipts": [
+    {
+      "amountYocto": "307708044000000000000000",
+      "blockHash": "3Y58wun9eScT7hBTxrL3wuWj3higki8mdRuMKQRJ9yAU",
+      "nonce": "277640719000008",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "AnZ1sJXeLRX4sDmQsVcVSHjdP7rHW6nXFg5wn2LKr5zY"
+    },
+    {
+      "amountYocto": "108650052000000000000000",
+      "blockHash": "5DMwBopKwY2Hb1nvAhB1GUXdsNQUYsPN8frPh2G8U6a",
+      "nonce": "277640719000009",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "8vy4bWY28fDYLqB3eHhsBrs2z8BWF2w32Fq8bQ3bzrV1"
+    }
+  ],
+  "checks": {
+    "realUIAuctionAndNegotiation": true,
+    "usefulCleaningSubcontract": true,
+    "unpaidSummaryLocked": true,
+    "parentOnlySummaryLocked": true,
+    "bothExactOwnerAuthorizations": true,
+    "matchingFinalReceiptsRechecked": true,
+    "fullSummaryAndCSVDownloadAfterBothConfirmations": true,
+    "realGraph": true,
+    "reputationProbeRejectedWithoutSigning": true,
+    "pageErrors": 0
+  },
+  "videoSha256": "ffa15023e79b3964e546ffe540d55980b26e5780a46ea04b056f9b2e97f81834",
+  "publicVideoUrl": null,
+  "publishing": "Local artifact only. Owner review/public posting/submission pending."
+}

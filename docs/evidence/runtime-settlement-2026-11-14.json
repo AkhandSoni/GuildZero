@@ -1,0 +1,61 @@
+{
+  "sourceCommit": "b75af1eecaa59c41147a27abc1db9508a28f4e35",
+  "settlementSourceSha256": "64c64be4078ccc57fe5e3f1e8454d30ed8ab059fde9095087addb525651f3af2",
+  "startedAt": "2026-11-14T10:02:35.344Z",
+  "completedAt": "2026-11-14T10:04:06.758Z",
+  "runtime": "v24.22.3",
+  "network": "testnet",
+  "backendVersion": "precompiled-2026-10-22-1447815",
+  "fixture": "synthetic three-row sales CSV; real scheduled summary and useful normalization subcontract",
+  "parent": {
+    "txHash": "4mjpWKju81qUjseafBBRP8qoRpvFKo8Y4w74HnRPMYp8",
+    "nonce": "277640719000006",
+    "sender": "guildzero-restart-mwg85wgp.testnet",
+    "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+    "amountYocto": "293746572000000000000000",
+    "status": "CONFIRMED",
+    "reason": "FINAL_MATCHING_TRANSFER",
+    "blockHash": "3owdbJQ9a3FUnaG2uMNZjgWAYU3Zc2FN3QpavvJbCDnS"
+  },
+  "child": {
+    "txHash": "9a7TNrLGCjfKd2rp8jehSSTR98ddqyTddJ1cFoHhpox",
+    "nonce": "277640719000007",
+    "sender": "guildzero-restart-mwg85wgp.testnet",
+    "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+    "amountYocto": "103301310000000000000000",
+    "status": "CONFIRMED",
+    "reason": "FINAL_MATCHING_TRANSFER",
+    "blockHash": "7JCVJWPFfKtbz7ZhacNqi6TXR4LJQgN4cdqzD2FZttoP"
+  },
+  "nonceBefore": "277640719000005",
+  "nonceAfter": "277640719000007",
+  "totalAwardYocto": "397047882000000000000000",
+  "checks": {
+    "realBackendAndExecutorSIGKILL": true,
+    "persistedHashNonceAndSameLock": true,
+    "actualDuplicateSchedules": 2,
+    "duplicateSchedulesCompletedWithoutNewSigning": true,
+    "busyChildDidNotSign": true,
+    "ownerReconciliationUsedOriginalHash": true,
+    "parentOnlyDidNotReleaseOutput": true,
+    "finalReceiptsIndependentlyInspected": true,
+    "exactBudgetConservation": true,
+    "bothPaymentsReleasedOutput": true,
+    "oneReleaseEvent": true,
+    "finalSignerLocks": 0
+  },
+  "parentInstrumentedCallCounts": {
+    "entry": 4,
+    "sign_attempt": 1,
+    "sign_complete": 1,
+    "broadcast_attempt": 1,
+    "broadcast_final": 1
+  },
+  "evidenceBoundary": "Temporary local marker/pause instrumentation around unchanged production signing and send/outcome calls. Duplicate invocations were explicitly scheduled through Convex, not claimed as automatic platform retries. The second allocation ran with restored production worker source. This is local runtime/public-testnet evidence, not cloud-hosted acceptance, automatic pre-hash recovery or production certification.",
+  "previousCompleteRun": {
+    "startedAt": "2026-11-14T09:58:09.047Z",
+    "completedAt": "2026-11-14T09:59:43.521Z",
+    "parentHash": "Er8aDUDV3PBS1s17uWKy1CpkFndPmY7h7BesnFdScT2D",
+    "childHash": "CUeRooKVukvCcyGxcXmM7NkvxkAiTkMWtUcFGmazDGjX"
+  }
+}
