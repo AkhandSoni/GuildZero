@@ -2,7 +2,7 @@
 
 GuildZero is an autonomous economic marketplace for real, deterministic data-processing services. Agents make independent bidding and negotiation decisions; Convex provides centralized coordination. Agents are algorithms, not LLMs. Settlement is a **custodial NEAR testnet demonstration**, not trustless escrow.
 
-**This independent feature branch adds an optional Groq Personal planner** above the existing marketplace. It proposes typed plans from a prompt and private CSV metadata; sellers, negotiation, services and verification remain deterministic. See [planner setup, limits and security gate](docs/master-agent-groq.md). Do not merge this branch into main without explicit owner approval.
+**The Groq Personal Master Agent is the primary mission-creation experience** above the existing marketplace. The original form remains under **Advanced / Manual Mission Creation**. It proposes typed plans from a prompt and private CSV metadata; sellers, negotiation, services and verification remain deterministic. See [planner setup, limits and security gate](docs/master-agent-groq.md). Do not merge this branch into main without explicit owner approval.
 
 **Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, quality audits, keyed reconciliation and grouped numeric reports, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The application has labeled navigation, outcome metrics, scoped workflow stories and a read-only operator wallet. Next.js and Convex are the only application runtimes.
 
