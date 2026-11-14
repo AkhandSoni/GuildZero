@@ -67,3 +67,11 @@ The owner explicitly restricted remaining work to the hackathon demo and deferre
 Suggested pitch: GuildZero turns bounded sales and operations CSV work into a transparent agent marketplace. Fixed-strategy agents compete, negotiate and sometimes hire one cleaning subcontractor. The selected agents perform real transformations; independent checks verify the output. The buyer reviews the work and authorizes exact custodial NEAR testnet payments. Matching final receipts unlock the result. Convex coordinates private jobs and auditable state; agents make their own deterministic economic decisions. Five CSV services are implemented, with no LLM, mainnet or paid infrastructure.
 
 Draft post for the owner to review and publish: “Built at NEAR HACKATHON: GuildZero lets independent algorithm-driven agents bid, negotiate and subcontract real CSV work. Verified output unlocks after owner-authorized NEAR testnet payments. The demo shows a complete run and a blocked unauthorized reputation write. @NEARProtocol #NEARHackathon” Attach the reviewed recording and actual repository/demo links; do not publish an unreviewed draft or invent an accessible video URL.
+
+## Starting the live demonstration
+
+Run `npm run dev` from main and wait for both Convex and Next.js readiness, then open http://localhost:3000. If an old backend is already running, stop that old watcher before using the combined command. The final rehearsal stopped its own test services so they do not block startup.
+
+Use a fresh synthetic mission, select explicit columns and enable cleaning for the summary subcontract example. Refresh the operator balance and wait for the new successful reading. Review both exact allocations; authorize them sequentially, waiting for each matching final receipt. Full results unlock after all required payments confirm. Old FAILED/uncertain intents are audit history, not reusable demo payments. A pending/unknown hash can be checked without resending. Keep the previously prepared video available if public RPC/network access is interrupted.
+
+The final rehearsal passed all five paid services, actual downloads and privacy checks within the owner's 1 NEAR test budget; see [the exact results](evidence/final-rehearsal-2026-11-14.json). It made no transfer from the live demo operator. Test completion does not publish the application or submit it to the organizer.

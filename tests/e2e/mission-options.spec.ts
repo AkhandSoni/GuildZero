@@ -14,7 +14,7 @@ test("normalization options and exact budget survive editing and reload", async 
   await page.getByLabel("Service template").selectOption("csv_normalize");
   await page.getByLabel("CSV dataset").fill('product\n" Bag "\nBook');
   await page.getByRole("checkbox", { name: "product", exact: true }).check();
-  await page.getByLabel("Case handling").selectOption("lowercase");
+  await page.getByLabel("Case handling", { exact: true }).selectOption("lowercase");
   await page.getByLabel("Maximum budget (testnet NEAR)").fill("0.000000000000000000000001");
   await page.getByRole("button", { name: "Create private mission" }).click();
   await expect(page).toHaveURL(/\/missions\/(?!new$)[a-z0-9]+$/);
@@ -23,8 +23,8 @@ test("normalization options and exact budget survive editing and reload", async 
   await expect(page.getByText("0.000000000000000000000001 testnet NEAR", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Edit mission", exact: true }).click();
   await expect(page.getByRole("checkbox", { name: "product", exact: true })).toBeChecked();
-  await expect(page.getByLabel("Case handling")).toHaveValue("lowercase");
-  await page.getByLabel("Case handling").selectOption("preserve");
+  await expect(page.getByLabel("Case handling", { exact: true })).toHaveValue("lowercase");
+  await page.getByLabel("Case handling", { exact: true }).selectOption("preserve");
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(page.getByTestId("saved-options")).toHaveText("product · preserve");
   await page.reload();

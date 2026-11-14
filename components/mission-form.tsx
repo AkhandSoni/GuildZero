@@ -260,7 +260,7 @@ export function MissionForm({
       <BusinessControls serviceType={serviceType} headers={headers} columns={selectedColumns} value={business} onChange={setBusiness} onReading={setReadingFile} onReservedColumn={column => setSelectedColumns(previous => previous.filter(c => c !== column))}/>
       {serviceType === "csv_normalize" && <label className="field">
         Case handling
-        <select name="caseMode" className="control"
+        <select name="caseMode" aria-label="Case handling" className="control"
           value={caseMode} onChange={(event) => setCaseMode(event.target.value as typeof caseMode)}>
           <option value="preserve">Preserve case</option>
           <option value="lowercase">Lowercase</option>

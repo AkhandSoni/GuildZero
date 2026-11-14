@@ -1,0 +1,139 @@
+{
+  "uiFixes": [
+    "Explicit accessible name for normalization case handling",
+    "Declare existing smooth scroll behavior to Next.js"
+  ],
+  "startedAt": "2026-11-14T12:02:48.215Z",
+  "finishedAt": "2026-11-14T12:09:30.926Z",
+  "nodeHost": "26.13.0",
+  "applicationNode": "24.22.3",
+  "checks": {
+    "cleanInstall": true,
+    "combinedDevStartupInActualMainCheckout": true,
+    "unitAndBackendTests": 342,
+    "integrationTestsIncluded": 188,
+    "developmentBrowserScenarios": 19,
+    "productionBrowserScenariosAfterFixes": 19,
+    "lint": true,
+    "typecheck": true,
+    "productionBuild": true,
+    "clientBoundaryAssets": 29,
+    "dependencyAuditVulnerabilities": 0,
+    "livePaidServices": [
+      {
+        "service": "csv_normalize",
+        "realOutputCorrect": true,
+        "downloadMatches": true,
+        "persistsAfterReload": true,
+        "mobileFits": true
+      },
+      {
+        "service": "csv_summary",
+        "realOutputCorrect": true,
+        "downloadMatches": true,
+        "persistsAfterReload": true,
+        "mobileFits": true
+      },
+      {
+        "service": "csv_validate",
+        "realOutputCorrect": true,
+        "downloadMatches": true,
+        "persistsAfterReload": true,
+        "mobileFits": true
+      },
+      {
+        "service": "csv_reconcile",
+        "realOutputCorrect": true,
+        "downloadMatches": true,
+        "persistsAfterReload": true,
+        "mobileFits": true
+      },
+      {
+        "service": "csv_report",
+        "realOutputCorrect": true,
+        "downloadMatches": true,
+        "persistsAfterReload": true,
+        "mobileFits": true
+      }
+    ],
+    "secondUserCannotReadPaidResults": true,
+    "recordedSubcontractReceiptsRecheckedReadOnly": true,
+    "applicationPageErrors": 0,
+    "demoOperatorHasNoStuckSignerLock": true,
+    "testOperatorHasNoStuckSignerLock": true,
+    "demoServerKeyRecognizedOnChain": true,
+    "demoRegisteredRecipientsExist": 5,
+    "demoSettlementEnabled": true,
+    "demoPersonalQuotaRequired": false,
+    "focusedDevelopmentScenariosAfterFixes": 3
+  },
+  "testBudget": {
+    "limitYocto": "1000000000000000000000000",
+    "transferredYocto": "948191258000000000000000",
+    "gasYocto": "223182562500000000000",
+    "actualTotalSpentYocto": "948414440562500000000000",
+    "remainingBudgetYocto": "51585559437500000000000",
+    "operator": "guildzero-restart-mwg85wgp.testnet"
+  },
+  "demoOperator": {
+    "account": "guildzero-mwe004n2.testnet",
+    "balanceYocto": "13299117795750000000000000",
+    "finalBlock": 277655177,
+    "testTransfersFromThisOperator": 0
+  },
+  "receipts": [
+    {
+      "amountYocto": "103146960000000000000000",
+      "blockHash": "F3FiZL51TYQwBKxBPsuBj7NYFqAVyjsw2ZaEpBFTkHTo",
+      "nonce": "277640719000010",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "4diDWU91bXumfhLnhGE1jHfPDm2TkeiFSgYUHoMZ1Wp2"
+    },
+    {
+      "amountYocto": "227194968000000000000000",
+      "blockHash": "8eCJyV1hLuqwmwz4jfBdQSHcVgwQBx44F9rjxPChJ6Mq",
+      "nonce": "277640719000011",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "5YSctvC8GK1p8xKzR3M9LE332t4zjmbGKYrRL4CH7pR2"
+    },
+    {
+      "amountYocto": "108433962000000000000000",
+      "blockHash": "Gj1Kcr4bUL1RjaeQYBxScstknwZCkiRPACCWex6KEeo2",
+      "nonce": "277640719000012",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "BspB1ECHTZxLSU4QC1SwGkdMnrPgwsLXHdU8KdkVnENi"
+    },
+    {
+      "amountYocto": "260582784000000000000000",
+      "blockHash": "2Vy9MkDGXasHGUUAmf7CYBVu4WL99LuUHYcLKH7ZEnyA",
+      "nonce": "277640719000013",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "9npkwfXNod5cbkHCGPRMw1iBdzT2SYyyAFscapSxQEcH"
+    },
+    {
+      "amountYocto": "248832584000000000000000",
+      "blockHash": "3JkyNRu3psHqvSMR6q5qXZKzzBxHQfUu2wZhStYa8XJj",
+      "nonce": "277640719000014",
+      "recipient": "worker.guildzero-restart-mwg85wgp.testnet",
+      "sender": "guildzero-restart-mwg85wgp.testnet",
+      "status": "CONFIRMED",
+      "txHash": "251mUNwC3PDvEhGQzRB43hJDktotcLuDxo3EaGXzYN1e"
+    }
+  ],
+  "settlementSourceSha256": "64c64be4078ccc57fe5e3f1e8454d30ed8ab059fde9095087addb525651f3af2",
+  "boundaries": "Synthetic fixtures and isolated paid test account. No new funds obtained, existing buyer intents reset, payment recovery enabled, demo credentials changed or imported into the isolated backend, public hosting or submission. Read-only checks of earlier confirmed subcontract receipts reuse prior evidence; no additional live crash-payment run was attempted under the budget cap.",
+  "baseCommit": "820311663c0c34e890b84a473ce8c45fe1b812c9",
+  "testedUiFileSha256": {
+    "app/layout.tsx": "6dfc6c5b8ef9d5fe4fe89ba924fd4fea0ca0fdbf786e6a34c0e958644dcd4a76",
+    "components/mission-form.tsx": "0786bd969ebbc17dd3d3620518300006c249ff3016e93ea0f1253aaae1f4867b",
+    "tests/e2e/mission-options.spec.ts": "03acd1f47fd907ae29c69b5994b34bfa5ac184d19aa8427d2f01f3ec3fe18a26"
+  }
+}
