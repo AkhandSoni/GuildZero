@@ -45,3 +45,37 @@ it("reports inference rate limits, fences failure recording and emits no raw err
   const response = await POST(request()); expect(response.status).toBe(429); expect(response.headers.get("retry-after")).toBe("15");
   const last = f.mutation.mock.calls.at(-1)![1]; expect(last.error).toBe("GROQ_RATE_LIMIT"); expect(last.token).toBe("private-claim");
 });
+it("revokes pending Start authority when provider configuration is missing before a planning claim", async () => {
+  configure(); f.query.mockResolvedValue({ startPending: true }); vi.stubEnv("GROQ_API_KEY", "");
+  const result = await POST(request());
+  expect(result.status).toBe(503); expect(f.infer).not.toHaveBeenCalled();
+  expect(f.mutation).toHaveBeenCalledTimes(1);
+  expect(getFunctionName(f.mutation.mock.calls[0][0])).toBe("masterStart:abortPlanning");
+  expect(f.mutation.mock.calls[0][1]).toEqual({ runId: id, revision: 1 });
+});
+it("records an inference failure and revokes unused Start authority without exposing the claim", async () => {
+  configure(); f.query.mockResolvedValue({ startPending: true });
+  f.infer.mockRejectedValue(new InferenceError("GROQ_RATE_LIMIT", 15));
+  const result = await POST(request());
+  expect(result.status).toBe(429);
+  expect(f.mutation.mock.calls.map(([ref]) => getFunctionName(ref))).toEqual([
+    "masterAgent:beginPlanning", "masterAgent:finishPlanning", "masterStart:abortPlanning",
+  ]);
+  expect(f.mutation.mock.calls[1][1]).toMatchObject({ token: "private-claim", error: "GROQ_RATE_LIMIT" });
+  expect(await result.text()).not.toContain("private-claim");
+});
+it("revokes a Start stopped by quota before inference but does not revoke another active planning lease", async () => {
+  configure(); f.query.mockResolvedValue({ startPending: true });
+  f.mutation.mockImplementation(async ref => {
+    if (getFunctionName(ref) === "masterAgent:beginPlanning") throw new ConvexError("PLANNING_RATE_LIMIT");
+    return null;
+  });
+  expect((await POST(request())).status).toBe(429);
+  expect(f.infer).not.toHaveBeenCalled();
+  expect(f.mutation.mock.calls.map(([ref]) => getFunctionName(ref))).toEqual(["masterAgent:beginPlanning", "masterStart:abortPlanning"]);
+  f.mutation.mockClear();
+  f.mutation.mockRejectedValue(new ConvexError("PLANNING_NOT_AVAILABLE"));
+  expect((await POST(request())).status).toBe(422);
+  expect(f.mutation).toHaveBeenCalledTimes(1);
+  expect(getFunctionName(f.mutation.mock.calls[0][0])).toBe("masterAgent:beginPlanning");
+});

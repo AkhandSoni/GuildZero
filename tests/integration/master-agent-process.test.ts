@@ -10,34 +10,50 @@ import { masterFixture } from "../helpers/master-fixtures";
 import { api, internal } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 import { PUBLIC_AGENTS } from "../../lib/agent-directory";
+// Scheduled test-runtime transfers stop here; the child process separately runs the actual SDK against an offline chain.
+vi.mock("../../convex/nearSettlement", async () => {
+  const { internalAction } = await import("../../convex/_generated/server");
+  const { v } = await import("convex/values");
+  return { settle: internalAction({ args: { intentId: v.id("paymentIntents") }, handler: async () => null }) };
+});
 const modules = import.meta.glob("../../convex/**/*.ts");
 const script = fileURLToPath(new URL("../helpers/settlement-worker-subprocess.mjs", import.meta.url));
 afterEach(async () => { await stopWorkerProcesses(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllEnvs(); });
 
-async function setup() {
+async function setup(oneClick = false) {
   vi.useFakeTimers(); vi.stubEnv("NEAR_SETTLEMENT_ENABLED", "false"); vi.stubEnv("MASTER_AGENT_AUTOPAY_ENABLED", "false");
   vi.stubEnv("NEAR_PAYMENT_RETRY_ENABLED", "false"); vi.stubEnv("NEAR_DEMO_ALLOWANCES_REQUIRED", "false");
   const t = testBackend(schema, modules);
   const ownerId = await t.run(ctx => ctx.db.insert("users", { email: "master-sdk-fixture@example.com" }));
   const owner = await asUser(t, ownerId), { context, plan } = masterFixture();
-  const runId = await owner.mutation(api.masterAgent.create, { requestId: "master-sdk-process-fixture", prompt: context.prompt, datasets: context.datasets,
-    capYocto: context.capYocto, deadlineAt: context.deadlineAt, requiresHumanReview: false });
-  const claim = await owner.mutation(api.masterAgent.beginPlanning, { runId, revision: 1 });
-  await owner.mutation(api.masterAgent.finishPlanning, { runId, revision: 1, token: claim.token, planJson: JSON.stringify(plan) });
-  const view = await owner.query(api.masterAgent.get, { runId });
-  await owner.mutation(api.masterAgent.accept, { runId, planHash: view.run.planHash!, allowUnfundedPreview: true });
-  await t.finishAllScheduledFunctions(vi.runAllTimers);
-  const jobId = (await owner.query(api.masterAgent.get, { runId })).steps[0].jobId!;
   const key = KeyPair.fromRandom("ed25519");
   const env = { MASTER_AGENT_AUTOPAY_ENABLED: "true", NEAR_NETWORK: "testnet", NEAR_OPERATOR_ACCOUNT_ID: "operator.testnet", NEAR_PRIVATE_KEY: key.toString(),
     NEAR_SETTLEMENT_ENABLED: "true", NEAR_PAYMENT_RETRY_ENABLED: "false", NEAR_DEMO_ALLOWANCES_REQUIRED: "false",
     NEAR_AGENT_RECIPIENTS_JSON: JSON.stringify(Object.fromEntries(PUBLIC_AGENTS.filter(a => a.capabilities.length).map(a => [a.id, "worker.testnet"]))) };
+  if (oneClick) for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+  const input = { requestId: "master-sdk-process-fixture", prompt: context.prompt, datasets: context.datasets,
+    capYocto: context.capYocto, deadlineAt: context.deadlineAt, requiresHumanReview: false };
+  const startReview = oneClick ? await owner.query(api.masterStart.review, {}) : null;
+  const runId = startReview ? await owner.mutation(api.masterStart.start, { ...input, mode: "automatic", policyHash: startReview.policyHash,
+    expiresAt: startReview.expiresAt, purpose: "human_start_and_pay_verified" }) : await owner.mutation(api.masterAgent.create, input);
+  const claim = await owner.mutation(api.masterAgent.beginPlanning, { runId, revision: 1 });
+  await owner.mutation(api.masterAgent.finishPlanning, { runId, revision: 1, token: claim.token, planJson: JSON.stringify(plan) });
+  if (!oneClick) {
+    const view = await owner.query(api.masterAgent.get, { runId });
+    await owner.mutation(api.masterAgent.accept, { runId, planHash: view.run.planHash!, allowUnfundedPreview: true });
+  }
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  const jobId = (await owner.query(api.masterAgent.get, { runId })).steps[0].jobId!;
+
   for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
-  const review = (await owner.query(api.masterAgent.spendingReview, { runId }))!;
-  const grantId = await owner.mutation(api.masterAgent.authorizeSpending, { runId, planHash: review.planHash, policyHash: review.policyHash,
-    capYocto: review.capYocto, expiresAt: review.expiresAt, purpose: "human_mission_spending" });
-  await t.mutation(internal.masterAgentWorker.authorize, { grantId, jobId });
+  if (!oneClick) {
+    const review = (await owner.query(api.masterAgent.spendingReview, { runId }))!;
+    const grantId = await owner.mutation(api.masterAgent.authorizeSpending, { runId, planHash: review.planHash, policyHash: review.policyHash,
+      capYocto: review.capYocto, expiresAt: review.expiresAt, purpose: "human_mission_spending" });
+    await t.mutation(internal.masterAgentWorker.authorize, { grantId, jobId });
+  }
   const intent = (await owner.query(api.payments.forJob, { jobId }))!;
+  if (oneClick) expect((await t.run(ctx => ctx.db.get(intent.masterGrantId!)))!.startConsentHash).toBeDefined();
   const counts = { initialized: 0, signing: 0, signed: 0, broadcasts: 0 };
   async function worker(mode: "success" | "revoke-preflight" | "lost-permit") {
     let revoked = false;
@@ -107,3 +123,25 @@ it("retains admitted signing and the lock after lost permit acknowledgment witho
   await s.worker("success"); expect(s.counts.broadcasts).toBe(0);
   expect((await s.owner.query(api.jobs.detail, { id: s.jobId })).delivery.released).toBe(false);
 });
+
+for (const mode of ["success", "revoke-preflight", "lost-permit"] as const) {
+  it(`runs single-Start admission through actual SDK offline settlement: ${mode}`, async () => {
+    const s = await setup(true);
+    expect((await s.owner.query(api.masterAgent.get, { runId: s.runId })).run.acceptedAt).toBeDefined();
+    await s.worker(mode);
+    if (mode === "success") {
+      expect(s.counts).toEqual({ initialized: 1, signing: 1, signed: 1, broadcasts: 1 });
+      expect((await s.owner.query(api.jobs.detail, { id: s.jobId })).delivery.released).toBe(true);
+      await s.worker("success"); expect(s.counts.broadcasts).toBe(1);
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+      expect((await s.owner.query(api.masterAgent.get, { runId: s.runId })).run.state).toBe("completed");
+    } else {
+      expect(s.counts).toEqual({ initialized: 0, signing: 0, signed: 0, broadcasts: 0 });
+      expect((await s.owner.query(api.jobs.detail, { id: s.jobId })).delivery.released).toBe(false);
+      if (mode === "lost-permit") {
+        expect(await s.t.run(ctx => ctx.db.query("signerLocks").collect())).toHaveLength(1);
+        await s.worker("success"); expect(s.counts.broadcasts).toBe(0);
+      }
+    }
+  });
+}

@@ -26,6 +26,9 @@ export default defineSchema({
     state: v.string(), planJson: v.optional(v.string()), planHash: v.optional(v.string()),
     planningClaimToken: v.optional(v.string()), planningClaimUntil: v.optional(v.number()),
     acceptedAt: v.optional(v.number()), cancelledAt: v.optional(v.number()),
+    startConsent: v.optional(v.object({ version: v.literal("guildzero-start-v1"), mode: v.union(v.literal("automatic"), v.literal("preview")),
+      requestHash: v.string(), datasetHash: v.string(), capYocto: v.string(), revision: v.number(), policyHash: v.string(),
+      expiresAt: v.number(), createdAt: v.number(), hash: v.string(), revokedAt: v.optional(v.number()), admittedPlanHash: v.optional(v.string()) })),
     contentRemovedAt: v.optional(v.number()),
     settlementChecks: v.optional(v.number()), nextSettlementCheckAt: v.optional(v.number()),
     error: v.optional(v.string()), inference: v.optional(v.object({ provider: v.literal("groq"), model: v.string(), inferenceMs: v.number(), requests: v.number(), inputTokens: v.union(v.number(), v.null()), outputTokens: v.union(v.number(), v.null()), planningMs: v.number() })),
@@ -34,6 +37,7 @@ export default defineSchema({
   masterSteps: defineTable({ runId: v.id("masterRuns"), ownerId: v.id("users"), stepId: v.string(), missionId: v.id("missions"), jobId: v.optional(v.id("jobs")) })
     .index("by_run", ["runId"]).index("by_mission", ["missionId"]),
   masterGrants: defineTable({ runId: v.id("masterRuns"), ownerId: v.id("users"), planHash: v.string(), datasetHash: v.string(),
+    startConsentHash: v.optional(v.string()),
     capYocto: v.string(), policyHash: v.string(), expiresAt: v.number(), revokedAt: v.optional(v.number()), createdAt: v.number(),
   }).index("by_run", ["runId"]),
   masterReservations: defineTable({ grantId: v.id("masterGrants"), intentId: v.id("paymentIntents"), amountYocto: v.string(), createdAt: v.number() })

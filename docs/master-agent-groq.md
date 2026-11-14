@@ -1,5 +1,7 @@
 # Personal planner — Groq experiment (#48)
 
+The experiment and MCP coexistence were merged in #51/#52. The current owner-requested primary experience is [Start once](master-agent-start.md): upfront request-bound consent replaces the two later approval screens. The review-first walkthrough below describes the retained legacy API/workflow; new Start requests cannot use its acceptance/grant endpoints.
+
 Branch: `feat/master-agent-groq`, independently based on `be04088784f1aed8cb04ff4f2f16720ae66e94f7`. Keep the PR unmerged until explicit owner approval, even when checks pass. The Qwen and MCP experiments have no code dependency on this branch.
 
 ## Setup

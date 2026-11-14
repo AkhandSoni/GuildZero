@@ -23,6 +23,7 @@ import type * as marketViews from "../marketViews.js";
 import type * as masterAgent from "../masterAgent.js";
 import type * as masterAgentWorker from "../masterAgentWorker.js";
 import type * as masterHelpers from "../masterHelpers.js";
+import type * as masterStart from "../masterStart.js";
 import type * as mcpCredentials from "../mcpCredentials.js";
 import type * as mcpGateway from "../mcpGateway.js";
 import type * as mcpPolicy from "../mcpPolicy.js";
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   masterAgent: typeof masterAgent;
   masterAgentWorker: typeof masterAgentWorker;
   masterHelpers: typeof masterHelpers;
+  masterStart: typeof masterStart;
   mcpCredentials: typeof mcpCredentials;
   mcpGateway: typeof mcpGateway;
   mcpPolicy: typeof mcpPolicy;
