@@ -6,6 +6,7 @@ import { quote, audit, bindingReason } from "./paymentHelpers";
 import { inspectReceipt } from "../lib/settlement/policy";
 import { preparationReason } from "../lib/settlement/failures";
 import { event } from "./workflowHelpers";
+import { grantReason } from "./masterHelpers";
 export const snapshot = internalQuery({
   args: { intentId: v.id("paymentIntents") },
   handler: async (ctx, { intentId }) => {
@@ -23,7 +24,7 @@ export const claim = internalMutation({
     if (!job) throw new ConvexError("JOB_NOT_FOUND");
     let reason: string | null;
     try {
-      reason = bindingReason(intent, await quote(ctx, job));
+      reason = await grantReason(ctx, intent) ?? bindingReason(intent, await quote(ctx, job));
       if (!reason) await enforceAllowance(ctx, intent.ownerId);
     } catch (error) {
       reason = error instanceof ConvexError && typeof error.data === "string"
@@ -56,6 +57,26 @@ export const claim = internalMutation({
       "Custodial testnet payment claimed. No confirmation yet.",
     );
     return intent;
+  },
+});
+// Delegated payments have an additional admission boundary immediately before
+// any SDK signer sees the key. Manual payments keep their established path.
+export const masterSigningPermit = internalMutation({
+  args: { intentId: v.id("paymentIntents") }, handler: async (ctx, { intentId }) => {
+    const intent = await ctx.db.get(intentId);
+    if (!intent || intent.status !== "SUBMITTING") return false;
+    if (!intent.masterGrantId) return true;
+    const lock = await ctx.db.query("signerLocks").withIndex("by_sender", q => q.eq("sender", intent.sender)).unique();
+    if (lock?.intentId !== intentId || intent.masterSigningAdmittedAt) return false;
+    const job = await ctx.db.get(intent.jobId);
+    if (!job) return false;
+    try {
+      if (await grantReason(ctx, intent) || bindingReason(intent, await quote(ctx, job))) return false;
+      await enforceAllowance(ctx, intent.ownerId);
+    } catch { return false; }
+    await ctx.db.patch(intentId, { masterSigningAdmittedAt: Date.now() });
+    await audit(ctx, job, "MASTER_SIGNING_ADMITTED", "VALID_HUMAN_MISSION_GRANT", "allow");
+    return true;
   },
 });
 export const prepared = internalMutation({

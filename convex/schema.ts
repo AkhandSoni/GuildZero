@@ -17,7 +17,31 @@ export const missionFields = {
 };
 export default defineSchema({
   ...legacyAuthTables,
+  masterRuns: defineTable({
+    ownerId: v.id("users"), requestId: v.string(), requestHash: v.string(),
+    prompt: v.string(), datasets: v.array(v.object({ ref: v.string(), name: v.string(), csv: v.string(), digest: v.string() })),
+    datasetHash: v.string(), capYocto: v.string(), deadlineAt: v.number(), requiresHumanReview: v.boolean(),
+    clarifications: v.array(v.string()), revision: v.number(), planningAttempts: v.number(),
+    state: v.string(), planJson: v.optional(v.string()), planHash: v.optional(v.string()),
+    planningClaimToken: v.optional(v.string()), planningClaimUntil: v.optional(v.number()),
+    acceptedAt: v.optional(v.number()), cancelledAt: v.optional(v.number()),
+    contentRemovedAt: v.optional(v.number()),
+    settlementChecks: v.optional(v.number()), nextSettlementCheckAt: v.optional(v.number()),
+    error: v.optional(v.string()), inference: v.optional(v.object({ provider: v.literal("groq"), model: v.string(), inferenceMs: v.number(), requests: v.number(), inputTokens: v.union(v.number(), v.null()), outputTokens: v.union(v.number(), v.null()), planningMs: v.number() })),
+    createdAt: v.number(), updatedAt: v.number(),
+  }).index("by_owner", ["ownerId"]).index("by_owner_request", ["ownerId", "requestId"]),
+  masterSteps: defineTable({ runId: v.id("masterRuns"), ownerId: v.id("users"), stepId: v.string(), missionId: v.id("missions"), jobId: v.optional(v.id("jobs")) })
+    .index("by_run", ["runId"]).index("by_mission", ["missionId"]),
+  masterGrants: defineTable({ runId: v.id("masterRuns"), ownerId: v.id("users"), planHash: v.string(), datasetHash: v.string(),
+    capYocto: v.string(), policyHash: v.string(), expiresAt: v.number(), revokedAt: v.optional(v.number()), createdAt: v.number(),
+  }).index("by_run", ["runId"]),
+  masterReservations: defineTable({ grantId: v.id("masterGrants"), intentId: v.id("paymentIntents"), amountYocto: v.string(), createdAt: v.number() })
+    .index("by_grant", ["grantId"]).index("by_intent", ["intentId"]),
+  masterEvents: defineTable({ runId: v.id("masterRuns"), ownerId: v.id("users"), type: v.string(), detail: v.string(), createdAt: v.number() })
+    .index("by_run", ["runId"]),
   paymentIntents: defineTable({
+    masterGrantId: v.optional(v.id("masterGrants")),
+    masterSigningAdmittedAt: v.optional(v.number()),
     recoveryVersion: v.optional(v.literal(2)),
     currentAttemptId: v.optional(v.id("paymentAttempts")),
     attemptCount: v.optional(v.number()),

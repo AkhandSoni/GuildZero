@@ -2,57 +2,16 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { user, ownedJob } from "./ownership";
-import { audit, quote, bindingReason } from "./paymentHelpers";
+import { audit, quote, bindingReason, prepareIntent } from "./paymentHelpers";
 import { authorizeAllowance, allowanceSnapshot } from "./allowanceHelpers";
 import { allowanceRequired } from "../lib/settlement/allowance";
 import { configuration, candidateReason } from "../lib/settlement/policy";
-import { appendAttempt, currentAttempt, recoveryEnabled, recoveryProjection } from "./paymentRecoveryHelpers";
+import { currentAttempt, recoveryEnabled, recoveryProjection } from "./paymentRecoveryHelpers";
 export const prepare = mutation({
   args: { jobId: v.id("jobs") },
   handler: async (ctx, { jobId }) => {
     const job = await ownedJob(ctx, jobId);
-    const old = await ctx.db
-      .query("paymentIntents")
-      .withIndex("by_job", (q) => q.eq("jobId", jobId))
-      .unique();
-    if (old) return { ok: true as const, intentId: old._id };
-    let q: Awaited<ReturnType<typeof quote>>;
-    try { q = await quote(ctx, job); }
-    catch (error) {
-      const code = error instanceof ConvexError ? String(error.data) : "PAYMENT_CONFIGURATION_OR_POLICY";
-      await audit(ctx, job, "PREPARE_PAYMENT", code);
-      return { ok: false as const, code };
-    }
-    // Once writes begin, let failures abort the entire mutation. In particular,
-    // an attempt write must not leave an orphaned stable intent behind.
-    const intentId = await ctx.db.insert("paymentIntents", {
-      ...(recoveryEnabled() ? { recoveryVersion: 2 as const } : {}),
-      ownerId: job.ownerId,
-      jobId,
-      contractId: q.contract._id,
-      policyVersion: q.policyVersion,
-      deliverableId: q.deliverableId,
-      verificationId: q.verificationId,
-      ...(q.disputeId ? { disputeId: q.disputeId } : {}),
-      sender: q.sender,
-      recipient: q.recipient,
-      amountYocto: q.amountYocto,
-      network: "testnet",
-      status: "READY",
-      createdAt: Date.now(),
-    });
-    if (recoveryEnabled()) {
-      const attemptId = await appendAttempt(ctx, (await ctx.db.get(intentId))!, 1);
-      await ctx.db.patch(intentId, { currentAttemptId: attemptId, attemptCount: 1 });
-    }
-    await audit(
-      ctx,
-      job,
-      "PREPARE_PAYMENT",
-      "EXACT_TRANSFER_PREPARED",
-      "allow",
-    );
-    return { ok: true as const, intentId };
+    return prepareIntent(ctx, job);
   },
 });
 export const authorize = mutation({
@@ -98,7 +57,7 @@ export const authorize = mutation({
       return { ok: false as const, code };
     }
     const authorizedAt = Date.now();
-    await ctx.db.patch(intent._id, { authorizedAt });
+    await ctx.db.patch(intent._id, { authorizedAt, masterGrantId: undefined });
     if (attempt) await ctx.db.patch(attempt._id, { authorizedAt });
     await audit(
       ctx,

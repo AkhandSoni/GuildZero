@@ -19,6 +19,7 @@
     "auth:keys": "node scripts/auth-keys.mjs",
     "test:e2e": "playwright test",
     "test:near": "node scripts/verify-testnet.mjs",
+    "benchmark:master-agent": "node scripts/benchmark-master-agent.mjs",
     "check:client": "node scripts/check-client-boundary.mjs",
     "dev:frontend": "node scripts/dev.mjs --frontend"
   },
@@ -37,7 +38,8 @@
     "password-hash-wasm": "0.0.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "tailwind-merge": "3.7.0"
+    "tailwind-merge": "3.7.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@edge-runtime/vm": "5.0.0",

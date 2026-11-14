@@ -1,5 +1,12 @@
 # Decisions and deviations log
 
+## 2026-11-15 — Explicitly authorized Groq Personal planner experiment (#48)
+
+- The owner requested implementing #48 independently on `feat/master-agent-groq`, using server-side environment variables, then supplied their own Groq key. This is the approved limited exception to the older no-LLM planning decision: a model proposes typed plans; algorithmic sellers, economic decisions, services, verification, human disputes, custody and release rules are reused. No Groq/Qwen/MCP branches are combined, and main must not receive commits or merges without separate explicit authorization.
+- Use a fixed-origin bounded Groq HTTPS adapter with configurable key/model in ignored Next.js environment. Send only user instructions and bounded schema/count metadata, never raw rows or financial credentials. Strict runtime/schema and existing deterministic input preflights precede human acceptance and real private mission creation. Recorded early live planning flaws led to identical common envelope rules in both provider issue specifications (v1.3), without changing frozen fixtures/gold scoring or claiming a comparative winner.
+- One-time bundle spending is new backend authority, not implicit budget consent. Keep `MASTER_AGENT_AUTOPAY_ENABLED` off pending security review/operator activation; preserve existing exact manual approvals. Scope grants to owner/accepted plan/datasets/missions/policy/expiry/cap, count parent/child allocation once and reserve each intent once. Recheck at claim and immediately before key access. Do not permit automatic v2 recovery, reset failure/uncertainty, bypass owner disputes or release unpaid content.
+- Planner datasets introduce another private copy. Bundle content removal therefore validates all existing mission retention guards and clears planner plus bound mission content atomically; individual mission retention points to that operation. No production expiry, recovery provider, paid infrastructure, hosting or new testnet spending is introduced. A branch PR remains unmerged regardless of passing checks.
+
 All locked choices are in `decisions.md`. Record any necessary change with date, reason, affected files, risk, and human approval. Without approval, keep original scope.
 
 ## 2026-11-13 — Business-user requirements and issue audit

@@ -6,6 +6,7 @@ export const preparationFailures = {
   INVALID_BALANCE_EVIDENCE: "The account balance or storage-cost information could not be validated.",
   INSUFFICIENT_OPERATOR_BALANCE: "The operator balance does not cover this transfer, storage and the gas reserve.",
   RECIPIENT_ACCOUNT_LOOKUP_FAILED: "The recipient account could not be read from testnet.",
+  MASTER_SIGNING_NOT_PERMITTED: "The mission spending authorization changed, expired or was revoked before signing was admitted.",
   SIGNER_KEY_INVALID: "The operator signing configuration could not be loaded.",
   TRANSACTION_PREPARATION_FAILED: "The account access key, nonce or recent block could not be prepared.",
   TRANSACTION_SIGNING_FAILED: "The transaction could not be signed by the configured operator.",

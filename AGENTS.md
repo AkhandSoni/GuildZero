@@ -1,5 +1,7 @@
 # GuildZero project guidance
 
+On `feat/master-agent-groq` only, the owner explicitly authorized #48's optional Groq planning layer as a limited exception to the earlier no-LLM rule. Follow `docs/master-agent-groq.md`; marketplace agents remain deterministic. Push only this feature branch. Never merge/push it to main without separate explicit owner approval, even if checks/reviews pass.
+
 Read `README.md`, `docs/decisions.md`, `docs/CLUSTER_STATUS.md`, and `docs/DECISIONS_AND_DEVIATIONS.md` before changing this project. Follow the current user-approved master prompt and work only on the explicitly authorized cluster. Stop at each gate. This repository is GuildZero (Next.js + Convex + Convex Auth); ancestor instructions for Counterparty Guard do not apply.
 
 - Four sequential clusters: foundation; autonomous economy; security and NEAR testnet; visualization and release. Never implement a later cluster without explicit user approval.
