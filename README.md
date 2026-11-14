@@ -4,7 +4,7 @@ GuildZero is an autonomous economic marketplace for real, deterministic data-pro
 
 **Current implementation:** integrated local hackathon prototype. Convex Auth, private mission CRUD, a scheduled deterministic economy, real CSV normalization/statistics, quality audits, keyed reconciliation and grouped numeric reports, bounded negotiation, scored awards, meaningful one-level subcontracting, independent verification, owner dispute decisions, reputation, security probes and a live economy graph are connected. The application has labeled navigation, outcome metrics, scoped workflow stories and a read-only operator wallet. Next.js and Convex are the only application runtimes.
 
-Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. No LLM, model training, mainnet payments or fabricated activity is involved. The bounded business-data expansion adds three typed services without changing the application runtimes or payment rules. A local demo recording and actual backend restart/payment evidence are prepared. Public posting, hosting and hackathon submission remain pending.
+Agents calculate offers from their own profiles, estimated costs, workload, capacity and strategy. Winners are selected by normalized utility, with deterministic tie-breaking. Work approval and testnet payment confirmation are separate states. Marketplace agents, bidding, negotiation, CSV execution, verification and settlement remain 100% deterministic; an optional Personal Master Agent planner (`/master-agent`, issue #49) can use a co-located local Ollama (`qwen3.5:4b`) model strictly to translate plain-language business requests into schema-validated, deterministically compiled `MasterAgentPlanV1` mission plans without model training, cloud LLM APIs, mainnet payments or fabricated activity. The bounded business-data expansion adds three typed services without changing the application runtimes or payment rules. A local demo recording and actual backend restart/payment evidence are prepared. Public posting, hosting and hackathon submission remain pending.
 
 ## Local setup (no account or paid service required)
 
@@ -86,6 +86,41 @@ Grouped reports allow at most 50 groups, 128 group/measure combinations and 100-
 All report JSON stays within 128 KiB. Quality reports include up to 100 record-number findings. Reconciliation reports include up to 25 differing keys, three changed fields per key and 80 characters per displayed value; flags/counts explicitly identify omissions, and examples may be reduced further by the byte cap. Counts cover the entire bounded input. Each new service has its own structured result view plus a JSON download after confirmed settlement. Cleaning subcontracting remains available for the established summary template.
 
 To try reconciliation, create a Keyed reconciliation mission, select **Use synthetic sample CSV** and **Use synthetic comparison CSV**, choose **order_id** as the key, and select **amount** and **status** as compared columns. Save and open the auction. The synthetic source pair contains one unchanged order, one changed order, and one unmatched order on each side. With settlement disabled, acknowledge metadata-only delivery; actual processing/verification still runs and full output remains locked. These are input fixtures, not fabricated deliverables or receipts.
+
+## Personal Master Agent — Local Ollama Qwen3.5 4B (#49)
+
+The `/master-agent` workspace provides an optional local-first Personal Master Agent that converts plain-language business goals and uploaded CSV metadata into a typed `MasterAgentPlanV1` (`guildzero-master-plan-v1`) plan using a local Ollama `qwen3.5:4b` model (`http://127.0.0.1:11434/api/chat`, `stream: false`, `think: false`, strict JSON Schema `format`).
+
+### Local Ollama setup (Linux / NVIDIA GPU or CPU)
+
+```sh
+ollama serve
+ollama pull qwen3.5:4b
+ollama list
+ollama ps
+```
+
+Optional server-only environment overrides in `.env.local`:
+
+```sh
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen3.5:4b
+```
+
+### Runtime topology and network boundaries
+
+- **Co-located local server requirement**: Browser clients call the Next.js Node route handler (`POST /api/master-agent/plan`) with their Convex Auth Bearer token. The route handler verifies ownership against Convex using a per-request authenticated `ConvexHttpClient` (no admin/deploy key) and invokes `http://127.0.0.1:11434` on the same machine. A remote cloud deployment (such as Vercel or hosted Convex) cannot reach a user's `127.0.0.1:11434`.
+- **SSRF & resource bounds**: `resolveOllamaConfig` rejects non-loopback hosts (`127.0.0.1`, `localhost`, `[::1]` only), credentials, paths, queries, and redirects. Model responses are streamed with a hard 32 KiB byte cap, single-concurrent-inference mutex, per-user rate limit (6 plans/minute), and abortable deadline.
+- **Offline planning vs. online settlement**: Once `ollama pull qwen3.5:4b` completes, `qwen3.5:4b` planning, deterministic compilation, local Convex auctions, CSV execution, and independent verification run 100% offline with zero external network calls or paid API keys. Public NEAR testnet receipt confirmation still requires internet access to `https://rpc.testnet.near.org`.
+- **Untrusted planner & human mission-scoped spending grant**: The model never receives raw signing keys, chooses payout accounts, awards contracts, verifies deliverables, or authorizes payments. Every `execute` plan is re-validated by `compileMasterAgentPlan` before the owner can accept and launch the missions. Payment scheduling requires a separate human **mission-scoped spending grant** (`spendingGrants` / `grantReservations`) capped at 1 NEAR and bound to owner, `runId`, `planVersion`, `planHash`, dataset SHA-256 digests, mission IDs, service/cleaning scopes, `operatorAccount`, `recipientsHash`, `PAYMENT_POLICY_VERSION`, `maxTransferYocto`, and `expiresAt`. Grant validity is rechecked at scheduling, `paymentWorker.claim`, and `paymentRecoveryWorker.signingPermit`; revoking a grant blocks any unclaimed or un-permitted transfer.
+
+### Reproducible 13-case benchmark
+
+```sh
+npm run benchmark:master-agent
+```
+
+See [docs/master-agent-qwen-local.md](docs/master-agent-qwen-local.md) and [docs/evidence/master-agent-qwen-local-benchmark.json](docs/evidence/master-agent-qwen-local-benchmark.json) for full hardware telemetry (`NVIDIA GeForce RTX 5060 Laptop GPU`, `3782 MiB` peak VRAM, `qwen3.5:4b` digest `d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04`) and 39/39 trial scores across the frozen 10-case + 3-companion suite.
 
 ## Validation
 

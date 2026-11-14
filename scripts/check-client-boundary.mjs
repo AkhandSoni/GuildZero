@@ -14,6 +14,7 @@ const forbidden = [
   "CONVEX_DEPLOY_KEY",
   "claimToken",
   "NEAR_PAYMENT_RETRY_ENABLED",
+  "OLLAMA_BASE_URL",
 ];
 let scanned = 0;
 const violations = [];

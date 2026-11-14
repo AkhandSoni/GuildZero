@@ -18,6 +18,7 @@ export const missionFields = {
 export default defineSchema({
   ...legacyAuthTables,
   paymentIntents: defineTable({
+    grantId: v.optional(v.id("spendingGrants")),
     recoveryVersion: v.optional(v.literal(2)),
     currentAttemptId: v.optional(v.id("paymentAttempts")),
     attemptCount: v.optional(v.number()),
@@ -53,6 +54,7 @@ export default defineSchema({
     attemptId: v.optional(v.id("paymentAttempts")),
   }).index("by_sender", ["sender"]),
   paymentAttempts: defineTable({
+    grantId: v.optional(v.id("spendingGrants")),
     intentId: v.id("paymentIntents"), ownerId: v.id("users"),
     jobId: v.id("jobs"), contractId: v.id("contracts"),
     deliverableId: v.id("deliverables"), verificationId: v.id("verifications"),
@@ -229,4 +231,133 @@ export default defineSchema({
     .index("by_owner", ["ownerId"])
     .index("by_job", ["jobId"])
     .index("by_mission", ["missionId"]),
+  masterAgentRuns: defineTable({
+    ownerId: v.id("users"),
+    title: v.string(),
+    prompt: v.string(),
+    clarificationResponse: v.optional(v.string()),
+    maxBudgetYocto: v.string(),
+    deadlineAt: v.number(),
+    requiresHumanReview: v.boolean(),
+    allowUnfundedPreview: v.boolean(),
+    state: v.union(
+      v.literal("planning"),
+      v.literal("needs_clarification"),
+      v.literal("ready"),
+      v.literal("executing"),
+      v.literal("needs_human_review"),
+      v.literal("awaiting_spending_authorization"),
+      v.literal("settling"),
+      v.literal("payment_uncertain"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    datasets: v.array(
+      v.object({
+        ref: v.string(),
+        name: v.string(),
+        csv: v.string(),
+        sha256: v.string(),
+        rowCount: v.number(),
+        byteLength: v.number(),
+        headers: v.array(v.string()),
+      }),
+    ),
+    latestPlanJson: v.optional(v.string()),
+    planHash: v.optional(v.string()),
+    planVersion: v.number(),
+    validationError: v.optional(
+      v.object({
+        code: v.string(),
+        message: v.string(),
+      }),
+    ),
+    inferenceEnvelope: v.optional(
+      v.object({
+        provider: v.string(),
+        model: v.string(),
+        modelDigest: v.optional(v.string()),
+        ollamaVersion: v.optional(v.string()),
+        schemaSha256: v.string(),
+        promptSha256: v.string(),
+        durationMs: v.number(),
+        totalDurationNs: v.optional(v.number()),
+        loadDurationNs: v.optional(v.number()),
+        promptEvalCount: v.optional(v.number()),
+        promptEvalDurationNs: v.optional(v.number()),
+        evalCount: v.optional(v.number()),
+        evalDurationNs: v.optional(v.number()),
+        numCtx: v.optional(v.number()),
+        numPredict: v.optional(v.number()),
+        temperature: v.optional(v.number()),
+        seed: v.optional(v.number()),
+        status: v.string(),
+        errorCode: v.optional(v.string()),
+        sanitizedError: v.optional(v.string()),
+      }),
+    ),
+    stepRecords: v.array(
+      v.object({
+        stepId: v.string(),
+        title: v.string(),
+        serviceType: missionFields.serviceType,
+        datasetRef: v.string(),
+        comparisonDatasetRef: v.optional(v.string()),
+        maxBudgetYocto: v.string(),
+        cleanBeforeProcessing: v.boolean(),
+        requiresHumanReview: v.boolean(),
+        missionId: v.id("missions"),
+        jobId: v.optional(v.id("jobs")),
+      }),
+    ),
+    grantId: v.optional(v.id("spendingGrants")),
+    activeRequestId: v.optional(v.string()),
+    contentRemovedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner", ["ownerId"])
+    .index("by_owner_state", ["ownerId", "state"]),
+  spendingGrants: defineTable({
+    ownerId: v.id("users"),
+    runId: v.id("masterAgentRuns"),
+    planVersion: v.number(),
+    planHash: v.string(),
+    datasetDigests: v.array(v.string()),
+    missionIds: v.array(v.id("missions")),
+    allowedScopes: v.array(
+      v.object({
+        missionId: v.id("missions"),
+        serviceType: missionFields.serviceType,
+        cleanBeforeProcessing: v.boolean(),
+        stepCapYocto: v.string(),
+      }),
+    ),
+    operatorAccount: v.string(),
+    recipientsHash: v.string(),
+    policyVersion: v.string(),
+    maxTransferYocto: v.string(),
+    reservedYocto: v.string(),
+    gasReserveDisclosureYocto: v.string(),
+    expiresAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_owner", ["ownerId"])
+    .index("by_run", ["runId"]),
+  grantReservations: defineTable({
+    grantId: v.id("spendingGrants"),
+    ownerId: v.id("users"),
+    runId: v.id("masterAgentRuns"),
+    missionId: v.id("missions"),
+    rootJobId: v.id("jobs"),
+    jobId: v.id("jobs"),
+    intentId: v.id("paymentIntents"),
+    amountYocto: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_grant", ["grantId"])
+    .index("by_job", ["jobId"])
+    .index("by_intent", ["intentId"]),
 });

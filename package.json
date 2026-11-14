@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:near": "node scripts/verify-testnet.mjs",
     "check:client": "node scripts/check-client-boundary.mjs",
+    "benchmark:master-agent": "node scripts/benchmark-master-agent.mjs",
     "dev:frontend": "node scripts/dev.mjs --frontend"
   },
   "dependencies": {

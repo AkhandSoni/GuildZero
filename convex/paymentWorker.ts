@@ -3,6 +3,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { enforceAllowance } from "./allowanceHelpers";
 import { quote, audit, bindingReason } from "./paymentHelpers";
+import { verifyGrantAtClaimBoundary } from "./spendingGrants";
 import { inspectReceipt } from "../lib/settlement/policy";
 import { preparationReason } from "../lib/settlement/failures";
 import { event } from "./workflowHelpers";
@@ -24,6 +25,7 @@ export const claim = internalMutation({
     let reason: string | null;
     try {
       reason = bindingReason(intent, await quote(ctx, job));
+      if (!reason) reason = await verifyGrantAtClaimBoundary(ctx, intent, job);
       if (!reason) await enforceAllowance(ctx, intent.ownerId);
     } catch (error) {
       reason = error instanceof ConvexError && typeof error.data === "string"

@@ -78,6 +78,23 @@ export const removeContent = mutation({
       for (const e of row.security) await ctx.db.patch(e._id, { reason: removed });
     }
     const root = rows.find(r => r.job.depth === 0)!.job;
+    const ownerRuns = await ctx.db.query("masterAgentRuns").withIndex("by_owner", q => q.eq("ownerId", mission.ownerId)).take(50);
+    for (const run of ownerRuns) {
+      if (run.contentRemovedAt === undefined && run.stepRecords.some(s => s.missionId === missionId)) {
+        const otherMissions = await Promise.all(run.stepRecords.map(s => ctx.db.get(s.missionId)));
+        if (otherMissions.every(m => !m || m.contentRemovedAt !== undefined)) {
+          await ctx.db.patch(run._id, {
+            title: removed,
+            prompt: removed,
+            clarificationResponse: undefined,
+            datasets: run.datasets.map(d => ({ ...d, csv: "", headers: [] })),
+            latestPlanJson: undefined,
+            contentRemovedAt: now,
+            updatedAt: now,
+          });
+        }
+      }
+    }
     await ctx.db.insert("economyEvents", { ownerId: mission.ownerId, missionId, jobId: root._id, type: "CONTENT_REMOVED", detail: "Owner removed private content under demo retention policy v1. Financial identities and public chain evidence retained.", createdAt: now });
   },
 });

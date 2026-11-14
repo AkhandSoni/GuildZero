@@ -3,6 +3,7 @@ import { internalMutation, internalQuery, type MutationCtx } from "./_generated/
 import type { Doc } from "./_generated/dataModel";
 import { attemptMatches, recoveryEnabled } from "./paymentRecoveryHelpers";
 import { quote, bindingReason, audit } from "./paymentHelpers";
+import { verifyGrantAtClaimBoundary } from "./spendingGrants";
 import { enforceAllowance } from "./allowanceHelpers";
 import { configuration, inspectReceipt } from "../lib/settlement/policy";
 import { recordDeliveryRelease } from "./deliveryAccess";
@@ -45,6 +46,7 @@ export const claim = internalMutation({ args, handler: async (ctx, input) => {
   let reason: string | null = null;
   try {
     reason = !recoveryEnabled() ? "PAYMENT_RECOVERY_DISABLED" : bindingReason(intent, await quote(ctx, job));
+    if (!reason) reason = await verifyGrantAtClaimBoundary(ctx, intent, job);
     if (!reason && !configuration().enabled) reason = "SETTLEMENT_CONFIGURATION_REQUIRED";
     if (!reason) await enforceAllowance(ctx, intent.ownerId);
   } catch { reason = "PAYMENT_POLICY_CHANGED"; }
@@ -67,6 +69,7 @@ export const signingPermit = internalMutation({ args, handler: async (ctx, input
   let reason: string | null = null;
   try {
     reason = !recoveryEnabled() ? "PAYMENT_RECOVERY_DISABLED" : !job ? "JOB_NOT_FOUND" : bindingReason(state.intent, await quote(ctx, job));
+    if (!reason && job) reason = await verifyGrantAtClaimBoundary(ctx, state.intent, job);
     if (!reason && !configuration().enabled) reason = "SETTLEMENT_CONFIGURATION_REQUIRED";
     if (!reason) await enforceAllowance(ctx, state.intent.ownerId);
   } catch { reason = "PAYMENT_POLICY_CHANGED"; }

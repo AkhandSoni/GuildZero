@@ -20,6 +20,7 @@ import type * as legacyAuthSchema from "../legacyAuthSchema.js";
 import type * as maintenance from "../maintenance.js";
 import type * as marketModel from "../marketModel.js";
 import type * as marketViews from "../marketViews.js";
+import type * as masterAgent from "../masterAgent.js";
 import type * as missions from "../missions.js";
 import type * as nearRecovery from "../nearRecovery.js";
 import type * as nearSettlement from "../nearSettlement.js";
@@ -37,6 +38,7 @@ import type * as publicMarket from "../publicMarket.js";
 import type * as retention from "../retention.js";
 import type * as security from "../security.js";
 import type * as settlementReadiness from "../settlementReadiness.js";
+import type * as spendingGrants from "../spendingGrants.js";
 import type * as workflow from "../workflow.js";
 import type * as workflowHelpers from "../workflowHelpers.js";
 
@@ -59,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   maintenance: typeof maintenance;
   marketModel: typeof marketModel;
   marketViews: typeof marketViews;
+  masterAgent: typeof masterAgent;
   missions: typeof missions;
   nearRecovery: typeof nearRecovery;
   nearSettlement: typeof nearSettlement;
@@ -76,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   retention: typeof retention;
   security: typeof security;
   settlementReadiness: typeof settlementReadiness;
+  spendingGrants: typeof spendingGrants;
   workflow: typeof workflow;
   workflowHelpers: typeof workflowHelpers;
 }>;

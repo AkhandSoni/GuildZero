@@ -19,8 +19,10 @@ export type MissionInput = {
   deadlineAt: number;
 };
 export class MissionValidationError extends Error {
-  constructor(readonly code: ReasonCode, message: string) {
+  readonly code: ReasonCode;
+  constructor(code: ReasonCode, message: string) {
     super(message);
+    this.code = code;
     this.name = "MissionValidationError";
   }
 }

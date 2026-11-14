@@ -6,7 +6,7 @@ export const MAX_PAYMENT_ATTEMPTS = 5;
 export const recoveryEnabled = () => process.env.NEAR_PAYMENT_RETRY_ENABLED === "true";
 function sameObligation(attempt: Doc<"paymentAttempts">, intent: Doc<"paymentIntents">) {
   return attempt.intentId === intent._id &&
-    (["ownerId", "jobId", "contractId", "deliverableId", "verificationId", "disputeId", "policyVersion", "network", "sender", "recipient", "amountYocto"] as const)
+    (["ownerId", "jobId", "contractId", "deliverableId", "verificationId", "disputeId", "grantId", "policyVersion", "network", "sender", "recipient", "amountYocto"] as const)
       .every(key => attempt[key] === intent[key]);
 }
 export function attemptMatches(attempt: Doc<"paymentAttempts">, intent: Doc<"paymentIntents">) {
@@ -30,6 +30,7 @@ export async function appendAttempt(ctx: MutationCtx, intent: Doc<"paymentIntent
       !Number.isSafeInteger(generation) || generation < 1 || generation > MAX_PAYMENT_ATTEMPTS)
     throw new ConvexError("INVALID_PAYMENT_ATTEMPT");
   return ctx.db.insert("paymentAttempts", {
+    ...(intent.grantId ? { grantId: intent.grantId } : {}),
     intentId: intent._id, ownerId: intent.ownerId, jobId: intent.jobId, contractId: intent.contractId,
     deliverableId: intent.deliverableId, verificationId: intent.verificationId,
     ...(intent.disputeId ? { disputeId: intent.disputeId } : {}), policyVersion: intent.policyVersion!,
