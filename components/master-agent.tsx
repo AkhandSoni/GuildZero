@@ -14,7 +14,7 @@ import { JobWorkspace } from "@/components/job-workspace";
 import { readCsvFile, inspectDataset } from "@/lib/dataset-preview";
 import { SAMPLE_CSV } from "@/lib/missions";
 import { formatNear, nearToYocto } from "@/lib/money";
-import { SERVICE_LABELS } from "@/lib/services";
+import { SERVICE_LABELS, type ServiceType } from "@/lib/services";
 import type { MasterAgentPlanV1 } from "@/lib/master-agent/plan";
 
 const messages: Record<string, string> = {
@@ -50,16 +50,25 @@ function CsvField({ label, csv, onChange }: { label: string; csv: string; onChan
   </div>;
 }
 
-export function MasterAgentHome() {
+const serviceSuggestions: Record<ServiceType, string> = {
+  csv_normalize: "Trim surrounding whitespace in this CSV. Preserve case and every row.",
+  csv_summary: "Summarize the numeric columns in this CSV, including counts and missing values.",
+  csv_validate: "Audit this CSV for missing values, repeated values and numeric suitability.",
+  csv_reconcile: "Reconcile these two CSV datasets. Ask me which shared unique key and value columns to compare.",
+  csv_report: "Create a grouped numeric report from this CSV. Ask me which grouping column and measures to use.",
+};
+export function MasterAgentHome({ initialService }: { initialService?: ServiceType } = {}) {
   const create = useMutation(api.masterAgent.create), runs = useQuery(api.masterAgent.list, {}), router = useRouter();
-  const [prompt, setPrompt] = useState(""), [csv, setCsv] = useState(""), [comparison, setComparison] = useState("");
-  const [twoDatasets, setTwoDatasets] = useState(false), [budget, setBudget] = useState("0.5");
+  const [prompt, setPrompt] = useState(initialService ? serviceSuggestions[initialService] : ""), [csv, setCsv] = useState(""), [comparison, setComparison] = useState("");
+  const [twoDatasets, setTwoDatasets] = useState(initialService === "csv_reconcile"), [budget, setBudget] = useState("0.5");
   const [deadline, setDeadline] = useState(() => localDate(Date.now() + 86400000)), [humanReview, setHumanReview] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
   const request = useRef<{ input: string; id: string } | null>(null);
   return <div className="grid min-w-0 gap-6">
-    <header><p className="eyebrow">Personal planner · Groq experiment</p><h1 className="mt-3 text-3xl">Give your data a job.</h1>
-      <p className="muted mt-3 max-w-3xl text-sm">Describe the result you need. Your planner proposes supported services and columns; GuildZero&apos;s independent agents compete and do the actual work.</p></header>
+    <header><p className="eyebrow">New mission · Personal Master Agent</p><h1 className="mt-3 text-3xl">Give your data a job.</h1>
+      <p className="muted mt-3 max-w-3xl text-sm">Enter a prompt, upload your CSV and set a budget. Your Groq-powered planner proposes a validated plan; GuildZero&apos;s independent agents do the actual work.</p>
+      <Link className="mt-4 inline-block text-sm underline" href={initialService ? `/missions/new/manual?service=${initialService}` : "/missions/new/manual"}>Advanced / Manual Mission Creation</Link>
+      {initialService && <p className="muted mt-3 text-xs">Starting suggestion: {SERVICE_LABELS[initialService]}. Edit the request to choose what you need.</p>}</header>
     <form className="panel grid min-w-0 gap-6" onSubmit={async event => {
       event.preventDefault(); setBusy(true); setError("");
       try {
@@ -83,7 +92,7 @@ export function MasterAgentHome() {
       <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={humanReview} onChange={e => setHumanReview(e.target.checked)} />Require my review of acceptance notes</label>
       <p className="muted text-xs">Groq receives your request, exact column names and bounded aggregate counts. Raw CSV rows are never sent to the model. Your private CSV is stored in Convex for the existing services. Use synthetic data for this demo.</p>
       {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
-      <Button disabled={busy} className="w-fit">{busy ? "Saving request…" : "Create planning request"}</Button>
+      <Button disabled={busy} className="w-fit">{busy ? "Saving request…" : "Generate plan"}</Button>
     </form>
     <section className="panel"><h2>Your recent planning requests</h2><p className="muted mt-2 text-xs">Up to 20 most recent requests. These are separate from your manual missions.</p>
       {!runs ? <p role="status" className="mt-4">Loading requests…</p> : !runs.length ? <p className="muted mt-4 text-sm">No planning requests yet.</p> : <ul className="mt-4 divide-y divide-[var(--border)]">{runs.map(r => <li key={r.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 py-4"><Link className="min-w-0 break-words text-sm underline" href={`/master-agent/${r.id}`}>{r.title}</Link><span className="muted text-xs">{r.state.replaceAll("_", " ")}</span></li>)}</ul>}
@@ -139,7 +148,7 @@ export function MasterAgentWorkspace({ runId }: { runId: Id<"masterRuns"> }) {
       <p className="muted text-sm">{proposed.summary}</p><p className="muted text-xs">Steps analyze uploaded datasets independently. A summary uses cleaned input only when its cleaning subcontract is explicitly included.</p><ol className="grid gap-4">{proposed.steps.map(step => <li className="rounded-md border border-[var(--border)] p-4" key={step.stepId}><h3>{step.title}</h3><p className="muted mt-2 text-sm">{SERVICE_LABELS[step.serviceType]} · {formatNear(step.maxBudgetYocto)} testnet NEAR maximum</p><p className="mt-2 break-words text-sm">Dataset: {step.datasetRef}{step.comparisonDatasetRef ? ` + ${step.comparisonDatasetRef}` : ""}. Columns: {step.options.columns.join(", ")}.</p>{step.options.groupBy && <p className="text-sm">Group by: {step.options.groupBy}</p>}{step.options.keyColumn && <p className="text-sm">Reconcile by: {step.options.keyColumn}</p>}{step.options.caseMode && <p className="text-sm">Case: {step.options.caseMode}</p>}{step.options.numericColumns && <p className="text-sm">Numeric checks: {step.options.numericColumns.join(", ") || "none"}</p>}<p className="muted mt-2 text-xs">{step.cleanBeforeProcessing ? "One-level cleaning subcontract included in this cap. " : ""}{run.requiresHumanReview || step.requiresHumanReview ? "Human review required." : "Existing template verification applies."}</p><p className="mt-2 text-xs">{step.acceptanceCriteria}</p></li>)}</ol>
       {!run.acceptedAt && run.state !== "cancelled" && run.state !== "content_removed" && <form className="grid gap-4" onSubmit={e => { e.preventDefault(); void act(() => accept({ runId, planHash: run.planHash!, allowUnfundedPreview: allowPreview })); }}>
         <label className="flex items-start gap-3 text-sm"><input type="checkbox" checked={allowPreview} onChange={e => setAllowPreview(e.target.checked)} /><span>If settlement is unavailable, I explicitly allow metadata-only processing. Full results stay locked until actual payments confirm.</span></label>
-        <label className="flex items-start gap-3 text-sm"><input type="checkbox" required /><span>I accept these services, columns and maximum contract budgets. This does not authorize payment.</span></label><Button className="w-fit" disabled={busy}>Accept plan and start marketplace</Button>
+        <p className="muted text-xs">Accepting starts only the displayed work. It does not authorize spending; payment approval and unresolved disputes remain separate.</p><Button className="w-fit" disabled={busy}>Accept plan and start marketplace</Button>
       </form>}
     </section>}
     {run.acceptedAt && run.state !== "cancelled" && run.state !== "content_removed" && <section className="panel grid gap-4" aria-label="Mission spending authorization"><h2>Spending authorization</h2>

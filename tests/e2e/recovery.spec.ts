@@ -9,7 +9,7 @@ async function signup(page: Page) {
   await page.getByRole("button", { name: "Create account", exact: true }).click(); await expect(page).toHaveURL(/\/dashboard$/);
 }
 async function create(page: Page, title: string, csv = "units\n3\n5", budget = "1", human = false, open = true) {
-  await page.goto("/missions/new"); await page.getByLabel("Mission title").fill(title);
+  await page.goto("/missions/new/manual"); await page.getByLabel("Mission title").fill(title);
   await page.getByLabel("CSV dataset").fill(csv); await page.getByRole("checkbox", { name: "units", exact: true }).check();
   await page.getByLabel("Maximum budget (testnet NEAR)").fill(budget);
   if (human) await page.getByRole("checkbox", { name: "Require human review of acceptance notes" }).check();

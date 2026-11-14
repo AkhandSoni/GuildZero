@@ -9,21 +9,42 @@ test("planner saves a private CSV request, reports missing inference configurati
   // Configuration-error fixture only. This default suite makes no Groq request.
   await page.route("**/api/master-agent/plan", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "GROQ_CONFIGURATION_REQUIRED" }) }));
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/sign-in"); await page.getByRole("button", { name: "Need an account? Sign up" }).click();
+  await page.goto("/missions/new"); await expect(page).toHaveURL(/\/sign-in$/);
+  await page.getByRole("button", { name: "Need an account? Sign up" }).click();
   const password = randomBytes(24).toString("base64url");
   await page.getByLabel("Email", { exact: true }).fill(`master-${randomBytes(8).toString("hex")}@example.com`);
   await page.getByLabel("Password", { exact: true }).fill(password); await page.getByLabel("Confirm password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click(); await expect(page).toHaveURL(/\/dashboard$/);
+  await page.getByRole("link", { name: "+ New mission", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new$/);
+  await expect(page.getByLabel("Mission title", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Maximum contract transfers (testnet NEAR)")).toHaveValue("0.5");
+  await page.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new\/manual$/);
+  await expect(page.getByLabel("Mission title", { exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByLabel("Mission title", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Use the Personal Master Agent instead", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new$/);
   await page.getByRole("link", { name: "Personal planner", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Personal planner", exact: true })).toHaveAttribute("aria-current", "page");
+  await page.getByRole("link", { name: "New mission", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new$/);
+  await page.goto("/master-agent?service=csv_reconcile");
+  await expect(page).toHaveURL(/\/missions\/new\?service=csv_reconcile$/);
+  await expect(page.getByLabel("Comparison CSV file", { exact: true })).toBeVisible();
+  await page.goto("/missions/new?service=unknown");
+  await expect(page.getByLabel("What should the agents do?", { exact: true })).toHaveValue("");
   await page.getByLabel("What should the agents do?", { exact: true }).fill("Summarize units and price.");
   await page.getByLabel("Primary CSV file", { exact: true }).setInputFiles({ name: "synthetic.csv", mimeType: "text/csv", buffer: Buffer.from("units,price\n3,12.50\n5,4\n") });
   await expect(page.getByRole("region", { name: "Dataset preview", exact: true })).toContainText("2 data rows");
-  await page.getByRole("button", { name: "Create planning request", exact: true }).click();
+  await page.getByRole("button", { name: "Generate plan", exact: true }).click();
   await expect(page).toHaveURL(/\/master-agent\/[a-z0-9]+\?plan=1$/);
   await expect(page.getByRole("alert").filter({ hasText: "Groq is not configured yet" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Proposed execution plan", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.goto("/master-agent"); await expect(page.getByRole("link", { name: "Summarize units and price.", exact: true })).toBeVisible();
+  await page.goto("/master-agent"); await expect(page).toHaveURL(/\/missions\/new$/); await expect(page.getByRole("link", { name: "Summarize units and price.", exact: true })).toBeVisible();
 });
 
 test("an explicitly labeled offline gold proposal starts actual private auctions and keeps unpaid output locked", async ({ page }) => {
@@ -45,7 +66,6 @@ test("an explicitly labeled offline gold proposal starts actual private auctions
   const proposal = page.getByRole("region", { name: "Proposed execution plan", exact: true });
   await expect(proposal).toContainText("Offline gold proposal");
   await proposal.getByRole("checkbox", { name: /If settlement is unavailable/ }).check();
-  await proposal.getByRole("checkbox", { name: /I accept these services/ }).check();
   await proposal.getByRole("button", { name: "Accept plan and start marketplace", exact: true }).click();
   await expect(page.getByText("Main analysis · Work accepted", { exact: true })).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole("region", { name: "Locked deliverable preview", exact: true })).toBeVisible();

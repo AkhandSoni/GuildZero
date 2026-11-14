@@ -17,7 +17,7 @@ test("business templates persist options, reject ambiguous reconciliation and pr
     ["csv_reconcile","Keyed reconciliation","id,amount\na,10\nb,20"],
     ["csv_report","Grouped numeric report","region,units\nNorth,3\nSouth,5\nNorth,2"],
   ] as const) {
-    await page.goto(`/missions/new?service=${service}`);
+    await page.goto(`/missions/new/manual?service=${service}`);
     await expect(page.getByLabel("Service template",{exact:true})).toHaveValue(service);
     await page.getByLabel("Mission title").fill(title);
     await page.getByLabel("Upload a CSV file",{exact:true}).setInputFiles({name:"business.csv",mimeType:"text/csv",buffer:Buffer.from(csv)});
@@ -57,7 +57,7 @@ test("business templates persist options, reject ambiguous reconciliation and pr
     await page.getByLabel("Filter by service",{exact:true}).selectOption(service);
     await expect(page.getByRole("heading",{name:title,exact:true})).toBeVisible();
   }
-  await page.goto("/missions/new?service=csv_reconcile");
+  await page.goto("/missions/new/manual?service=csv_reconcile");
   await page.getByLabel("Mission title").fill("Synthetic reconciliation starter");
   await page.getByRole("button",{name:"Use synthetic sample CSV",exact:true}).click();
   await page.getByRole("button",{name:"Use synthetic comparison CSV",exact:true}).click();

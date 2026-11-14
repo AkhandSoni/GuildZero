@@ -13,7 +13,7 @@ test("verified output remains locked, underflow is blocked before commitment and
   await expect(page).toHaveURL(/\/dashboard$/);
 
   async function launch(title: string, csv: string, clean = false, open = true) {
-    await page.goto("/missions/new");
+    await page.goto("/missions/new/manual");
     await page.getByLabel("Mission title").fill(title);
     await page.getByLabel("CSV dataset").fill(csv);
     await page.getByRole("checkbox", { name: "units", exact: true }).check();

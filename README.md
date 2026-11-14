@@ -46,7 +46,7 @@ Dependencies are pinned with their lockfile. The application uses Next.js 16.4.6
 ## Foundation walkthrough
 
 1. Open `/sign-in`, choose **Sign up**, and create account A.
-2. On `/dashboard`, select **New mission**. Enter a title, choose one of the five CSV templates, and upload a UTF-8 `.csv` file, select **Use synthetic sample CSV**, or paste CSV.
+2. On `/dashboard`, select **New mission**, then **Advanced / Manual Mission Creation** for this manual walkthrough. The primary experience is now the Groq Personal Master Agent: enter a prompt, upload CSV and set a budget, then select **Generate plan** and review the validated proposal. Enter a title, choose one of the five CSV templates, and upload a UTF-8 `.csv` file, select **Use synthetic sample CSV**, or paste CSV.
 3. Review the real dataset preview and column-quality counts. Use **Select numeric columns** for summary-ready columns or select them individually. Select processing columns (numeric columns for statistics; case handling for normalization). Set a positive budget (up to 1,000 testnet NEAR), a deadline within 30 days, and acceptance notes. Select **Create private mission**. Options persist with the draft and are visible after reload/edit.
 4. The saved `/missions/[id]` page shows the exact input and budget. Reload to confirm persistence; edit and save changes. Drafts move no funds.
 5. In a private browser window, create account B. Its dashboard does not list A's mission. Paste A's mission URL: access is denied without revealing the mission contents. Backend tests also exercise unauthorized edit/delete attempts.

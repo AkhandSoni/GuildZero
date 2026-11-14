@@ -10,7 +10,8 @@ test("real bidding, negotiation and subcontracted processing persist while unpai
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "+ New mission" }).click();
-  await expect(page).toHaveURL(/\/missions\/new$/);
+  await page.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new\/manual$/);
   await page.getByLabel("Mission title").fill("Automatic sales analysis");
   await page.getByRole("button", { name: "Use synthetic sample CSV" }).click();
   await expect(page.getByRole("region", { name: "Dataset preview", exact: true })).toBeVisible();

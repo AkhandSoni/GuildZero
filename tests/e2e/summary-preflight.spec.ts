@@ -12,7 +12,7 @@ test("strict summary preflight preserves draft CSV and blocks commitment until s
   await page.getByLabel("Confirm password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto("/missions/new");
+  await page.goto("/missions/new/manual");
   const csv = 'price,units\n"$1,234.50",3\n"1234,50",-2';
   await page.getByLabel("Mission title", { exact: true }).fill("Strict format correction");
   await page.getByLabel("CSV dataset", { exact: true }).fill(csv);

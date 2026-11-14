@@ -11,7 +11,8 @@ test("unsaved brief protects links, Back, reload and cancel; saves release the g
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "+ New mission", exact: true }).click();
-  await expect(page).toHaveURL(/\/missions\/new$/);
+  await page.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new\/manual$/);
   const title = page.getByLabel("Mission title");
   await title.fill("Keep these edits");
   const dataset = page.getByLabel("CSV dataset", { exact: true });
@@ -55,7 +56,7 @@ test("unsaved brief protects links, Back, reload and cancel; saves release the g
   await title.fill("Discard with Back");
   page.once("dialog", async dialog => { await dialog.accept(); });
   await page.evaluate(() => history.back());
-  await expect(page).toHaveURL(/\/missions\/new$/);
+  await expect(page).toHaveURL(/\/missions\/new\/manual$/);
   await expect(title).toHaveValue("");
   await title.fill("Discard with link");
   page.once("dialog", async dialog => { await dialog.accept(); });

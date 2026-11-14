@@ -22,7 +22,7 @@ test("pending save freezes the submitted brief until persistence completes", asy
   await page.getByLabel("Confirm password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto("/missions/new");
+  await page.goto("/missions/new/manual");
   await page.getByLabel("Mission title").fill("Persist exactly this brief");
   await page.getByLabel("CSV dataset", { exact: true }).fill("units\n3");
   await page.getByRole("checkbox", { name: "units", exact: true }).check();

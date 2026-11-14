@@ -33,7 +33,8 @@ test("real password auth, mission CRUD, session persistence, and two-user privac
     await expect(alice).toHaveURL(/\/sign-in$/);
     await authenticate(alice, `alice-${suffix}@example.com`, true);
     await alice.getByRole("link", { name: "+ New mission" }).click();
-    await expect(alice).toHaveURL(/\/missions\/new$/);
+  await alice.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true }).click();
+    await expect(alice).toHaveURL(/\/missions\/new\/manual$/);
     await alice.getByLabel("Mission title").fill(`Private sales ${suffix}`);
     await alice
       .getByRole("button", { name: "Use synthetic sample CSV" })

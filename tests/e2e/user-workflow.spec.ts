@@ -15,7 +15,8 @@ test("upload, inspect, process, verify locked delivery, reuse and find a private
   await page.getByRole("button",{name:"Create account",exact:true}).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link",{name:"+ New mission",exact:true}).click();
-  await expect(page).toHaveURL(/\/missions\/new$/);
+  await page.getByRole("link", { name: "Advanced / Manual Mission Creation", exact: true }).click();
+  await expect(page).toHaveURL(/\/missions\/new\/manual$/);
   const title=`Imported sales ${suffix}`;
   const csv="product,units,price\nBag,3,2\nBook,5,4\nPen,,1";
   await page.getByLabel("Mission title").fill(title);
@@ -80,7 +81,7 @@ test("import errors preserve valid data and selections, and clearing allows reim
   const password=randomBytes(24).toString("base64url");
   await page.getByLabel("Password",{exact:true}).fill(password);await page.getByLabel("Confirm password",{exact:true}).fill(password);
   await page.getByRole("button",{name:"Create account",exact:true}).click();await expect(page).toHaveURL(/\/dashboard$/);
-  await page.goto("/missions/new");
+  await page.goto("/missions/new/manual");
   const chooser=page.getByLabel("Upload a CSV file",{exact:true});
   await chooser.setInputFiles({name:"good.csv",mimeType:"text/csv",buffer:Buffer.from("units\n3")});
   await page.getByRole("button",{name:"Select numeric columns",exact:true}).click();
