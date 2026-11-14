@@ -5,9 +5,22 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
 import { masterFixture } from "../helpers/master-fixtures";
 
+function backendUrl() {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL ?? readFileSync(".env.local", "utf8").match(/^NEXT_PUBLIC_CONVEX_URL=["']?([^\s"']+)/m)?.[1];
+  if (!url) throw Error("Configure the test backend public URL.");
+  return url;
+}
+
 test("planner saves a private CSV request, reports missing inference configuration and fits mobile", async ({ page }) => {
   // Configuration-error fixture only. This default suite makes no Groq request.
-  await page.route("**/api/master-agent/plan", route => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "GROQ_CONFIGURATION_REQUIRED" }) }));
+  await page.route("**/api/master-agent/plan", async route => {
+    const auth = route.request().headers().authorization;
+    if (!auth?.startsWith("Bearer ")) throw Error("Expected authenticated fixture request.");
+    const client = new ConvexHttpClient(backendUrl(), { logger: false });
+    client.setAuth(auth.slice(7));
+    await client.mutation(api.masterStart.abortPlanning, route.request().postDataJSON());
+    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "GROQ_CONFIGURATION_REQUIRED" }) });
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/missions/new"); await expect(page).toHaveURL(/\/sign-in$/);
   await page.getByRole("button", { name: "Need an account? Sign up" }).click();
@@ -39,23 +52,22 @@ test("planner saves a private CSV request, reports missing inference configurati
   await page.getByLabel("What should the agents do?", { exact: true }).fill("Summarize units and price.");
   await page.getByLabel("Primary CSV file", { exact: true }).setInputFiles({ name: "synthetic.csv", mimeType: "text/csv", buffer: Buffer.from("units,price\n3,12.50\n5,4\n") });
   await expect(page.getByRole("region", { name: "Dataset preview", exact: true })).toContainText("2 data rows");
-  await page.getByRole("button", { name: "Generate plan", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await expect(page).toHaveURL(/\/master-agent\/[a-z0-9]+\?plan=1$/);
   await expect(page.getByRole("alert").filter({ hasText: "Groq is not configured yet" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Started workflow authorization", exact: true })).toContainText("revoked");
   await expect(page.getByRole("region", { name: "Proposed execution plan", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goBack();
   await expect(page).toHaveURL(/\/missions\/new\?service=unknown$/);
-  await expect(page.getByRole("button", { name: "Generate plan", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start", exact: true })).toBeEnabled();
   await page.goForward();
   await expect(page).toHaveURL(/\/master-agent\/[a-z0-9]+\?plan=1$/);
   await page.goto("/master-agent"); await expect(page).toHaveURL(/\/missions\/new$/); await expect(page.getByRole("link", { name: "Summarize units and price.", exact: true })).toBeVisible();
 });
 
 test("an explicitly labeled offline gold proposal starts actual private auctions and keeps unpaid output locked", async ({ page }) => {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL ?? readFileSync(".env.local", "utf8").match(/^NEXT_PUBLIC_CONVEX_URL=["']?([^\s"']+)/m)?.[1];
-  if (!url) throw Error("Configure the test backend public URL.");
-  const client = new ConvexHttpClient(url, { logger: false });
+  const client = new ConvexHttpClient(backendUrl(), { logger: false });
   const email = `master-gold-${randomBytes(8).toString("hex")}@example.com`, password = randomBytes(24).toString("base64url");
   const session = await client.mutation(api.auth.signIn, { flow: "signUp", email, password });
   if (session.status !== "complete") throw Error("Synthetic test session creation failed.");

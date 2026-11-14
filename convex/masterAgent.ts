@@ -59,6 +59,7 @@ export const get = query({ args: { runId: v.id("masterRuns") }, handler: async (
   return { run: { id: run._id, prompt: run.prompt, datasets: run.datasets.map(d => ({ ref: d.ref, name: d.name })),
     capYocto: run.capYocto, deadlineAt: run.deadlineAt, requiresHumanReview: run.requiresHumanReview,
     state: run.state, revision: run.revision, planJson: run.planJson ?? null, planHash: run.planHash ?? null,
+    startConsent: run.startConsent ? { mode: run.startConsent.mode, expiresAt: run.startConsent.expiresAt, revokedAt: run.startConsent.revokedAt ?? null } : null,
     acceptedAt: run.acceptedAt ?? null, error: run.error ?? null, clarifications: run.clarifications, inference: run.inference ?? null },
     steps, events, grant: grants[0] ? { id: grants[0]._id, capYocto: grants[0].capYocto, expiresAt: grants[0].expiresAt, revokedAt: grants[0].revokedAt ?? null, expired: grants[0].expiresAt <= Date.now() } : null,
     financials: { committedYocto: committed.toString(), confirmedTransfersYocto: confirmed.toString(), pendingTransfersYocto: pending.toString() },
@@ -66,10 +67,11 @@ export const get = query({ args: { runId: v.id("masterRuns") }, handler: async (
 } });
 export const context = query({ args: { runId: v.id("masterRuns") }, handler: async (ctx, { runId }) => {
   const run = await ownedRun(ctx, runId);
-  return { context: planningContext(run), revision: run.revision, accepted: !!run.acceptedAt };
+  return { context: planningContext(run), revision: run.revision, accepted: !!run.acceptedAt, startPending: !!run.startConsent && !run.acceptedAt };
 } });
 export const beginPlanning = mutation({ args: { runId: v.id("masterRuns"), revision: v.number() }, handler: async (ctx, args) => {
   const run = await ownedRun(ctx, args.runId);
+  if (run.startConsent && (run.startConsent.revokedAt !== undefined || run.startConsent.expiresAt <= Date.now())) throw new ConvexError("START_AUTHORIZATION_INACTIVE");
   if (run.acceptedAt || run.cancelledAt || run.revision !== args.revision || (run.planningClaimUntil ?? 0) > Date.now() || run.planningAttempts >= 3)
     throw new ConvexError("PLANNING_NOT_AVAILABLE");
   if (!(await limiter.limit(ctx, "masterPlanning", { key: run.ownerId })).ok || !(await limiter.limit(ctx, "masterGlobal", { key: "groq" })).ok)
@@ -99,8 +101,17 @@ export const finishPlanning = mutation({ args: { runId: v.id("masterRuns"), revi
       !Number.isSafeInteger(inference.planningMs) || inference.planningMs < 0 || inference.inferenceMs > 120000 || inference.planningMs > 180000 ||
       [inference.inputTokens, inference.outputTokens].some(n => n !== null && (!Number.isSafeInteger(n) || n < 0)))) throw new ConvexError("INVALID_INFERENCE_METADATA");
   await ctx.db.patch(run._id, { state: error ? "failed" : state, planJson: error ? undefined : planJson,
+    ...(run.startConsent && (error || state !== "ready_to_accept") ? { startConsent: { ...run.startConsent, revokedAt: run.startConsent.revokedAt ?? Date.now() } } : {}),
     planHash: error ? undefined : planHash, inference, error, planningClaimToken: undefined, planningClaimUntil: undefined, updatedAt: Date.now() });
-  await masterEvent(ctx, run, error ? "PLAN_REJECTED" : "PLAN_PROPOSED", error ? "Planning stopped: " + error : "A schema-validated proposal is ready. No mission or spending authority was created.");
+  await masterEvent(ctx, run, error ? "PLAN_REJECTED" : "PLAN_PROPOSED", error ? "Planning stopped: " + error : run.startConsent ? "The returned plan passed schema and capability validation. Automatic admission must still match the original human Start." : "A schema-validated proposal is ready. No mission or spending authority was created.");
+  if (!error && state === "ready_to_accept" && run.startConsent) {
+    try { await ctx.runMutation(internal.masterStart.admit, { runId: run._id }); }
+    catch (e) {
+      error = e instanceof ConvexError && typeof e.data === "string" && /^[A-Z_]{3,80}$/.test(e.data) ? e.data : "START_ADMISSION_FAILED";
+      await ctx.db.patch(run._id, { state: "failed", error, startConsent: { ...run.startConsent, revokedAt: run.startConsent.revokedAt ?? Date.now() } });
+      await masterEvent(ctx, run, "START_ADMISSION_BLOCKED", "No work or payment started: " + error);
+    }
+  }
   return { ok: !error, code: error ?? null };
 } });
 export const clarify = mutation({ args: { runId: v.id("masterRuns"), reply: v.string() }, handler: async (ctx, args) => {
@@ -108,12 +119,14 @@ export const clarify = mutation({ args: { runId: v.id("masterRuns"), reply: v.st
   if (run.acceptedAt || run.cancelledAt || (run.planningClaimUntil ?? 0) > Date.now() || run.clarifications.length >= 3 || !args.reply.trim() || args.reply.length > 1000)
     throw new ConvexError("CLARIFICATION_NOT_AVAILABLE");
   await ctx.db.patch(run._id, { clarifications: [...run.clarifications, args.reply.trim()], revision: run.revision + 1,
+    ...(run.startConsent ? { startConsent: { ...run.startConsent, revokedAt: run.startConsent.revokedAt ?? Date.now() } } : {}),
     planningAttempts: 0, planningClaimToken: undefined, planningClaimUntil: undefined,
     planJson: undefined, planHash: undefined, inference: undefined, error: undefined, state: "ready", updatedAt: Date.now() });
   return run.revision + 1;
 } });
 export const accept = mutation({ args: { runId: v.id("masterRuns"), planHash: v.string(), allowUnfundedPreview: v.boolean() }, handler: async (ctx, args): Promise<void> => {
   const run = await ownedRun(ctx, args.runId);
+  if (run.startConsent) throw new ConvexError("START_REQUIRES_NEW_REQUEST");
   if (run.planHash !== args.planHash || !run.planJson || run.cancelledAt) throw new ConvexError("MASTER_PLAN_CHANGED");
   if (run.acceptedAt) return;
   const checked = validatePlan(JSON.parse(run.planJson), planningContext(run));
@@ -147,6 +160,7 @@ export const spendingReview = query({ args: { runId: v.id("masterRuns") }, handl
 export const authorizeSpending = mutation({ args: { runId: v.id("masterRuns"), planHash: v.string(), policyHash: v.string(), capYocto: v.string(), expiresAt: v.number(), purpose: v.literal("human_mission_spending") },
   handler: async (ctx, args): Promise<Id<"masterGrants">> => {
     const run = await ownedRun(ctx, args.runId);
+    if (run.startConsent) throw new ConvexError("START_REQUIRES_NEW_REQUEST");
     if (!masterAutopayEnabled()) throw new ConvexError("MASTER_AUTOPAY_DISABLED");
     const { plan } = await boundMissions(ctx, run);
     if (run.planHash !== args.planHash || args.capYocto !== plan.proposedTotalBudgetYocto || args.policyHash !== await policyFingerprint() ||
@@ -169,6 +183,8 @@ export const authorizeSpending = mutation({ args: { runId: v.id("masterRuns"), p
 });
 export const revokeSpending = mutation({ args: { runId: v.id("masterRuns") }, handler: async (ctx, { runId }): Promise<void> => {
   const run = await ownedRun(ctx, runId);
+  if (run.startConsent) await ctx.db.patch(runId, { startConsent: { ...run.startConsent, revokedAt: run.startConsent.revokedAt ?? Date.now() },
+    ...(!run.acceptedAt ? { planningClaimToken: undefined, planningClaimUntil: undefined, state: "failed", error: "START_AUTHORIZATION_INACTIVE" } : {}) });
   const grants = await ctx.db.query("masterGrants").withIndex("by_run", q => q.eq("runId", runId)).take(6);
   for (const grant of grants) if (!grant.revokedAt) await ctx.db.patch(grant._id, { revokedAt: Date.now() });
   await masterEvent(ctx, run, "SPENDING_REVOKED", "New automatic authorizations are stopped. Signing already admitted or broadcast cannot be cancelled.");
@@ -188,7 +204,8 @@ export const cancel = mutation({ args: { runId: v.id("masterRuns") }, handler: a
   const steps = await ctx.db.query("masterSteps").withIndex("by_run", q => q.eq("runId", runId)).take(4);
   for (const step of steps) if (step.jobId && (await ctx.db.get(step.jobId))?.state === "bidding")
     await ctx.runMutation(api.jobs.cancel, { id: step.jobId });
-  await ctx.db.patch(runId, { cancelledAt: Date.now(), state: "cancelled", updatedAt: Date.now() });
+  await ctx.db.patch(runId, { cancelledAt: Date.now(), state: "cancelled", planningClaimToken: undefined, planningClaimUntil: undefined,
+    ...(run.startConsent ? { startConsent: { ...run.startConsent, revokedAt: run.startConsent.revokedAt ?? Date.now() } } : {}), updatedAt: Date.now() });
   await masterEvent(ctx, run, "RUN_CANCELLED", "Stopped delegation and cancelled unawarded work. Committed work and admitted transactions keep their original history.");
 } });
 export const removeContent = mutation({ args: { runId: v.id("masterRuns"), confirm: v.literal("REMOVE_PLANNER_AND_MISSION_CONTENT") }, handler: async (ctx, { runId }): Promise<void> => {
@@ -208,6 +225,7 @@ export const removeContent = mutation({ args: { runId: v.id("masterRuns"), confi
   for (const step of steps) await removeOwnedContent(ctx, step.missionId);
   for (const event of events) await ctx.db.patch(event._id, { detail: "Private planner content removed by owner" });
   await ctx.db.patch(runId, { prompt: "Content removed by owner", datasets: [], clarifications: [], planJson: undefined,
+    ...(run.startConsent ? { startConsent: { ...run.startConsent, revokedAt: run.startConsent.revokedAt ?? Date.now() } } : {}),
     cancelledAt: run.cancelledAt ?? Date.now(), contentRemovedAt: Date.now(), state: "content_removed", error: undefined,
     planningClaimToken: undefined, planningClaimUntil: undefined, updatedAt: Date.now() });
   await masterEvent(ctx, run, "PLANNER_CONTENT_REMOVED", "Owner removed planner inputs/proposals and all bound mission content. Financial identities and receipt evidence were retained.");

@@ -5,6 +5,7 @@ import { user } from "./ownership";
 import { fingerprint, validatePlan, type PlanningContext } from "../lib/master-agent/plan";
 import { configuration } from "../lib/settlement/policy";
 import { PAYMENT_POLICY_VERSION } from "./paymentHelpers";
+import { checkStartConsent } from "./masterStart";
 
 export async function ownedRun(ctx: QueryCtx, id: Id<"masterRuns">) {
   const ownerId = await user(ctx), run = await ctx.db.get(id);
@@ -72,6 +73,12 @@ export async function grantReason(ctx: QueryCtx, intent: Doc<"paymentIntents">):
   const run = await ctx.db.get(grant.runId);
   if (!run || run.ownerId !== intent.ownerId || run.planHash !== grant.planHash || run.datasetHash !== grant.datasetHash) return "MASTER_GRANT_BINDING_CHANGED";
   try {
+    if (run.startConsent && grant.startConsentHash !== run.startConsent.hash) return "START_AUTHORIZATION_CHANGED";
+    if (grant.startConsentHash) {
+      const consent = await checkStartConsent(run);
+      if (consent.mode !== "automatic" || consent.hash !== grant.startConsentHash || consent.admittedPlanHash !== grant.planHash ||
+          grant.expiresAt > consent.expiresAt || BigInt(grant.capYocto) > BigInt(consent.capYocto)) return "START_AUTHORIZATION_CHANGED";
+    }
     const { steps, plan } = await boundMissions(ctx, run);
     if (grant.capYocto !== plan.proposedTotalBudgetYocto || grant.policyHash !== await policyFingerprint()) return "MASTER_GRANT_POLICY_CHANGED";
     const job = await ctx.db.get(intent.jobId);

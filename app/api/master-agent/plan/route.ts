@@ -39,11 +39,16 @@ export async function POST(request: Request) {
     fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10000), redirect: "error" }) });
   client.setAuth(auth.slice(7));
   let claim: { token: string } | undefined;
+  let startPending = false;
   const start = performance.now();
   try {
     // Verify actual ownership before revealing state or consuming provider quota.
-    await client.query(api.masterAgent.context, { runId: input.runId });
-    if (!process.env.GROQ_API_KEY?.trim() || !process.env.GROQ_MODEL?.trim()) return response({ code: "GROQ_CONFIGURATION_REQUIRED" }, 503);
+    const context = await client.query(api.masterAgent.context, { runId: input.runId });
+    startPending = context.startPending === true;
+    if (!process.env.GROQ_API_KEY?.trim() || !process.env.GROQ_MODEL?.trim()) {
+      if (startPending) await client.mutation(api.masterStart.abortPlanning, input);
+      return response({ code: "GROQ_CONFIGURATION_REQUIRED" }, 503);
+    }
     const begun = await client.mutation(api.masterAgent.beginPlanning, input);
     claim = begun;
     const result = await inferGroq(begun.context, { key: process.env.GROQ_API_KEY, model: process.env.GROQ_MODEL }, request.signal);
@@ -56,6 +61,9 @@ export async function POST(request: Request) {
     if (claim) {
       try { await client.mutation(api.masterAgent.finishPlanning, { ...input, token: claim.token, error: code }); }
       catch { /* A stale/expired session cannot mutate the run. Existing lease expires. */ }
+    }
+    if (startPending && code !== "PLANNING_NOT_AVAILABLE") {
+      try { await client.mutation(api.masterStart.abortPlanning, input); } catch { /* Existing expiry/revocation remains authoritative. */ }
     }
     const retry = error instanceof InferenceError ? error.retryAfterSeconds : undefined;
     const status = code.includes("RATE_LIMIT") ? 429 : code === "UNAUTHENTICATED" ? 401 : code === "MASTER_RUN_NOT_FOUND" ? 404 : 422;
