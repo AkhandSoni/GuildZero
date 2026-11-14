@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { user, ownedJob } from "./ownership";
 import { audit, quote, bindingReason } from "./paymentHelpers";
@@ -7,10 +8,8 @@ import { authorizeAllowance, allowanceSnapshot } from "./allowanceHelpers";
 import { allowanceRequired } from "../lib/settlement/allowance";
 import { configuration, candidateReason } from "../lib/settlement/policy";
 import { appendAttempt, currentAttempt, recoveryEnabled, recoveryProjection } from "./paymentRecoveryHelpers";
-export const prepare = mutation({
-  args: { jobId: v.id("jobs") },
-  handler: async (ctx, { jobId }) => {
-    const job = await ownedJob(ctx, jobId);
+export async function prepareOwned(ctx: MutationCtx, job: Doc<"jobs">) {
+    const jobId = job._id;
     const old = await ctx.db
       .query("paymentIntents")
       .withIndex("by_job", (q) => q.eq("jobId", jobId))
@@ -53,7 +52,11 @@ export const prepare = mutation({
       "allow",
     );
     return { ok: true as const, intentId };
-  },
+}
+
+export const prepare = mutation({
+  args: { jobId: v.id("jobs") },
+  handler: async (ctx, { jobId }) => prepareOwned(ctx, await ownedJob(ctx, jobId)),
 });
 export const authorize = mutation({
   args: {

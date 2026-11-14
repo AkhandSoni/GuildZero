@@ -173,3 +173,7 @@ The `minimatch` override patches a development-only ESLint dependency advisory w
 Official references: [Auth 2 source and migration notes](https://github.com/convex/convex-auth), [Convex runtimes](https://docs.convex.dev/functions/runtimes), [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), and [Convex testing](https://docs.convex.dev/testing/convex-test).
 
 See [cluster status](docs/CLUSTER_STATUS.md), [decisions and deviations](docs/DECISIONS_AND_DEVIATIONS.md), and [locked product decisions](docs/decisions.md). On 2026-11-12 the user authorized continued sequential work and feature-branch pushes; acceptance gates still require actual working evidence.
+
+## Local MCP integration (issue #50)
+
+The `feat/MCP` extension adds local stdio tools for external assistants, a scoped Convex gateway and human-managed connection credentials. It preserves GuildZero's existing economy and separate per-payment owner approval. Start with the [implementation plan](docs/mcp-implementation-plan.md) and [local setup/security guide](docs/mcp-setup.md). Wallet configuration and funded delivery are separate steps; no-send local testing needs no NEAR account. See the [actual validation record](docs/mcp-validation.md) for checked behavior and remaining gates.

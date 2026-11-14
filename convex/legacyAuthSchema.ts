@@ -8,6 +8,7 @@ export const legacyAuthTables = {
    */
   users: defineTable({
     authVersion: v.optional(v.literal(2)),
+    mcpDisabledAt: v.optional(v.number()),
     authPasswordNfkc: v.optional(v.boolean()),
     name: v.optional(v.string()),
     image: v.optional(v.string()),
